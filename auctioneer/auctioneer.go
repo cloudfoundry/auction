@@ -49,5 +49,9 @@ func (a *auctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.AuctionRe
 	}
 	result.BiddingDuration = time.Since(t)
 
+	if result.Winner == "" {
+		return result, auctiontypes.InsufficientResources
+	}
+
 	return result, nil
 }

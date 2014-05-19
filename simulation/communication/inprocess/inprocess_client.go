@@ -151,8 +151,8 @@ func (client *InprocessClient) ReleaseReservation(guids []string, instance aucti
 	}
 }
 
-func (client *InprocessClient) Claim(guid string, instance models.LRPStartAuction) {
+func (client *InprocessClient) Run(guid string, instance models.LRPStartAuction) {
 	client.beSlowAndPossiblyTimeout(guid)
 
-	client.reps[guid].Claim(instance)
+	client.reps[guid].Run(instance)
 }

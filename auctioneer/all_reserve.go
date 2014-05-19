@@ -6,7 +6,7 @@ import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
 Tell the subset of reps to reserve
     Pick the winner (lowest score)
-        Tell the winner to claim and the others to release
+        Tell the winner to run and the others to release
 
 */
 func allReserveAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) (string, int, int) {
@@ -28,7 +28,7 @@ func allReserveAuction(client auctiontypes.RepPoolClient, auctionRequest auction
 		orderedReps := scores.FilterErrors().Shuffle().Sort().Reps()
 
 		numCommunications += len(orderedReps)
-		client.Claim(orderedReps[0], auctionRequest.LRPStartAuction)
+		client.Run(orderedReps[0], auctionRequest.LRPStartAuction)
 		if len(orderedReps) > 1 {
 			client.ReleaseReservation(orderedReps[1:], auctionInfo)
 		}

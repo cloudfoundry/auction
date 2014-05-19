@@ -107,7 +107,7 @@ func Start(rabbitUrl string, rep *auctionrep.AuctionRep) {
 		return successResponse
 	})
 
-	server.Handle("claim", func(req []byte) []byte {
+	server.Handle("run", func(req []byte) []byte {
 		var instance models.LRPStartAuction
 
 		err := json.Unmarshal(req, &instance)
@@ -115,7 +115,7 @@ func Start(rabbitUrl string, rep *auctionrep.AuctionRep) {
 			return errorResponse
 		}
 
-		rep.Claim(instance)
+		rep.Run(instance)
 
 		return successResponse
 	})

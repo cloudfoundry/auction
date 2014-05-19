@@ -84,7 +84,7 @@ func (rep *SimulationRepDelegate) ReleaseReservation(instance auctiontypes.LRPAu
 	return nil
 }
 
-func (rep *SimulationRepDelegate) Claim(instance models.LRPStartAuction) error {
+func (rep *SimulationRepDelegate) Run(instance models.LRPStartAuction) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 

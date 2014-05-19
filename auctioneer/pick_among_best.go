@@ -35,7 +35,7 @@ func pickAmongBestAuction(client auctiontypes.RepPoolClient, auctionRequest auct
 			continue
 		}
 
-		client.Claim(winner.Rep, auctionRequest.LRPStartAuction)
+		client.Run(winner.Rep, auctionRequest.LRPStartAuction)
 		numCommunications += 1
 
 		return winner.Rep, rounds, numCommunications

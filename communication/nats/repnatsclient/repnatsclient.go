@@ -202,9 +202,9 @@ func (rep *RepNatsClient) ReleaseReservation(guids []string, instance auctiontyp
 	}
 }
 
-func (rep *RepNatsClient) Claim(guid string, instance models.LRPStartAuction) {
-	err := rep.publishWithTimeout(guid, "claim", instance, nil)
+func (rep *RepNatsClient) Run(guid string, instance models.LRPStartAuction) {
+	err := rep.publishWithTimeout(guid, "run", instance, nil)
 	if err != nil {
-		log.Println("failed to claim:", err)
+		log.Println("failed to run:", err)
 	}
 }

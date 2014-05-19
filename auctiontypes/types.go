@@ -70,7 +70,7 @@ type RepPoolClient interface {
 	Score(guids []string, instance LRPAuctionInfo) ScoreResults
 	ScoreThenTentativelyReserve(guids []string, instance LRPAuctionInfo) ScoreResults
 	ReleaseReservation(guids []string, instance LRPAuctionInfo)
-	Claim(guid string, instance models.LRPStartAuction)
+	Run(guid string, instance models.LRPStartAuction)
 }
 
 type TestRepPoolClient interface {

@@ -14,7 +14,7 @@ type AuctionRepDelegate interface {
 
 	Reserve(instance auctiontypes.LRPAuctionInfo) error
 	ReleaseReservation(instance auctiontypes.LRPAuctionInfo) error
-	Claim(instance models.LRPStartAuction) error
+	Run(instance models.LRPStartAuction) error
 }
 
 //Used in simulation
@@ -87,11 +87,11 @@ func (rep *AuctionRep) ReleaseReservation(instance auctiontypes.LRPAuctionInfo) 
 	return rep.delegate.ReleaseReservation(instance)
 }
 
-func (rep *AuctionRep) Claim(instance models.LRPStartAuction) error {
+func (rep *AuctionRep) Run(instance models.LRPStartAuction) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	return rep.delegate.Claim(instance)
+	return rep.delegate.Run(instance)
 }
 
 func (rep *AuctionRep) TotalResources() auctiontypes.Resources {

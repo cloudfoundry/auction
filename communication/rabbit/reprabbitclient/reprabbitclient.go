@@ -138,9 +138,9 @@ func (rep *RepRabbitClient) ReleaseReservation(guids []string, instance auctiont
 	allReceived.Wait()
 }
 
-func (rep *RepRabbitClient) Claim(guid string, instance models.LRPStartAuction) {
-	err := rep.request(guid, "claim", instance, nil)
+func (rep *RepRabbitClient) Run(guid string, instance models.LRPStartAuction) {
+	err := rep.request(guid, "run", instance, nil)
 	if err != nil {
-		log.Println("failed to claim:", err)
+		log.Println("failed to run:", err)
 	}
 }

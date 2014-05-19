@@ -52,7 +52,7 @@ func allRescoreAuction(client auctiontypes.RepPoolClient, auctionRequest auction
 			}
 		}
 
-		client.Claim(winner.Rep, auctionRequest.LRPStartAuction)
+		client.Run(winner.Rep, auctionRequest.LRPStartAuction)
 		numCommunications += 1
 		return winner.Rep, rounds, numCommunications
 	}

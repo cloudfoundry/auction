@@ -130,7 +130,7 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 		responsePayload = successResponse
 	})
 
-	client.Subscribe(guid+".claim", func(msg *yagnats.Message) {
+	client.Subscribe(guid+".run", func(msg *yagnats.Message) {
 		var inst models.LRPStartAuction
 
 		responsePayload := errorResponse
@@ -144,7 +144,7 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 			return
 		}
 
-		rep.Claim(inst) //need to handle error
+		rep.Run(inst) //need to handle error
 
 		responsePayload = successResponse
 	})

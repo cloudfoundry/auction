@@ -22,7 +22,7 @@ func randomAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontype
 			continue
 		}
 
-		client.Claim(randomPick, auctionRequest.LRPStartAuction)
+		client.Run(randomPick, auctionRequest.LRPStartAuction)
 		numCommunications += 1
 
 		return randomPick, rounds, numCommunications

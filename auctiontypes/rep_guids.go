@@ -1,9 +1,9 @@
-package types
+package auctiontypes
 
 import (
 	"math"
 
-	"github.com/onsi/auction/util"
+	"github.com/cloudfoundry-incubator/auction/util"
 )
 
 func (r RepGuids) RandomSubsetByCount(n int) RepGuids {

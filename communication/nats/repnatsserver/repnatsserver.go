@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/cloudfoundry-incubator/auction/auctionrep"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry/yagnats"
-	"github.com/onsi/auction/auctionrep"
-	"github.com/onsi/auction/types"
 )
 
 var errorResponse = []byte("error")
@@ -42,7 +42,7 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 	})
 
 	client.Subscribe(guid+".set_instances", func(msg *yagnats.Message) {
-		var instances []types.Instance
+		var instances []auctiontypes.Instance
 
 		err := json.Unmarshal(msg.Payload, &instances)
 		if err != nil {
@@ -59,14 +59,14 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 	})
 
 	client.Subscribe(guid+".score", func(msg *yagnats.Message) {
-		var inst types.Instance
+		var inst auctiontypes.Instance
 
 		err := json.Unmarshal(msg.Payload, &inst)
 		if err != nil {
 			panic(err)
 		}
 
-		response := types.ScoreResult{
+		response := auctiontypes.ScoreResult{
 			Rep: guid,
 		}
 
@@ -85,14 +85,14 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 	})
 
 	client.Subscribe(guid+".score_then_tentatively_reserve", func(msg *yagnats.Message) {
-		var inst types.Instance
+		var inst auctiontypes.Instance
 
 		err := json.Unmarshal(msg.Payload, &inst)
 		if err != nil {
 			panic(err)
 		}
 
-		response := types.ScoreResult{
+		response := auctiontypes.ScoreResult{
 			Rep: guid,
 		}
 
@@ -111,7 +111,7 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 	})
 
 	client.Subscribe(guid+".release-reservation", func(msg *yagnats.Message) {
-		var inst types.Instance
+		var inst auctiontypes.Instance
 
 		responsePayload := errorResponse
 		defer func() {
@@ -130,7 +130,7 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 	})
 
 	client.Subscribe(guid+".claim", func(msg *yagnats.Message) {
-		var inst types.Instance
+		var inst auctiontypes.Instance
 
 		responsePayload := errorResponse
 		defer func() {

@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cloudfoundry-incubator/auction/auctioneer"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsclient"
+	"github.com/cloudfoundry-incubator/auction/communication/rabbit/reprabbitclient"
 	"github.com/cloudfoundry/yagnats"
-	"github.com/onsi/auction/auctioneer"
-	"github.com/onsi/auction/communication/nats/repnatsclient"
-	"github.com/onsi/auction/communication/rabbit/reprabbitclient"
-	"github.com/onsi/auction/types"
 )
 
 var natsAddrs = flag.String("natsAddrs", "", "nats server addresses")
@@ -39,7 +39,7 @@ func main() {
 		panic("need http addr")
 	}
 
-	var repClient types.RepPoolClient
+	var repClient auctiontypes.RepPoolClient
 
 	if *natsAddrs != "" {
 		client := yagnats.NewClient()
@@ -73,7 +73,7 @@ func main() {
 			<-semaphore
 		}()
 
-		var auctionRequest types.AuctionRequest
+		var auctionRequest auctiontypes.AuctionRequest
 		err := json.NewDecoder(r.Body).Decode(&auctionRequest)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)

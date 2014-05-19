@@ -4,19 +4,19 @@ import (
 	"errors"
 	"time"
 
-	"github.com/onsi/auction/types"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 )
 
 var AllBiddersFull = errors.New("all the bidders were full")
 
-var DefaultRules = types.AuctionRules{
+var DefaultRules = auctiontypes.AuctionRules{
 	Algorithm:      "reserve_n_best",
 	MaxRounds:      100,
 	MaxBiddingPool: 0.2,
 }
 
-func Auction(client types.RepPoolClient, auctionRequest types.AuctionRequest) types.AuctionResult {
-	result := types.AuctionResult{
+func Auction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) auctiontypes.AuctionResult {
+	result := auctiontypes.AuctionResult{
 		Instance: auctionRequest.Instance,
 	}
 

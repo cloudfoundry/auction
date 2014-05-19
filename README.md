@@ -4,7 +4,7 @@ Auction implements the scheduling algorithm for Diego's long running processes. 
 
 ## The Auctioneer
 
-The `auctioneer` package provides a variety of auction algorithms.  Diego nodes that play the `auctioneer` role must call `auctioneer.Auction` passing in a valid `types.AuctionRequest` and `types.RepPoolClient` for communciating with the pool of auction representatives.
+The `auctioneer` package provides a variety of auction algorithms.  Diego nodes that play the `auctioneer` role must call `auctioneer.Auction` passing in a valid `auctiontypes.AuctionRequest` and `auctiontypes.RepPoolClient` for communciating with the pool of auction representatives.
 
 ## The Representatives
 

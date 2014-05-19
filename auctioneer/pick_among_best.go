@@ -1,6 +1,6 @@
 package auctioneer
 
-import "github.com/onsi/auction/types"
+import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
 /*
 
@@ -10,7 +10,7 @@ Get the scores from the subset of reps
 
 */
 
-func pickAmongBestAuction(client types.RepPoolClient, auctionRequest types.AuctionRequest) (string, int, int) {
+func pickAmongBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {

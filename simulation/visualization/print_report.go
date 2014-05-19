@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/onsi/auction/simulation/communication/inprocess"
-	"github.com/onsi/auction/types"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/simulation/communication/inprocess"
 )
 
 const defaultStyle = "\x1b[0m"
@@ -19,7 +19,7 @@ const grayColor = "\x1b[90m"
 const lightGrayColor = "\x1b[37m"
 const purpleColor = "\x1b[35m"
 
-func PrintReport(client types.TestRepPoolClient, results []types.AuctionResult, representatives []string, duration time.Duration, rules types.AuctionRules) {
+func PrintReport(client auctiontypes.TestRepPoolClient, results []auctiontypes.AuctionResult, representatives []string, duration time.Duration, rules auctiontypes.AuctionRules) {
 	roundsDistribution := map[int]int{}
 	auctionedInstances := map[string]bool{}
 

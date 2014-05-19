@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/util"
 	"github.com/cloudfoundry/yagnats"
-	"github.com/onsi/auction/types"
-	"github.com/onsi/auction/util"
 )
 
 var TimeoutError = errors.New("timeout")
@@ -66,8 +66,8 @@ func (rep *RepNatsClient) publishWithTimeout(guid string, subject string, req in
 	}
 }
 
-func (rep *RepNatsClient) TotalResources(guid string) types.Resources {
-	var totalResources types.Resources
+func (rep *RepNatsClient) TotalResources(guid string) auctiontypes.Resources {
+	var totalResources auctiontypes.Resources
 	err := rep.publishWithTimeout(guid, "total_resources", nil, &totalResources)
 	if err != nil {
 		panic(err)
@@ -76,8 +76,8 @@ func (rep *RepNatsClient) TotalResources(guid string) types.Resources {
 	return totalResources
 }
 
-func (rep *RepNatsClient) Instances(guid string) []types.Instance {
-	var instances []types.Instance
+func (rep *RepNatsClient) Instances(guid string) []auctiontypes.Instance {
+	var instances []auctiontypes.Instance
 	err := rep.publishWithTimeout(guid, "instances", nil, &instances)
 	if err != nil {
 		panic(err)
@@ -93,25 +93,25 @@ func (rep *RepNatsClient) Reset(guid string) {
 	}
 }
 
-func (rep *RepNatsClient) SetInstances(guid string, instances []types.Instance) {
+func (rep *RepNatsClient) SetInstances(guid string, instances []auctiontypes.Instance) {
 	err := rep.publishWithTimeout(guid, "set_instances", instances, nil)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (rep *RepNatsClient) batch(subject string, guids []string, instance types.Instance) types.ScoreResults {
+func (rep *RepNatsClient) batch(subject string, guids []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
 	replyTo := util.RandomGuid()
 
 	allReceived := new(sync.WaitGroup)
 	allReceived.Add(len(guids))
-	responses := make(chan types.ScoreResult, len(guids))
+	responses := make(chan auctiontypes.ScoreResult, len(guids))
 
 	n := 0
 	subscriptionID, err := rep.client.Subscribe(replyTo, func(msg *yagnats.Message) {
 		n++
 		defer allReceived.Done()
-		var result types.ScoreResult
+		var result auctiontypes.ScoreResult
 		err := json.Unmarshal(msg.Payload, &result)
 		if err != nil {
 			return
@@ -121,7 +121,7 @@ func (rep *RepNatsClient) batch(subject string, guids []string, instance types.I
 	})
 
 	if err != nil {
-		return types.ScoreResults{}
+		return auctiontypes.ScoreResults{}
 	}
 
 	defer rep.client.Unsubscribe(subscriptionID)
@@ -144,7 +144,7 @@ func (rep *RepNatsClient) batch(subject string, guids []string, instance types.I
 		println("TIMING OUT!!")
 	}
 
-	results := types.ScoreResults{}
+	results := auctiontypes.ScoreResults{}
 
 	for {
 		select {
@@ -158,15 +158,15 @@ func (rep *RepNatsClient) batch(subject string, guids []string, instance types.I
 	return results
 }
 
-func (rep *RepNatsClient) Score(guids []string, instance types.Instance) types.ScoreResults {
+func (rep *RepNatsClient) Score(guids []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
 	return rep.batch("score", guids, instance)
 }
 
-func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, instance types.Instance) types.ScoreResults {
+func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
 	return rep.batch("score_then_tentatively_reserve", guids, instance)
 }
 
-func (rep *RepNatsClient) ReleaseReservation(guids []string, instance types.Instance) {
+func (rep *RepNatsClient) ReleaseReservation(guids []string, instance auctiontypes.Instance) {
 	replyTo := util.RandomGuid()
 
 	allReceived := new(sync.WaitGroup)
@@ -201,7 +201,7 @@ func (rep *RepNatsClient) ReleaseReservation(guids []string, instance types.Inst
 	}
 }
 
-func (rep *RepNatsClient) Claim(guid string, instance types.Instance) {
+func (rep *RepNatsClient) Claim(guid string, instance auctiontypes.Instance) {
 	err := rep.publishWithTimeout(guid, "claim", instance, nil)
 	if err != nil {
 		log.Println("failed to claim:", err)

@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/onsi/auction/communication/rabbit/rabbitclient"
-	"github.com/onsi/auction/types"
-	"github.com/onsi/auction/util"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/communication/rabbit/rabbitclient"
+	"github.com/cloudfoundry-incubator/auction/util"
 )
 
 var TimeoutError = errors.New("timeout")
@@ -60,8 +60,8 @@ func (rep *RepRabbitClient) request(guid string, subject string, req interface{}
 	return nil
 }
 
-func (rep *RepRabbitClient) TotalResources(guid string) types.Resources {
-	var totalResources types.Resources
+func (rep *RepRabbitClient) TotalResources(guid string) auctiontypes.Resources {
+	var totalResources auctiontypes.Resources
 	err := rep.request(guid, "total_resources", []byte{}, &totalResources)
 	if err != nil {
 		panic(err)
@@ -69,8 +69,8 @@ func (rep *RepRabbitClient) TotalResources(guid string) types.Resources {
 	return totalResources
 }
 
-func (rep *RepRabbitClient) Instances(guid string) []types.Instance {
-	var instances []types.Instance
+func (rep *RepRabbitClient) Instances(guid string) []auctiontypes.Instance {
+	var instances []auctiontypes.Instance
 	err := rep.request(guid, "instances", nil, &instances)
 	if err != nil {
 		panic(err)
@@ -86,21 +86,21 @@ func (rep *RepRabbitClient) Reset(guid string) {
 	}
 }
 
-func (rep *RepRabbitClient) SetInstances(guid string, instances []types.Instance) {
+func (rep *RepRabbitClient) SetInstances(guid string, instances []auctiontypes.Instance) {
 	err := rep.request(guid, "set_instances", instances, nil)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (rep *RepRabbitClient) batch(subject string, guids []string, instance types.Instance) types.ScoreResults {
-	c := make(chan types.ScoreResult)
+func (rep *RepRabbitClient) batch(subject string, guids []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
+	c := make(chan auctiontypes.ScoreResult)
 	for _, guid := range guids {
 		go func(guid string) {
-			var response types.ScoreResult
+			var response auctiontypes.ScoreResult
 			err := rep.request(guid, subject, instance, &response)
 			if err != nil {
-				c <- types.ScoreResult{
+				c <- auctiontypes.ScoreResult{
 					Error: err.Error(),
 				}
 			}
@@ -108,7 +108,7 @@ func (rep *RepRabbitClient) batch(subject string, guids []string, instance types
 		}(guid)
 	}
 
-	scores := types.ScoreResults{}
+	scores := auctiontypes.ScoreResults{}
 	for _ = range guids {
 		scores = append(scores, <-c)
 	}
@@ -116,15 +116,15 @@ func (rep *RepRabbitClient) batch(subject string, guids []string, instance types
 	return scores
 }
 
-func (rep *RepRabbitClient) Score(guids []string, instance types.Instance) types.ScoreResults {
+func (rep *RepRabbitClient) Score(guids []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
 	return rep.batch("score", guids, instance)
 }
 
-func (rep *RepRabbitClient) ScoreThenTentativelyReserve(guids []string, instance types.Instance) types.ScoreResults {
+func (rep *RepRabbitClient) ScoreThenTentativelyReserve(guids []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
 	return rep.batch("score_then_tentatively_reserve", guids, instance)
 }
 
-func (rep *RepRabbitClient) ReleaseReservation(guids []string, instance types.Instance) {
+func (rep *RepRabbitClient) ReleaseReservation(guids []string, instance auctiontypes.Instance) {
 	allReceived := new(sync.WaitGroup)
 	allReceived.Add(len(guids))
 	for _, guid := range guids {
@@ -137,7 +137,7 @@ func (rep *RepRabbitClient) ReleaseReservation(guids []string, instance types.In
 	allReceived.Wait()
 }
 
-func (rep *RepRabbitClient) Claim(guid string, instance types.Instance) {
+func (rep *RepRabbitClient) Claim(guid string, instance auctiontypes.Instance) {
 	err := rep.request(guid, "claim", instance, nil)
 	if err != nil {
 		log.Println("failed to claim:", err)

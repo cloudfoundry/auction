@@ -8,18 +8,18 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/cloudfoundry-incubator/auction/auctioneer"
+	"github.com/cloudfoundry-incubator/auction/auctionrep"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsclient"
+	"github.com/cloudfoundry-incubator/auction/communication/rabbit/reprabbitclient"
+	"github.com/cloudfoundry-incubator/auction/simulation/auctiondistributor"
+	"github.com/cloudfoundry-incubator/auction/simulation/communication/inprocess"
+	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
+	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
+	"github.com/cloudfoundry-incubator/auction/util"
 	"github.com/cloudfoundry/gunk/natsrunner"
 	"github.com/cloudfoundry/yagnats"
-	"github.com/onsi/auction/auctioneer"
-	"github.com/onsi/auction/auctionrep"
-	"github.com/onsi/auction/communication/nats/repnatsclient"
-	"github.com/onsi/auction/communication/rabbit/reprabbitclient"
-	"github.com/onsi/auction/simulation/auctiondistributor"
-	"github.com/onsi/auction/simulation/communication/inprocess"
-	"github.com/onsi/auction/simulation/simulationrepdelegate"
-	"github.com/onsi/auction/simulation/visualization"
-	"github.com/onsi/auction/types"
-	"github.com/onsi/auction/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -42,7 +42,7 @@ const Remote = "remote"
 const numAuctioneers = 10
 const numReps = 100
 
-var repResources = types.Resources{
+var repResources = auctiontypes.Resources{
 	MemoryMB:   100.0,
 	DiskMB:     100.0,
 	Containers: 100,
@@ -59,7 +59,7 @@ var reports []*visualization.Report
 
 var sessionsToTerminate []*gexec.Session
 var natsRunner *natsrunner.NATSRunner
-var client types.TestRepPoolClient
+var client auctiontypes.TestRepPoolClient
 var guids []string
 
 func init() {
@@ -144,7 +144,7 @@ var _ = AfterSuite(func() {
 	}
 })
 
-func buildInProcessReps() (types.TestRepPoolClient, []string) {
+func buildInProcessReps() (auctiontypes.TestRepPoolClient, []string) {
 	inprocess.LatencyMin = 1 * time.Millisecond
 	inprocess.LatencyMax = 2 * time.Millisecond
 	inprocess.Timeout = 50 * time.Millisecond
@@ -181,7 +181,7 @@ func startRabbit() string {
 }
 
 func launchExternalReps(communicationFlag string, communicationValue string) []string {
-	repNodeBinary, err := gexec.Build("github.com/onsi/auction/simulation/repnode")
+	repNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/repnode")
 	Ω(err).ShouldNot(HaveOccurred())
 
 	guids := []string{}
@@ -210,7 +210,7 @@ func launchExternalReps(communicationFlag string, communicationValue string) []s
 }
 
 func launchExternalAuctioneers(communicationFlag string, communicationValue string) []string {
-	auctioneerNodeBinary, err := gexec.Build("github.com/onsi/auction/simulation/auctioneernode")
+	auctioneerNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/auctioneernode")
 	Ω(err).ShouldNot(HaveOccurred())
 
 	auctioneerHosts := []string{}
@@ -261,7 +261,7 @@ func ketchupAuctioneerHosts() []string {
 	}
 }
 
-func ketchupNATSClient() types.TestRepPoolClient {
+func ketchupNATSClient() auctiontypes.TestRepPoolClient {
 	natsAddrs := []string{
 		"10.10.50.20:4222",
 		"10.10.114.20:4222",

@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/GaryBoone/GoStats/stats"
-	"github.com/onsi/auction/types"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 )
 
 type Report struct {
 	RepGuids                     []string
-	AuctionResults               []types.AuctionResult
-	InstancesByRep               map[string][]types.Instance
+	AuctionResults               []auctiontypes.AuctionResult
+	InstancesByRep               map[string][]auctiontypes.Instance
 	AuctionDuration              time.Duration
 	auctionedInstancesByInstGuid map[string]bool
 }
@@ -34,7 +34,7 @@ func NewStat(data []float64) Stat {
 	}
 }
 
-func (r *Report) IsAuctionedInstance(inst types.Instance) bool {
+func (r *Report) IsAuctionedInstance(inst auctiontypes.Instance) bool {
 	if r.auctionedInstancesByInstGuid == nil {
 		r.auctionedInstancesByInstGuid = map[string]bool{}
 		for _, result := range r.AuctionResults {
@@ -129,8 +129,8 @@ func (r *Report) WaitTimeStats() Stat {
 	return NewStat(waitTimes)
 }
 
-func FetchAndSortInstances(client types.TestRepPoolClient, repGuids []string) map[string][]types.Instance {
-	instancesByRepGuid := map[string][]types.Instance{}
+func FetchAndSortInstances(client auctiontypes.TestRepPoolClient, repGuids []string) map[string][]auctiontypes.Instance {
+	instancesByRepGuid := map[string][]auctiontypes.Instance{}
 	for _, guid := range repGuids {
 		instances := client.Instances(guid)
 		sort.Sort(ByAppGuid(instances))
@@ -140,7 +140,7 @@ func FetchAndSortInstances(client types.TestRepPoolClient, repGuids []string) ma
 	return instancesByRepGuid
 }
 
-type ByAppGuid []types.Instance
+type ByAppGuid []auctiontypes.Instance
 
 func (a ByAppGuid) Len() int           { return len(a) }
 func (a ByAppGuid) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }

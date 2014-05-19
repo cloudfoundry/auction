@@ -1,10 +1,10 @@
 package simulation_test
 
 import (
-	"github.com/onsi/auction/auctioneer"
-	"github.com/onsi/auction/simulation/visualization"
-	"github.com/onsi/auction/types"
-	"github.com/onsi/auction/util"
+	"github.com/cloudfoundry-incubator/auction/auctioneer"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
+	"github.com/cloudfoundry-incubator/auction/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -12,29 +12,29 @@ import (
 var _ = Ω
 
 var _ = Describe("Auction", func() {
-	var initialDistributions map[int][]types.Instance
+	var initialDistributions map[int][]auctiontypes.Instance
 
-	newInstance := func(appGuid string, memoryMB float64) types.Instance {
-		return types.Instance{
+	newInstance := func(appGuid string, memoryMB float64) auctiontypes.Instance {
+		return auctiontypes.Instance{
 			AppGuid:      appGuid,
 			InstanceGuid: util.NewGuid("INS"),
-			Resources: types.Resources{
+			Resources: auctiontypes.Resources{
 				MemoryMB: memoryMB,
 				DiskMB:   1,
 			},
 		}
 	}
 
-	generateUniqueInstances := func(numInstances int, memoryMB float64) []types.Instance {
-		instances := []types.Instance{}
+	generateUniqueInstances := func(numInstances int, memoryMB float64) []auctiontypes.Instance {
+		instances := []auctiontypes.Instance{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newInstance(util.NewGrayscaleGuid("BBB"), memoryMB))
 		}
 		return instances
 	}
 
-	generateUniqueInitialInstances := func(numInstances int, memoryMB float64) []types.Instance {
-		instances := []types.Instance{}
+	generateUniqueInitialInstances := func(numInstances int, memoryMB float64) []auctiontypes.Instance {
+		instances := []auctiontypes.Instance{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newInstance(util.NewGrayscaleGuid("AAA"), memoryMB))
 		}
@@ -45,16 +45,16 @@ var _ = Describe("Auction", func() {
 		return []string{"purple", "red", "cyan", "teal", "gray", "blue", "pink", "green", "lime", "orange", "lightseagreen", "brown"}[util.R.Intn(12)]
 	}
 
-	generateInstancesWithRandomSVGColors := func(numInstances int, memoryMB float64) []types.Instance {
-		instances := []types.Instance{}
+	generateInstancesWithRandomSVGColors := func(numInstances int, memoryMB float64) []auctiontypes.Instance {
+		instances := []auctiontypes.Instance{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newInstance(randomSVGColor(), memoryMB))
 		}
 		return instances
 	}
 
-	generateInstancesForAppGuid := func(numInstances int, appGuid string, memoryMB float64) []types.Instance {
-		instances := []types.Instance{}
+	generateInstancesForAppGuid := func(numInstances int, appGuid string, memoryMB float64) []auctiontypes.Instance {
+		instances := []auctiontypes.Instance{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newInstance(appGuid, memoryMB))
 		}
@@ -63,7 +63,7 @@ var _ = Describe("Auction", func() {
 
 	BeforeEach(func() {
 		util.ResetGuids()
-		initialDistributions = map[int][]types.Instance{}
+		initialDistributions = map[int][]auctiontypes.Instance{}
 	})
 
 	JustBeforeEach(func() {
@@ -82,7 +82,7 @@ var _ = Describe("Auction", func() {
 				i := i
 				Context("with single-instance and multi-instance apps apps", func() {
 					It("should distribute evenly", func() {
-						instances := []types.Instance{}
+						instances := []auctiontypes.Instance{}
 
 						instances = append(instances, generateUniqueInstances(n1apps[i]/2, 1)...)
 						instances = append(instances, generateInstancesWithRandomSVGColors(n1apps[i]/2, 1)...)
@@ -91,7 +91,7 @@ var _ = Describe("Auction", func() {
 						instances = append(instances, generateUniqueInstances(n4apps[i]/2, 4)...)
 						instances = append(instances, generateInstancesWithRandomSVGColors(n4apps[i]/2, 4)...)
 
-						permutedInstances := make([]types.Instance, len(instances))
+						permutedInstances := make([]auctiontypes.Instance, len(instances))
 						for i, index := range util.R.Perm(len(instances)) {
 							permutedInstances[i] = instances[index]
 						}

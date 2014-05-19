@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/onsi/auction/simulation/visualization"
+	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
 )
 
 func main() {

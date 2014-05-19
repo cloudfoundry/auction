@@ -5,30 +5,30 @@ import (
 	"time"
 
 	"github.com/cheggaaa/pb"
-	"github.com/onsi/auction/auctioneer"
-	"github.com/onsi/auction/simulation/visualization"
-	"github.com/onsi/auction/types"
+	"github.com/cloudfoundry-incubator/auction/auctioneer"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
 )
 
-type AuctionCommunicator func(types.AuctionRequest) types.AuctionResult
+type AuctionCommunicator func(auctiontypes.AuctionRequest) auctiontypes.AuctionResult
 
 type AuctionDistributor struct {
-	client        types.TestRepPoolClient
+	client        auctiontypes.TestRepPoolClient
 	communicator  AuctionCommunicator
 	maxConcurrent int
 }
 
-func NewInProcessAuctionDistributor(client types.TestRepPoolClient, maxConcurrent int) *AuctionDistributor {
+func NewInProcessAuctionDistributor(client auctiontypes.TestRepPoolClient, maxConcurrent int) *AuctionDistributor {
 	return &AuctionDistributor{
 		client:        client,
 		maxConcurrent: maxConcurrent,
-		communicator: func(auctionRequest types.AuctionRequest) types.AuctionResult {
+		communicator: func(auctionRequest auctiontypes.AuctionRequest) auctiontypes.AuctionResult {
 			return auctioneer.Auction(client, auctionRequest)
 		},
 	}
 }
 
-func NewRemoteAuctionDistributor(hosts []string, client types.TestRepPoolClient, maxConcurrent int) *AuctionDistributor {
+func NewRemoteAuctionDistributor(hosts []string, client auctiontypes.TestRepPoolClient, maxConcurrent int) *AuctionDistributor {
 	return &AuctionDistributor{
 		client:        client,
 		maxConcurrent: maxConcurrent,
@@ -36,17 +36,17 @@ func NewRemoteAuctionDistributor(hosts []string, client types.TestRepPoolClient,
 	}
 }
 
-func (ad *AuctionDistributor) HoldAuctionsFor(instances []types.Instance, representatives []string, rules types.AuctionRules) *visualization.Report {
+func (ad *AuctionDistributor) HoldAuctionsFor(instances []auctiontypes.Instance, representatives []string, rules auctiontypes.AuctionRules) *visualization.Report {
 	fmt.Printf("\nStarting Auctions\n\n")
 	bar := pb.StartNew(len(instances))
 
 	t := time.Now()
 	semaphore := make(chan bool, ad.maxConcurrent)
-	c := make(chan types.AuctionResult)
+	c := make(chan auctiontypes.AuctionResult)
 	for _, inst := range instances {
-		go func(inst types.Instance) {
+		go func(inst auctiontypes.Instance) {
 			semaphore <- true
-			result := ad.communicator(types.AuctionRequest{
+			result := ad.communicator(auctiontypes.AuctionRequest{
 				Instance: inst,
 				RepGuids: representatives,
 				Rules:    rules,
@@ -57,7 +57,7 @@ func (ad *AuctionDistributor) HoldAuctionsFor(instances []types.Instance, repres
 		}(inst)
 	}
 
-	results := []types.AuctionResult{}
+	results := []auctiontypes.AuctionResult{}
 	for _ = range instances {
 		results = append(results, <-c)
 		bar.Increment()

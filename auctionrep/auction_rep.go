@@ -3,24 +3,24 @@ package auctionrep
 import (
 	"sync"
 
-	"github.com/onsi/auction/types"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 )
 
 type AuctionRepDelegate interface {
-	RemainingResources() types.Resources
-	TotalResources() types.Resources
-
+	RemainingResources() auctiontypes.Resources
+	TotalResources() auctiontypes.Resources
 	NumInstancesForAppGuid(guid string) int
-	Reserve(instance types.Instance) error
-	ReleaseReservation(instance types.Instance) error
-	Claim(instance types.Instance) error
+
+	Reserve(instance auctiontypes.Instance) error
+	ReleaseReservation(instance auctiontypes.Instance) error
+	Claim(instance auctiontypes.Instance) error
 }
 
 //Used in simulation
 type SimulationAuctionRepDelegate interface {
 	AuctionRepDelegate
-	SetInstances(instances []types.Instance)
-	Instances() []types.Instance
+	SetInstances(instances []auctiontypes.Instance)
+	Instances() []auctiontypes.Instance
 }
 
 type AuctionRep struct {
@@ -41,13 +41,13 @@ func (rep *AuctionRep) Guid() string {
 	return rep.guid
 }
 
-func (rep *AuctionRep) Score(instance types.Instance) (float64, error) {
+func (rep *AuctionRep) Score(instance auctiontypes.Instance) (float64, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
 	remaining := rep.delegate.RemainingResources()
 	if !rep.hasRoomFor(instance.Resources, remaining) {
-		return 0, types.InsufficientResources
+		return 0, auctiontypes.InsufficientResources
 	}
 
 	total := rep.delegate.TotalResources()
@@ -56,13 +56,13 @@ func (rep *AuctionRep) Score(instance types.Instance) (float64, error) {
 	return rep.score(remaining, total, nInstances), nil
 }
 
-func (rep *AuctionRep) ScoreThenTentativelyReserve(instance types.Instance) (float64, error) {
+func (rep *AuctionRep) ScoreThenTentativelyReserve(instance auctiontypes.Instance) (float64, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
 	remaining := rep.delegate.RemainingResources()
 	if !rep.hasRoomFor(instance.Resources, remaining) {
-		return 0, types.InsufficientResources
+		return 0, auctiontypes.InsufficientResources
 	}
 
 	//score first
@@ -79,21 +79,21 @@ func (rep *AuctionRep) ScoreThenTentativelyReserve(instance types.Instance) (flo
 	return score, nil
 }
 
-func (rep *AuctionRep) ReleaseReservation(instance types.Instance) error {
+func (rep *AuctionRep) ReleaseReservation(instance auctiontypes.Instance) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
 	return rep.delegate.ReleaseReservation(instance)
 }
 
-func (rep *AuctionRep) Claim(instance types.Instance) error {
+func (rep *AuctionRep) Claim(instance auctiontypes.Instance) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
 	return rep.delegate.Claim(instance)
 }
 
-func (rep *AuctionRep) TotalResources() types.Resources {
+func (rep *AuctionRep) TotalResources() auctiontypes.Resources {
 	return rep.delegate.TotalResources()
 }
 
@@ -106,10 +106,10 @@ func (rep *AuctionRep) Reset() {
 		println("not reseting")
 		return
 	}
-	simDelegate.SetInstances([]types.Instance{})
+	simDelegate.SetInstances([]auctiontypes.Instance{})
 }
 
-func (rep *AuctionRep) SetInstances(instances []types.Instance) {
+func (rep *AuctionRep) SetInstances(instances []auctiontypes.Instance) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
@@ -121,21 +121,21 @@ func (rep *AuctionRep) SetInstances(instances []types.Instance) {
 	simDelegate.SetInstances(instances)
 }
 
-func (rep *AuctionRep) Instances() []types.Instance {
+func (rep *AuctionRep) Instances() []auctiontypes.Instance {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
 	simDelegate, ok := rep.delegate.(SimulationAuctionRepDelegate)
 	if !ok {
 		println("not fetching instances")
-		return []types.Instance{}
+		return []auctiontypes.Instance{}
 	}
 	return simDelegate.Instances()
 }
 
 // internals -- no locks here the operations above should be atomic
 
-func (rep *AuctionRep) hasRoomFor(required types.Resources, remaining types.Resources) bool {
+func (rep *AuctionRep) hasRoomFor(required auctiontypes.Resources, remaining auctiontypes.Resources) bool {
 	hasEnoughMemory := remaining.MemoryMB >= required.MemoryMB
 	hasEnoughDisk := remaining.DiskMB >= required.DiskMB
 	hasEnoughContainers := remaining.Containers > 0
@@ -143,7 +143,7 @@ func (rep *AuctionRep) hasRoomFor(required types.Resources, remaining types.Reso
 	return hasEnoughMemory && hasEnoughDisk && hasEnoughContainers
 }
 
-func (rep *AuctionRep) score(remaining types.Resources, total types.Resources, nInstances int) float64 {
+func (rep *AuctionRep) score(remaining auctiontypes.Resources, total auctiontypes.Resources, nInstances int) float64 {
 	fMemory := 1.0 - remaining.MemoryMB/total.MemoryMB
 	fDisk := 1.0 - remaining.DiskMB/total.DiskMB
 	fContainers := 1.0 - float64(remaining.Containers)/float64(total.Containers)

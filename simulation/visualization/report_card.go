@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/ajstarks/svgo"
-	"github.com/onsi/auction/types"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 )
 
 const border = 5
@@ -60,7 +60,7 @@ func (r *SVGReport) Done() {
 	r.f.Close()
 }
 
-func (r *SVGReport) DrawHeader(communicationMode string, rules types.AuctionRules, maxConcurrent int) {
+func (r *SVGReport) DrawHeader(communicationMode string, rules auctiontypes.AuctionRules, maxConcurrent int) {
 	rulesString := fmt.Sprintf("%#v", rules)
 	header := fmt.Sprintf("%s - MaxConcurrent:%d - %s ", communicationMode, maxConcurrent, rulesString[19:len(rulesString)-1])
 	r.SVG.Text(border, 40, header, `text-anchor:start;font-size:32px;font-family:Helvetica Neue`)

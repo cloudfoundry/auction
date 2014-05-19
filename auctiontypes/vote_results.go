@@ -1,9 +1,9 @@
-package types
+package auctiontypes
 
 import (
 	"sort"
 
-	"github.com/onsi/auction/util"
+	"github.com/cloudfoundry-incubator/auction/util"
 )
 
 func (a ScoreResults) Len() int           { return len(a) }

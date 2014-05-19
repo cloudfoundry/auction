@@ -4,11 +4,11 @@ import (
 	"flag"
 	"strings"
 
-	"github.com/onsi/auction/auctionrep"
-	"github.com/onsi/auction/communication/nats/repnatsserver"
-	"github.com/onsi/auction/communication/rabbit/reprabbitserver"
-	"github.com/onsi/auction/simulation/simulationrepdelegate"
-	"github.com/onsi/auction/types"
+	"github.com/cloudfoundry-incubator/auction/auctionrep"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsserver"
+	"github.com/cloudfoundry-incubator/auction/communication/rabbit/reprabbitserver"
+	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
 )
 
 var memoryMB = flag.Float64("memoryMB", 100.0, "total available memory in MB")
@@ -29,7 +29,7 @@ func main() {
 		panic("need nats or rabbit addr")
 	}
 
-	repDelegate := simulationrepdelegate.New(types.Resources{
+	repDelegate := simulationrepdelegate.New(auctiontypes.Resources{
 		MemoryMB:   *memoryMB,
 		DiskMB:     *diskMB,
 		Containers: *containers,

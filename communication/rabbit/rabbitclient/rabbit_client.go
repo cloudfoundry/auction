@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/onsi/auction/util"
+	"github.com/cloudfoundry-incubator/auction/util"
 	"github.com/streadway/amqp"
 )
 

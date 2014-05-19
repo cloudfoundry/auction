@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/onsi/auction/auctionrep"
-	"github.com/onsi/auction/communication/rabbit/rabbitclient"
-	"github.com/onsi/auction/types"
+	"github.com/cloudfoundry-incubator/auction/auctionrep"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/communication/rabbit/rabbitclient"
 )
 
 var errorResponse = []byte("error")
@@ -31,7 +31,7 @@ func Start(rabbitUrl string, rep *auctionrep.AuctionRep) {
 	})
 
 	server.Handle("set_instances", func(req []byte) []byte {
-		var instances []types.Instance
+		var instances []auctiontypes.Instance
 
 		err := json.Unmarshal(req, &instances)
 		if err != nil {
@@ -48,14 +48,14 @@ func Start(rabbitUrl string, rep *auctionrep.AuctionRep) {
 	})
 
 	server.Handle("score", func(req []byte) []byte {
-		var inst types.Instance
+		var inst auctiontypes.Instance
 
 		err := json.Unmarshal(req, &inst)
 		if err != nil {
 			return errorResponse
 		}
 
-		response := types.ScoreResult{
+		response := auctiontypes.ScoreResult{
 			Rep: rep.Guid(),
 		}
 
@@ -71,14 +71,14 @@ func Start(rabbitUrl string, rep *auctionrep.AuctionRep) {
 	})
 
 	server.Handle("score_then_tentatively_reserve", func(req []byte) []byte {
-		var inst types.Instance
+		var inst auctiontypes.Instance
 
 		err := json.Unmarshal(req, &inst)
 		if err != nil {
 			return errorResponse
 		}
 
-		response := types.ScoreResult{
+		response := auctiontypes.ScoreResult{
 			Rep: rep.Guid(),
 		}
 
@@ -94,7 +94,7 @@ func Start(rabbitUrl string, rep *auctionrep.AuctionRep) {
 	})
 
 	server.Handle("release-reservation", func(req []byte) []byte {
-		var instance types.Instance
+		var instance auctiontypes.Instance
 
 		err := json.Unmarshal(req, &instance)
 		if err != nil {
@@ -107,7 +107,7 @@ func Start(rabbitUrl string, rep *auctionrep.AuctionRep) {
 	})
 
 	server.Handle("claim", func(req []byte) []byte {
-		var instance types.Instance
+		var instance auctiontypes.Instance
 
 		err := json.Unmarshal(req, &instance)
 		if err != nil {

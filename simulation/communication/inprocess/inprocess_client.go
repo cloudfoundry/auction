@@ -3,9 +3,9 @@ package inprocess
 import (
 	"time"
 
-	"github.com/onsi/auction/auctionrep"
-	"github.com/onsi/auction/types"
-	"github.com/onsi/auction/util"
+	"github.com/cloudfoundry-incubator/auction/auctionrep"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/util"
 )
 
 var LatencyMin time.Duration
@@ -45,15 +45,15 @@ func (client *InprocessClient) beSlowAndPossiblyTimeout(guid string) bool {
 	}
 }
 
-func (client *InprocessClient) TotalResources(guid string) types.Resources {
+func (client *InprocessClient) TotalResources(guid string) auctiontypes.Resources {
 	return client.reps[guid].TotalResources()
 }
 
-func (client *InprocessClient) Instances(guid string) []types.Instance {
+func (client *InprocessClient) Instances(guid string) []auctiontypes.Instance {
 	return client.reps[guid].Instances()
 }
 
-func (client *InprocessClient) SetInstances(guid string, instances []types.Instance) {
+func (client *InprocessClient) SetInstances(guid string, instances []auctiontypes.Instance) {
 	client.reps[guid].SetInstances(instances)
 }
 
@@ -61,8 +61,8 @@ func (client *InprocessClient) Reset(guid string) {
 	client.reps[guid].Reset()
 }
 
-func (client *InprocessClient) score(guid string, instance types.Instance, c chan types.ScoreResult) {
-	result := types.ScoreResult{
+func (client *InprocessClient) score(guid string, instance auctiontypes.Instance, c chan auctiontypes.ScoreResult) {
+	result := auctiontypes.ScoreResult{
 		Rep: guid,
 	}
 	defer func() {
@@ -84,13 +84,13 @@ func (client *InprocessClient) score(guid string, instance types.Instance, c cha
 	return
 }
 
-func (client *InprocessClient) Score(representatives []string, instance types.Instance) types.ScoreResults {
-	c := make(chan types.ScoreResult)
+func (client *InprocessClient) Score(representatives []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
+	c := make(chan auctiontypes.ScoreResult)
 	for _, guid := range representatives {
 		go client.score(guid, instance, c)
 	}
 
-	results := types.ScoreResults{}
+	results := auctiontypes.ScoreResults{}
 	for _ = range representatives {
 		results = append(results, <-c)
 	}
@@ -98,8 +98,8 @@ func (client *InprocessClient) Score(representatives []string, instance types.In
 	return results
 }
 
-func (client *InprocessClient) reserveAndRecastScore(guid string, instance types.Instance, c chan types.ScoreResult) {
-	result := types.ScoreResult{
+func (client *InprocessClient) reserveAndRecastScore(guid string, instance auctiontypes.Instance, c chan auctiontypes.ScoreResult) {
+	result := auctiontypes.ScoreResult{
 		Rep: guid,
 	}
 	defer func() {
@@ -121,13 +121,13 @@ func (client *InprocessClient) reserveAndRecastScore(guid string, instance types
 	return
 }
 
-func (client *InprocessClient) ScoreThenTentativelyReserve(guids []string, instance types.Instance) types.ScoreResults {
-	c := make(chan types.ScoreResult)
+func (client *InprocessClient) ScoreThenTentativelyReserve(guids []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
+	c := make(chan auctiontypes.ScoreResult)
 	for _, guid := range guids {
 		go client.reserveAndRecastScore(guid, instance, c)
 	}
 
-	results := types.ScoreResults{}
+	results := auctiontypes.ScoreResults{}
 	for _ = range guids {
 		results = append(results, <-c)
 	}
@@ -135,7 +135,7 @@ func (client *InprocessClient) ScoreThenTentativelyReserve(guids []string, insta
 	return results
 }
 
-func (client *InprocessClient) ReleaseReservation(guids []string, instance types.Instance) {
+func (client *InprocessClient) ReleaseReservation(guids []string, instance auctiontypes.Instance) {
 	c := make(chan bool)
 	for _, guid := range guids {
 		go func(guid string) {
@@ -150,7 +150,7 @@ func (client *InprocessClient) ReleaseReservation(guids []string, instance types
 	}
 }
 
-func (client *InprocessClient) Claim(guid string, instance types.Instance) {
+func (client *InprocessClient) Claim(guid string, instance auctiontypes.Instance) {
 	client.beSlowAndPossiblyTimeout(guid)
 
 	client.reps[guid].Claim(instance)

@@ -5,33 +5,33 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/onsi/auction/auctionrep"
-	"github.com/onsi/auction/types"
+	"github.com/cloudfoundry-incubator/auction/auctionrep"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 )
 
 type SimulationRepDelegate struct {
 	lock           *sync.Mutex
-	instances      map[string]types.Instance
-	totalResources types.Resources
+	instances      map[string]auctiontypes.Instance
+	totalResources auctiontypes.Resources
 }
 
-func New(totalResources types.Resources) auctionrep.SimulationAuctionRepDelegate {
+func New(totalResources auctiontypes.Resources) auctionrep.SimulationAuctionRepDelegate {
 	return &SimulationRepDelegate{
 		totalResources: totalResources,
 
 		lock:      &sync.Mutex{},
-		instances: map[string]types.Instance{},
+		instances: map[string]auctiontypes.Instance{},
 	}
 }
 
-func (rep *SimulationRepDelegate) RemainingResources() types.Resources {
+func (rep *SimulationRepDelegate) RemainingResources() auctiontypes.Resources {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
 	return rep.remainingResources()
 }
 
-func (rep *SimulationRepDelegate) TotalResources() types.Resources {
+func (rep *SimulationRepDelegate) TotalResources() auctiontypes.Resources {
 	return rep.totalResources
 }
 
@@ -50,7 +50,7 @@ func (rep *SimulationRepDelegate) NumInstancesForAppGuid(guid string) int {
 	return n
 }
 
-func (rep *SimulationRepDelegate) Reserve(instance types.Instance) error {
+func (rep *SimulationRepDelegate) Reserve(instance auctiontypes.Instance) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
@@ -61,7 +61,7 @@ func (rep *SimulationRepDelegate) Reserve(instance types.Instance) error {
 	hasEnoughContainers := remaining.Containers > 0
 
 	if !(hasEnoughMemory && hasEnoughDisk && hasEnoughContainers) {
-		return types.InsufficientResources
+		return auctiontypes.InsufficientResources
 	}
 
 	rep.instances[instance.InstanceGuid] = instance
@@ -69,7 +69,7 @@ func (rep *SimulationRepDelegate) Reserve(instance types.Instance) error {
 	return nil
 }
 
-func (rep *SimulationRepDelegate) ReleaseReservation(instance types.Instance) error {
+func (rep *SimulationRepDelegate) ReleaseReservation(instance auctiontypes.Instance) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
@@ -83,7 +83,7 @@ func (rep *SimulationRepDelegate) ReleaseReservation(instance types.Instance) er
 	return nil
 }
 
-func (rep *SimulationRepDelegate) Claim(instance types.Instance) error {
+func (rep *SimulationRepDelegate) Claim(instance auctiontypes.Instance) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
@@ -99,11 +99,11 @@ func (rep *SimulationRepDelegate) Claim(instance types.Instance) error {
 
 //simulation only
 
-func (rep *SimulationRepDelegate) SetInstances(instances []types.Instance) {
+func (rep *SimulationRepDelegate) SetInstances(instances []auctiontypes.Instance) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	instancesMap := map[string]types.Instance{}
+	instancesMap := map[string]auctiontypes.Instance{}
 	for _, instance := range instances {
 		instancesMap[instance.InstanceGuid] = instance
 	}
@@ -111,11 +111,11 @@ func (rep *SimulationRepDelegate) SetInstances(instances []types.Instance) {
 	rep.instances = instancesMap
 }
 
-func (rep *SimulationRepDelegate) Instances() []types.Instance {
+func (rep *SimulationRepDelegate) Instances() []auctiontypes.Instance {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	result := []types.Instance{}
+	result := []auctiontypes.Instance{}
 	for _, instance := range rep.instances {
 		result = append(result, instance)
 	}
@@ -124,7 +124,7 @@ func (rep *SimulationRepDelegate) Instances() []types.Instance {
 
 //internal
 
-func (rep *SimulationRepDelegate) remainingResources() types.Resources {
+func (rep *SimulationRepDelegate) remainingResources() auctiontypes.Resources {
 	resources := rep.totalResources
 	for _, instance := range rep.instances {
 		resources.MemoryMB -= instance.Resources.MemoryMB

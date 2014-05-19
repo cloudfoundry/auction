@@ -1,7 +1,7 @@
 package simulation_test
 
 import (
-	"github.com/cloudfoundry-incubator/auction/auctioneer"
+	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
 	"github.com/cloudfoundry-incubator/auction/util"
@@ -99,9 +99,9 @@ var _ = Describe("Auction", func() {
 							permutedInstances[i] = instances[index]
 						}
 
-						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctioneer.DefaultRules)
+						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctionrunner.DefaultRules)
 
-						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctioneer.DefaultRules)
+						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultRules)
 
 						svgReport.DrawReportCard(i, 0, report)
 						reports = append(reports, report)
@@ -128,9 +128,9 @@ var _ = Describe("Auction", func() {
 					It("should distribute evenly", func() {
 						instances := generateUniqueInstances(napps[i], 1)
 
-						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctioneer.DefaultRules)
+						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctionrunner.DefaultRules)
 
-						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctioneer.DefaultRules)
+						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultRules)
 
 						svgReport.DrawReportCard(i, 1, report)
 						reports = append(reports, report)
@@ -156,9 +156,9 @@ var _ = Describe("Auction", func() {
 					It("should distribute evenly", func() {
 						instances := generateInstancesForAppGuid(napps[i], "red", 1)
 
-						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctioneer.DefaultRules)
+						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctionrunner.DefaultRules)
 
-						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctioneer.DefaultRules)
+						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultRules)
 
 						svgReport.DrawReportCard(i, 2, report)
 						reports = append(reports, report)

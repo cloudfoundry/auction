@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/cheggaaa/pb"
-	"github.com/cloudfoundry-incubator/auction/auctioneer"
+	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
@@ -20,7 +20,7 @@ type AuctionDistributor struct {
 }
 
 func NewInProcessAuctionDistributor(client auctiontypes.TestRepPoolClient, maxConcurrent int) *AuctionDistributor {
-	auctionRunner := auctioneer.New(client)
+	auctionRunner := auctionrunner.New(client)
 	return &AuctionDistributor{
 		client:        client,
 		maxConcurrent: maxConcurrent,

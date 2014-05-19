@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudfoundry-incubator/auction/auctioneer"
+	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsclient"
 	"github.com/cloudfoundry-incubator/auction/communication/rabbit/reprabbitclient"
@@ -80,7 +80,7 @@ func main() {
 			return
 		}
 
-		auctionResult, _ := auctioneer.New(repClient).RunLRPStartAuction(auctionRequest)
+		auctionResult, _ := auctionrunner.New(repClient).RunLRPStartAuction(auctionRequest)
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(auctionResult)

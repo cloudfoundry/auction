@@ -1,16 +1,15 @@
-package auctioneer
+package auctionrunner
 
 import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
 /*
 
 Get the scores from the subset of reps
-	Select the best 5
-		Pick a winner randomly from that set
+    Select the best
 
 */
 
-func pickAmongBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) (string, int, int) {
+func pickBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
 	auctionInfo := auctiontypes.NewLRPAuctionInfo(auctionRequest.LRPStartAuction)
 
@@ -25,9 +24,7 @@ func pickAmongBestAuction(client auctiontypes.RepPoolClient, auctionRequest auct
 			continue
 		}
 
-		top5Winners := firstRoundScores.FilterErrors().Shuffle().Sort()[:5]
-
-		winner := top5Winners.Shuffle()[0]
+		winner := firstRoundScores.FilterErrors().Shuffle().Sort()[0]
 
 		result := client.ScoreThenTentativelyReserve([]string{winner.Rep}, auctionInfo)[0]
 		numCommunications += 1

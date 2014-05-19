@@ -1,4 +1,4 @@
-package auctioneer
+package auctionrunner
 
 import (
 	"errors"

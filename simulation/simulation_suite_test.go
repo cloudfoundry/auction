@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/cloudfoundry-incubator/auction/auctioneer"
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
+	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsclient"
 	"github.com/cloudfoundry-incubator/auction/communication/rabbit/reprabbitclient"
@@ -67,9 +67,9 @@ func init() {
 	flag.StringVar(&auctioneerMode, "auctioneerMode", "inprocess", "one of inprocess, remote")
 	flag.DurationVar(&timeout, "timeout", 500*time.Millisecond, "timeout when waiting for responses from remote calls")
 
-	flag.StringVar(&(auctioneer.DefaultRules.Algorithm), "algorithm", auctioneer.DefaultRules.Algorithm, "the auction algorithm to use")
-	flag.IntVar(&(auctioneer.DefaultRules.MaxRounds), "maxRounds", auctioneer.DefaultRules.MaxRounds, "the maximum number of rounds per auction")
-	flag.Float64Var(&(auctioneer.DefaultRules.MaxBiddingPool), "maxBiddingPool", auctioneer.DefaultRules.MaxBiddingPool, "the maximum number of participants in the pool")
+	flag.StringVar(&(auctionrunner.DefaultRules.Algorithm), "algorithm", auctionrunner.DefaultRules.Algorithm, "the auction algorithm to use")
+	flag.IntVar(&(auctionrunner.DefaultRules.MaxRounds), "maxRounds", auctionrunner.DefaultRules.MaxRounds, "the maximum number of rounds per auction")
+	flag.Float64Var(&(auctionrunner.DefaultRules.MaxBiddingPool), "maxBiddingPool", auctionrunner.DefaultRules.MaxBiddingPool, "the maximum number of participants in the pool")
 
 	flag.IntVar(&maxConcurrent, "maxConcurrent", 20, "the maximum number of concurrent auctions to run")
 }
@@ -283,16 +283,16 @@ func ketchupNATSClient() auctiontypes.TestRepPoolClient {
 }
 
 func startReport() {
-	reportName = fmt.Sprintf("./runs/%s_%s_pool%.1f_conc%d.svg", auctioneer.DefaultRules.Algorithm, communicationMode, auctioneer.DefaultRules.MaxBiddingPool, maxConcurrent)
+	reportName = fmt.Sprintf("./runs/%s_%s_pool%.1f_conc%d.svg", auctionrunner.DefaultRules.Algorithm, communicationMode, auctionrunner.DefaultRules.MaxBiddingPool, maxConcurrent)
 	svgReport = visualization.StartSVGReport(reportName, 2, 3)
-	svgReport.DrawHeader(communicationMode, auctioneer.DefaultRules, maxConcurrent)
+	svgReport.DrawHeader(communicationMode, auctionrunner.DefaultRules, maxConcurrent)
 }
 
 func finishReport() {
 	svgReport.Done()
 	exec.Command("open", "-a", "safari", reportName).Run()
 
-	reportJSONName := fmt.Sprintf("./runs/%s_%s_pool%.1f_conc%d.json", auctioneer.DefaultRules.Algorithm, communicationMode, auctioneer.DefaultRules.MaxBiddingPool, maxConcurrent)
+	reportJSONName := fmt.Sprintf("./runs/%s_%s_pool%.1f_conc%d.json", auctionrunner.DefaultRules.Algorithm, communicationMode, auctionrunner.DefaultRules.MaxBiddingPool, maxConcurrent)
 	data, err := json.Marshal(reports)
 	Ω(err).ShouldNot(HaveOccurred())
 	ioutil.WriteFile(reportJSONName, data, 0777)

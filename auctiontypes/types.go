@@ -7,6 +7,10 @@ import (
 
 var InsufficientResources = errors.New("insufficient resources for instance")
 
+type AuctionRunner interface {
+	RunLRPStartAuction(auctionRequest AuctionRequest) (AuctionResult, error)
+}
+
 type AuctionRequest struct {
 	Instance Instance     `json:"i"`
 	RepGuids RepGuids     `json:"rg"`

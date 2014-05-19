@@ -80,7 +80,7 @@ func main() {
 			return
 		}
 
-		auctionResult := auctioneer.Auction(repClient, auctionRequest)
+		auctionResult, _ := auctioneer.New(repClient).RunLRPStartAuction(auctionRequest)
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(auctionResult)

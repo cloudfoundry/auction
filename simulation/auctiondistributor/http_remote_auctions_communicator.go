@@ -19,7 +19,7 @@ func newHttpRemoteAuctions(hosts []string) *httpRemoteAuctions {
 	return &httpRemoteAuctions{hosts}
 }
 
-func (h *httpRemoteAuctions) RemoteAuction(auctionRequest auctiontypes.AuctionRequest) auctiontypes.AuctionResult {
+func (h *httpRemoteAuctions) RemoteAuction(auctionRequest auctiontypes.AuctionRequest) (auctiontypes.AuctionResult, error) {
 	host := h.hosts[util.R.Intn(len(h.hosts))]
 
 	payload, _ := json.Marshal(auctionRequest)
@@ -28,17 +28,17 @@ func (h *httpRemoteAuctions) RemoteAuction(auctionRequest auctiontypes.AuctionRe
 		fmt.Println("FAILED! TO AUCTION", err)
 		return auctiontypes.AuctionResult{
 			Instance: auctionRequest.Instance,
-		}
+		}, err
 	}
 
 	defer res.Body.Close()
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		return auctiontypes.AuctionResult{}, err
 	}
 
 	var result auctiontypes.AuctionResult
 	json.Unmarshal(data, &result)
 
-	return result
+	return result, nil
 }

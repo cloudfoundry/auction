@@ -10,7 +10,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
 )
 
-type AuctionCommunicator func(auctiontypes.AuctionRequest) auctiontypes.AuctionResult
+type AuctionCommunicator func(auctiontypes.AuctionRequest) (auctiontypes.AuctionResult, error)
 
 type AuctionDistributor struct {
 	client        auctiontypes.TestRepPoolClient
@@ -19,11 +19,12 @@ type AuctionDistributor struct {
 }
 
 func NewInProcessAuctionDistributor(client auctiontypes.TestRepPoolClient, maxConcurrent int) *AuctionDistributor {
+	auctionRunner := auctioneer.New(client)
 	return &AuctionDistributor{
 		client:        client,
 		maxConcurrent: maxConcurrent,
-		communicator: func(auctionRequest auctiontypes.AuctionRequest) auctiontypes.AuctionResult {
-			return auctioneer.Auction(client, auctionRequest)
+		communicator: func(auctionRequest auctiontypes.AuctionRequest) (auctiontypes.AuctionResult, error) {
+			return auctionRunner.RunLRPStartAuction(auctionRequest)
 		},
 	}
 }
@@ -46,7 +47,7 @@ func (ad *AuctionDistributor) HoldAuctionsFor(instances []auctiontypes.Instance,
 	for _, inst := range instances {
 		go func(inst auctiontypes.Instance) {
 			semaphore <- true
-			result := ad.communicator(auctiontypes.AuctionRequest{
+			result, _ := ad.communicator(auctiontypes.AuctionRequest{
 				Instance: inst,
 				RepGuids: representatives,
 				Rules:    rules,

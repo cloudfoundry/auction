@@ -15,7 +15,17 @@ var DefaultRules = auctiontypes.AuctionRules{
 	MaxBiddingPool: 0.2,
 }
 
-func Auction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) auctiontypes.AuctionResult {
+type auctionRunner struct {
+	client auctiontypes.RepPoolClient
+}
+
+func New(client auctiontypes.RepPoolClient) *auctionRunner {
+	return &auctionRunner{
+		client: client,
+	}
+}
+
+func (a *auctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.AuctionRequest) (auctiontypes.AuctionResult, error) {
 	result := auctiontypes.AuctionResult{
 		Instance: auctionRequest.Instance,
 	}
@@ -23,21 +33,21 @@ func Auction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.Auct
 	t := time.Now()
 	switch auctionRequest.Rules.Algorithm {
 	case "all_rescore":
-		result.Winner, result.NumRounds, result.NumCommunications = allRescoreAuction(client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications = allRescoreAuction(a.client, auctionRequest)
 	case "all_reserve":
-		result.Winner, result.NumRounds, result.NumCommunications = allReserveAuction(client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications = allReserveAuction(a.client, auctionRequest)
 	case "pick_among_best":
-		result.Winner, result.NumRounds, result.NumCommunications = pickAmongBestAuction(client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications = pickAmongBestAuction(a.client, auctionRequest)
 	case "pick_best":
-		result.Winner, result.NumRounds, result.NumCommunications = pickBestAuction(client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications = pickBestAuction(a.client, auctionRequest)
 	case "reserve_n_best":
-		result.Winner, result.NumRounds, result.NumCommunications = reserveNBestAuction(client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications = reserveNBestAuction(a.client, auctionRequest)
 	case "random":
-		result.Winner, result.NumRounds, result.NumCommunications = randomAuction(client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications = randomAuction(a.client, auctionRequest)
 	default:
 		panic("unkown algorithm " + auctionRequest.Rules.Algorithm)
 	}
 	result.BiddingDuration = time.Since(t)
 
-	return result
+	return result, nil
 }

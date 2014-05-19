@@ -7,6 +7,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/cloudfoundry/yagnats"
 )
 
@@ -41,25 +42,25 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 		client.Publish(msg.ReplyTo, successResponse)
 	})
 
-	client.Subscribe(guid+".set_instances", func(msg *yagnats.Message) {
-		var instances []auctiontypes.Instance
+	client.Subscribe(guid+".set_lrp_auction_infos", func(msg *yagnats.Message) {
+		var instances []auctiontypes.LRPAuctionInfo
 
 		err := json.Unmarshal(msg.Payload, &instances)
 		if err != nil {
 			client.Publish(msg.ReplyTo, errorResponse)
 		}
 
-		rep.SetInstances(instances)
+		rep.SetLRPAuctionInfos(instances)
 		client.Publish(msg.ReplyTo, successResponse)
 	})
 
-	client.Subscribe(guid+".instances", func(msg *yagnats.Message) {
-		jinstances, _ := json.Marshal(rep.Instances())
+	client.Subscribe(guid+".lrp_auction_infos", func(msg *yagnats.Message) {
+		jinstances, _ := json.Marshal(rep.LRPAuctionInfos())
 		client.Publish(msg.ReplyTo, jinstances)
 	})
 
 	client.Subscribe(guid+".score", func(msg *yagnats.Message) {
-		var inst auctiontypes.Instance
+		var inst auctiontypes.LRPAuctionInfo
 
 		err := json.Unmarshal(msg.Payload, &inst)
 		if err != nil {
@@ -85,7 +86,7 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 	})
 
 	client.Subscribe(guid+".score_then_tentatively_reserve", func(msg *yagnats.Message) {
-		var inst auctiontypes.Instance
+		var inst auctiontypes.LRPAuctionInfo
 
 		err := json.Unmarshal(msg.Payload, &inst)
 		if err != nil {
@@ -111,7 +112,7 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 	})
 
 	client.Subscribe(guid+".release-reservation", func(msg *yagnats.Message) {
-		var inst auctiontypes.Instance
+		var inst auctiontypes.LRPAuctionInfo
 
 		responsePayload := errorResponse
 		defer func() {
@@ -130,7 +131,7 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 	})
 
 	client.Subscribe(guid+".claim", func(msg *yagnats.Message) {
-		var inst auctiontypes.Instance
+		var inst models.LRPStartAuction
 
 		responsePayload := errorResponse
 		defer func() {

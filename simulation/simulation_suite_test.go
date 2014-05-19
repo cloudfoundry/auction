@@ -193,8 +193,8 @@ func launchExternalReps(communicationFlag string, communicationValue string) []s
 			repNodeBinary,
 			"-guid", guid,
 			communicationFlag, communicationValue,
-			"-memoryMB", fmt.Sprintf("%f", repResources.MemoryMB),
-			"-diskMB", fmt.Sprintf("%f", repResources.DiskMB),
+			"-memoryMB", fmt.Sprintf("%d", repResources.MemoryMB),
+			"-diskMB", fmt.Sprintf("%d", repResources.DiskMB),
 			"-containers", fmt.Sprintf("%d", repResources.Containers),
 		)
 

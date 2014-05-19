@@ -12,6 +12,7 @@ Get the scores from the subset of reps
 
 func reserveNBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
+	auctionInfo := auctiontypes.NewLRPAuctionInfo(auctionRequest.LRPStartAuction)
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		//pick a subset
@@ -19,7 +20,7 @@ func reserveNBestAuction(client auctiontypes.RepPoolClient, auctionRequest aucti
 
 		//get everyone's score, if they're all full: bail
 		numCommunications += len(firstRoundReps)
-		firstRoundScores := client.Score(firstRoundReps, auctionRequest.Instance)
+		firstRoundScores := client.Score(firstRoundReps, auctionInfo)
 		if firstRoundScores.AllFailed() {
 			continue
 		}
@@ -34,7 +35,7 @@ func reserveNBestAuction(client auctiontypes.RepPoolClient, auctionRequest aucti
 
 		//ask them to reserve
 		numCommunications += len(winners)
-		winners = client.ScoreThenTentativelyReserve(winners.Reps(), auctionRequest.Instance)
+		winners = client.ScoreThenTentativelyReserve(winners.Reps(), auctionInfo)
 		//if they're all out of space, try again
 		if winners.AllFailed() {
 			continue
@@ -44,9 +45,9 @@ func reserveNBestAuction(client auctiontypes.RepPoolClient, auctionRequest aucti
 		orderedReps := winners.FilterErrors().Shuffle().Sort().Reps()
 
 		numCommunications += len(winners)
-		client.Claim(orderedReps[0], auctionRequest.Instance)
+		client.Claim(orderedReps[0], auctionRequest.LRPStartAuction)
 		if len(orderedReps) > 1 {
-			client.ReleaseReservation(orderedReps[1:], auctionRequest.Instance)
+			client.ReleaseReservation(orderedReps[1:], auctionInfo)
 		}
 
 		return orderedReps[0], rounds, numCommunications

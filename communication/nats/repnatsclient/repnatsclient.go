@@ -9,6 +9,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/util"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/cloudfoundry/yagnats"
 )
 
@@ -76,9 +77,9 @@ func (rep *RepNatsClient) TotalResources(guid string) auctiontypes.Resources {
 	return totalResources
 }
 
-func (rep *RepNatsClient) Instances(guid string) []auctiontypes.Instance {
-	var instances []auctiontypes.Instance
-	err := rep.publishWithTimeout(guid, "instances", nil, &instances)
+func (rep *RepNatsClient) LRPAuctionInfos(guid string) []auctiontypes.LRPAuctionInfo {
+	var instances []auctiontypes.LRPAuctionInfo
+	err := rep.publishWithTimeout(guid, "lrp_auction_infos", nil, &instances)
 	if err != nil {
 		panic(err)
 	}
@@ -93,14 +94,14 @@ func (rep *RepNatsClient) Reset(guid string) {
 	}
 }
 
-func (rep *RepNatsClient) SetInstances(guid string, instances []auctiontypes.Instance) {
-	err := rep.publishWithTimeout(guid, "set_instances", instances, nil)
+func (rep *RepNatsClient) SetLRPAuctionInfos(guid string, instances []auctiontypes.LRPAuctionInfo) {
+	err := rep.publishWithTimeout(guid, "set_lrp_auction_infos", instances, nil)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (rep *RepNatsClient) batch(subject string, guids []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
+func (rep *RepNatsClient) batch(subject string, guids []string, instance auctiontypes.LRPAuctionInfo) auctiontypes.ScoreResults {
 	replyTo := util.RandomGuid()
 
 	allReceived := new(sync.WaitGroup)
@@ -158,15 +159,15 @@ func (rep *RepNatsClient) batch(subject string, guids []string, instance auction
 	return results
 }
 
-func (rep *RepNatsClient) Score(guids []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
+func (rep *RepNatsClient) Score(guids []string, instance auctiontypes.LRPAuctionInfo) auctiontypes.ScoreResults {
 	return rep.batch("score", guids, instance)
 }
 
-func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
+func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, instance auctiontypes.LRPAuctionInfo) auctiontypes.ScoreResults {
 	return rep.batch("score_then_tentatively_reserve", guids, instance)
 }
 
-func (rep *RepNatsClient) ReleaseReservation(guids []string, instance auctiontypes.Instance) {
+func (rep *RepNatsClient) ReleaseReservation(guids []string, instance auctiontypes.LRPAuctionInfo) {
 	replyTo := util.RandomGuid()
 
 	allReceived := new(sync.WaitGroup)
@@ -201,7 +202,7 @@ func (rep *RepNatsClient) ReleaseReservation(guids []string, instance auctiontyp
 	}
 }
 
-func (rep *RepNatsClient) Claim(guid string, instance auctiontypes.Instance) {
+func (rep *RepNatsClient) Claim(guid string, instance models.LRPStartAuction) {
 	err := rep.publishWithTimeout(guid, "claim", instance, nil)
 	if err != nil {
 		log.Println("failed to claim:", err)

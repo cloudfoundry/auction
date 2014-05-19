@@ -12,16 +12,17 @@ Pick an arbitrary rep
 
 func randomAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
+	auctionInfo := auctiontypes.NewLRPAuctionInfo(auctionRequest.LRPStartAuction)
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		randomPick := auctionRequest.RepGuids.RandomSubsetByCount(1)[0]
-		result := client.ScoreThenTentativelyReserve([]string{randomPick}, auctionRequest.Instance)[0]
+		result := client.ScoreThenTentativelyReserve([]string{randomPick}, auctionInfo)[0]
 		numCommunications += 1
 		if result.Error != "" {
 			continue
 		}
 
-		client.Claim(randomPick, auctionRequest.Instance)
+		client.Claim(randomPick, auctionRequest.LRPStartAuction)
 		numCommunications += 1
 
 		return randomPick, rounds, numCommunications

@@ -5,6 +5,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
 	"github.com/cloudfoundry-incubator/auction/util"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -12,29 +13,27 @@ import (
 var _ = Ω
 
 var _ = Describe("Auction", func() {
-	var initialDistributions map[int][]auctiontypes.Instance
+	var initialDistributions map[int][]models.LRPStartAuction
 
-	newInstance := func(appGuid string, memoryMB float64) auctiontypes.Instance {
-		return auctiontypes.Instance{
-			AppGuid:      appGuid,
+	newInstance := func(appGuid string, memoryMB int) models.LRPStartAuction {
+		return models.LRPStartAuction{
+			Guid:         appGuid,
 			InstanceGuid: util.NewGuid("INS"),
-			Resources: auctiontypes.Resources{
-				MemoryMB: memoryMB,
-				DiskMB:   1,
-			},
+			MemoryMB:     memoryMB,
+			DiskMB:       1,
 		}
 	}
 
-	generateUniqueInstances := func(numInstances int, memoryMB float64) []auctiontypes.Instance {
-		instances := []auctiontypes.Instance{}
+	generateUniqueInstances := func(numInstances int, memoryMB int) []models.LRPStartAuction {
+		instances := []models.LRPStartAuction{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newInstance(util.NewGrayscaleGuid("BBB"), memoryMB))
 		}
 		return instances
 	}
 
-	generateUniqueInitialInstances := func(numInstances int, memoryMB float64) []auctiontypes.Instance {
-		instances := []auctiontypes.Instance{}
+	generateUniqueInitialInstances := func(numInstances int, memoryMB int) []models.LRPStartAuction {
+		instances := []models.LRPStartAuction{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newInstance(util.NewGrayscaleGuid("AAA"), memoryMB))
 		}
@@ -45,16 +44,16 @@ var _ = Describe("Auction", func() {
 		return []string{"purple", "red", "cyan", "teal", "gray", "blue", "pink", "green", "lime", "orange", "lightseagreen", "brown"}[util.R.Intn(12)]
 	}
 
-	generateInstancesWithRandomSVGColors := func(numInstances int, memoryMB float64) []auctiontypes.Instance {
-		instances := []auctiontypes.Instance{}
+	generateInstancesWithRandomSVGColors := func(numInstances int, memoryMB int) []models.LRPStartAuction {
+		instances := []models.LRPStartAuction{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newInstance(randomSVGColor(), memoryMB))
 		}
 		return instances
 	}
 
-	generateInstancesForAppGuid := func(numInstances int, appGuid string, memoryMB float64) []auctiontypes.Instance {
-		instances := []auctiontypes.Instance{}
+	generateInstancesForAppGuid := func(numInstances int, appGuid string, memoryMB int) []models.LRPStartAuction {
+		instances := []models.LRPStartAuction{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newInstance(appGuid, memoryMB))
 		}
@@ -63,12 +62,16 @@ var _ = Describe("Auction", func() {
 
 	BeforeEach(func() {
 		util.ResetGuids()
-		initialDistributions = map[int][]auctiontypes.Instance{}
+		initialDistributions = map[int][]models.LRPStartAuction{}
 	})
 
 	JustBeforeEach(func() {
-		for index, instances := range initialDistributions {
-			client.SetInstances(guids[index], instances)
+		for index, startAuctions := range initialDistributions {
+			auctionInfos := []auctiontypes.LRPAuctionInfo{}
+			for _, startAuction := range startAuctions {
+				auctionInfos = append(auctionInfos, auctiontypes.NewLRPAuctionInfo(startAuction))
+			}
+			client.SetLRPAuctionInfos(guids[index], auctionInfos)
 		}
 	})
 
@@ -82,7 +85,7 @@ var _ = Describe("Auction", func() {
 				i := i
 				Context("with single-instance and multi-instance apps apps", func() {
 					It("should distribute evenly", func() {
-						instances := []auctiontypes.Instance{}
+						instances := []models.LRPStartAuction{}
 
 						instances = append(instances, generateUniqueInstances(n1apps[i]/2, 1)...)
 						instances = append(instances, generateInstancesWithRandomSVGColors(n1apps[i]/2, 1)...)
@@ -91,7 +94,7 @@ var _ = Describe("Auction", func() {
 						instances = append(instances, generateUniqueInstances(n4apps[i]/2, 4)...)
 						instances = append(instances, generateInstancesWithRandomSVGColors(n4apps[i]/2, 4)...)
 
-						permutedInstances := make([]auctiontypes.Instance, len(instances))
+						permutedInstances := make([]models.LRPStartAuction, len(instances))
 						for i, index := range util.R.Perm(len(instances)) {
 							permutedInstances[i] = instances[index]
 						}

@@ -6,6 +6,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/util"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
 var LatencyMin time.Duration
@@ -49,19 +50,19 @@ func (client *InprocessClient) TotalResources(guid string) auctiontypes.Resource
 	return client.reps[guid].TotalResources()
 }
 
-func (client *InprocessClient) Instances(guid string) []auctiontypes.Instance {
-	return client.reps[guid].Instances()
+func (client *InprocessClient) LRPAuctionInfos(guid string) []auctiontypes.LRPAuctionInfo {
+	return client.reps[guid].LRPAuctionInfos()
 }
 
-func (client *InprocessClient) SetInstances(guid string, instances []auctiontypes.Instance) {
-	client.reps[guid].SetInstances(instances)
+func (client *InprocessClient) SetLRPAuctionInfos(guid string, instances []auctiontypes.LRPAuctionInfo) {
+	client.reps[guid].SetLRPAuctionInfos(instances)
 }
 
 func (client *InprocessClient) Reset(guid string) {
 	client.reps[guid].Reset()
 }
 
-func (client *InprocessClient) score(guid string, instance auctiontypes.Instance, c chan auctiontypes.ScoreResult) {
+func (client *InprocessClient) score(guid string, instance auctiontypes.LRPAuctionInfo, c chan auctiontypes.ScoreResult) {
 	result := auctiontypes.ScoreResult{
 		Rep: guid,
 	}
@@ -84,7 +85,7 @@ func (client *InprocessClient) score(guid string, instance auctiontypes.Instance
 	return
 }
 
-func (client *InprocessClient) Score(representatives []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
+func (client *InprocessClient) Score(representatives []string, instance auctiontypes.LRPAuctionInfo) auctiontypes.ScoreResults {
 	c := make(chan auctiontypes.ScoreResult)
 	for _, guid := range representatives {
 		go client.score(guid, instance, c)
@@ -98,7 +99,7 @@ func (client *InprocessClient) Score(representatives []string, instance auctiont
 	return results
 }
 
-func (client *InprocessClient) reserveAndRecastScore(guid string, instance auctiontypes.Instance, c chan auctiontypes.ScoreResult) {
+func (client *InprocessClient) reserveAndRecastScore(guid string, instance auctiontypes.LRPAuctionInfo, c chan auctiontypes.ScoreResult) {
 	result := auctiontypes.ScoreResult{
 		Rep: guid,
 	}
@@ -121,7 +122,7 @@ func (client *InprocessClient) reserveAndRecastScore(guid string, instance aucti
 	return
 }
 
-func (client *InprocessClient) ScoreThenTentativelyReserve(guids []string, instance auctiontypes.Instance) auctiontypes.ScoreResults {
+func (client *InprocessClient) ScoreThenTentativelyReserve(guids []string, instance auctiontypes.LRPAuctionInfo) auctiontypes.ScoreResults {
 	c := make(chan auctiontypes.ScoreResult)
 	for _, guid := range guids {
 		go client.reserveAndRecastScore(guid, instance, c)
@@ -135,7 +136,7 @@ func (client *InprocessClient) ScoreThenTentativelyReserve(guids []string, insta
 	return results
 }
 
-func (client *InprocessClient) ReleaseReservation(guids []string, instance auctiontypes.Instance) {
+func (client *InprocessClient) ReleaseReservation(guids []string, instance auctiontypes.LRPAuctionInfo) {
 	c := make(chan bool)
 	for _, guid := range guids {
 		go func(guid string) {
@@ -150,7 +151,7 @@ func (client *InprocessClient) ReleaseReservation(guids []string, instance aucti
 	}
 }
 
-func (client *InprocessClient) Claim(guid string, instance auctiontypes.Instance) {
+func (client *InprocessClient) Claim(guid string, instance models.LRPStartAuction) {
 	client.beSlowAndPossiblyTimeout(guid)
 
 	client.reps[guid].Claim(instance)

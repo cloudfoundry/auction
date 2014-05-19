@@ -7,11 +7,12 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
 type SimulationRepDelegate struct {
 	lock           *sync.Mutex
-	instances      map[string]auctiontypes.Instance
+	instances      map[string]auctiontypes.LRPAuctionInfo
 	totalResources auctiontypes.Resources
 }
 
@@ -20,7 +21,7 @@ func New(totalResources auctiontypes.Resources) auctionrep.SimulationAuctionRepD
 		totalResources: totalResources,
 
 		lock:      &sync.Mutex{},
-		instances: map[string]auctiontypes.Instance{},
+		instances: map[string]auctiontypes.LRPAuctionInfo{},
 	}
 }
 
@@ -50,14 +51,14 @@ func (rep *SimulationRepDelegate) NumInstancesForAppGuid(guid string) int {
 	return n
 }
 
-func (rep *SimulationRepDelegate) Reserve(instance auctiontypes.Instance) error {
+func (rep *SimulationRepDelegate) Reserve(instance auctiontypes.LRPAuctionInfo) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
 	remaining := rep.remainingResources()
 
-	hasEnoughMemory := remaining.MemoryMB >= instance.Resources.MemoryMB
-	hasEnoughDisk := remaining.DiskMB >= instance.Resources.DiskMB
+	hasEnoughMemory := remaining.MemoryMB >= instance.MemoryMB
+	hasEnoughDisk := remaining.DiskMB >= instance.DiskMB
 	hasEnoughContainers := remaining.Containers > 0
 
 	if !(hasEnoughMemory && hasEnoughDisk && hasEnoughContainers) {
@@ -69,7 +70,7 @@ func (rep *SimulationRepDelegate) Reserve(instance auctiontypes.Instance) error 
 	return nil
 }
 
-func (rep *SimulationRepDelegate) ReleaseReservation(instance auctiontypes.Instance) error {
+func (rep *SimulationRepDelegate) ReleaseReservation(instance auctiontypes.LRPAuctionInfo) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
@@ -83,7 +84,7 @@ func (rep *SimulationRepDelegate) ReleaseReservation(instance auctiontypes.Insta
 	return nil
 }
 
-func (rep *SimulationRepDelegate) Claim(instance auctiontypes.Instance) error {
+func (rep *SimulationRepDelegate) Claim(instance models.LRPStartAuction) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
@@ -99,11 +100,11 @@ func (rep *SimulationRepDelegate) Claim(instance auctiontypes.Instance) error {
 
 //simulation only
 
-func (rep *SimulationRepDelegate) SetInstances(instances []auctiontypes.Instance) {
+func (rep *SimulationRepDelegate) SetLRPAuctionInfos(instances []auctiontypes.LRPAuctionInfo) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	instancesMap := map[string]auctiontypes.Instance{}
+	instancesMap := map[string]auctiontypes.LRPAuctionInfo{}
 	for _, instance := range instances {
 		instancesMap[instance.InstanceGuid] = instance
 	}
@@ -111,11 +112,11 @@ func (rep *SimulationRepDelegate) SetInstances(instances []auctiontypes.Instance
 	rep.instances = instancesMap
 }
 
-func (rep *SimulationRepDelegate) Instances() []auctiontypes.Instance {
+func (rep *SimulationRepDelegate) LRPAuctionInfos() []auctiontypes.LRPAuctionInfo {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	result := []auctiontypes.Instance{}
+	result := []auctiontypes.LRPAuctionInfo{}
 	for _, instance := range rep.instances {
 		result = append(result, instance)
 	}
@@ -127,8 +128,8 @@ func (rep *SimulationRepDelegate) Instances() []auctiontypes.Instance {
 func (rep *SimulationRepDelegate) remainingResources() auctiontypes.Resources {
 	resources := rep.totalResources
 	for _, instance := range rep.instances {
-		resources.MemoryMB -= instance.Resources.MemoryMB
-		resources.DiskMB -= instance.Resources.DiskMB
+		resources.MemoryMB -= instance.MemoryMB
+		resources.DiskMB -= instance.DiskMB
 		resources.Containers -= 1
 	}
 	return resources

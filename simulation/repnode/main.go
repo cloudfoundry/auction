@@ -11,8 +11,8 @@ import (
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
 )
 
-var memoryMB = flag.Float64("memoryMB", 100.0, "total available memory in MB")
-var diskMB = flag.Float64("diskMB", 100.0, "total available disk in MB")
+var memoryMB = flag.Int("memoryMB", 100, "total available memory in MB")
+var diskMB = flag.Int("diskMB", 100, "total available disk in MB")
 var containers = flag.Int("containers", 100, "total available containers")
 var guid = flag.String("guid", "", "guid")
 var natsAddrs = flag.String("natsAddrs", "", "nats server addresses")

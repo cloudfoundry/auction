@@ -3,6 +3,8 @@ package auctiontypes
 import (
 	"errors"
 	"time"
+
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
 var InsufficientResources = errors.New("insufficient resources for instance")
@@ -12,18 +14,18 @@ type AuctionRunner interface {
 }
 
 type AuctionRequest struct {
-	Instance Instance     `json:"i"`
-	RepGuids RepGuids     `json:"rg"`
-	Rules    AuctionRules `json:"r"`
+	LRPStartAuction models.LRPStartAuction `json:"a"`
+	RepGuids        RepGuids               `json:"rg"`
+	Rules           AuctionRules           `json:"r"`
 }
 
 type AuctionResult struct {
-	Instance          Instance      `json:"i"`
-	Winner            string        `json:"w"`
-	NumRounds         int           `json:"nr"`
-	NumCommunications int           `json:"nc"`
-	BiddingDuration   time.Duration `json:"bd"`
-	Duration          time.Duration `json:"d"`
+	LRPStartAuction   models.LRPStartAuction `json:"i"`
+	Winner            string                 `json:"w"`
+	NumRounds         int                    `json:"nr"`
+	NumCommunications int                    `json:"nc"`
+	BiddingDuration   time.Duration          `json:"bd"`
+	Duration          time.Duration          `json:"d"`
 }
 
 type AuctionRules struct {
@@ -43,29 +45,39 @@ type ScoreResult struct {
 type ScoreResults []ScoreResult
 
 type Resources struct {
-	DiskMB     float64 `json:"d"`
-	MemoryMB   float64 `json:"m"`
-	Containers int     `json:"c,omitempty"`
+	DiskMB     int `json:"d"`
+	MemoryMB   int `json:"m"`
+	Containers int `json:"c,omitempty"`
 }
 
-type Instance struct {
-	AppGuid      string    `json:"a"`
-	InstanceGuid string    `json:"i"`
-	Resources    Resources `json:"r"`
+type LRPAuctionInfo struct {
+	AppGuid      string `json:"a"`
+	InstanceGuid string `json:"i"`
+	DiskMB       int    `json:"d"`
+	MemoryMB     int    `json:"m"`
+}
+
+func NewLRPAuctionInfo(info models.LRPStartAuction) LRPAuctionInfo {
+	return LRPAuctionInfo{
+		AppGuid:      info.Guid,
+		InstanceGuid: info.InstanceGuid,
+		DiskMB:       info.DiskMB,
+		MemoryMB:     info.MemoryMB,
+	}
 }
 
 type RepPoolClient interface {
-	Score(guids []string, instance Instance) ScoreResults
-	ScoreThenTentativelyReserve(guids []string, instance Instance) ScoreResults
-	ReleaseReservation(guids []string, instance Instance)
-	Claim(guid string, instance Instance)
+	Score(guids []string, instance LRPAuctionInfo) ScoreResults
+	ScoreThenTentativelyReserve(guids []string, instance LRPAuctionInfo) ScoreResults
+	ReleaseReservation(guids []string, instance LRPAuctionInfo)
+	Claim(guid string, instance models.LRPStartAuction)
 }
 
 type TestRepPoolClient interface {
 	RepPoolClient
 
 	TotalResources(guid string) Resources
-	Instances(guid string) []Instance
-	SetInstances(guid string, instances []Instance)
+	LRPAuctionInfos(guid string) []LRPAuctionInfo
+	SetLRPAuctionInfos(guid string, instances []LRPAuctionInfo)
 	Reset(guid string)
 }

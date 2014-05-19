@@ -11,7 +11,7 @@ import (
 type Report struct {
 	RepGuids                     []string
 	AuctionResults               []auctiontypes.AuctionResult
-	InstancesByRep               map[string][]auctiontypes.Instance
+	InstancesByRep               map[string][]auctiontypes.LRPAuctionInfo
 	AuctionDuration              time.Duration
 	auctionedInstancesByInstGuid map[string]bool
 }
@@ -34,11 +34,11 @@ func NewStat(data []float64) Stat {
 	}
 }
 
-func (r *Report) IsAuctionedInstance(inst auctiontypes.Instance) bool {
+func (r *Report) IsAuctionedInstance(inst auctiontypes.LRPAuctionInfo) bool {
 	if r.auctionedInstancesByInstGuid == nil {
 		r.auctionedInstancesByInstGuid = map[string]bool{}
 		for _, result := range r.AuctionResults {
-			r.auctionedInstancesByInstGuid[result.Instance.InstanceGuid] = true
+			r.auctionedInstancesByInstGuid[result.LRPStartAuction.InstanceGuid] = true
 		}
 	}
 
@@ -72,7 +72,7 @@ func (r *Report) InitialDistributionScore() float64 {
 		memoryCount := 0.0
 		for _, instance := range instances {
 			if !r.IsAuctionedInstance(instance) {
-				memoryCount += instance.Resources.MemoryMB
+				memoryCount += float64(instance.MemoryMB)
 			}
 		}
 		memoryCounts = append(memoryCounts, memoryCount)
@@ -90,7 +90,7 @@ func (r *Report) DistributionScore() float64 {
 	for _, instances := range r.InstancesByRep {
 		memoryCount := 0.0
 		for _, instance := range instances {
-			memoryCount += instance.Resources.MemoryMB
+			memoryCount += float64(instance.MemoryMB)
 		}
 		memoryCounts = append(memoryCounts, memoryCount)
 	}
@@ -129,10 +129,10 @@ func (r *Report) WaitTimeStats() Stat {
 	return NewStat(waitTimes)
 }
 
-func FetchAndSortInstances(client auctiontypes.TestRepPoolClient, repGuids []string) map[string][]auctiontypes.Instance {
-	instancesByRepGuid := map[string][]auctiontypes.Instance{}
+func FetchAndSortInstances(client auctiontypes.TestRepPoolClient, repGuids []string) map[string][]auctiontypes.LRPAuctionInfo {
+	instancesByRepGuid := map[string][]auctiontypes.LRPAuctionInfo{}
 	for _, guid := range repGuids {
-		instances := client.Instances(guid)
+		instances := client.LRPAuctionInfos(guid)
 		sort.Sort(ByAppGuid(instances))
 		instancesByRepGuid[guid] = instances
 	}
@@ -140,7 +140,7 @@ func FetchAndSortInstances(client auctiontypes.TestRepPoolClient, repGuids []str
 	return instancesByRepGuid
 }
 
-type ByAppGuid []auctiontypes.Instance
+type ByAppGuid []auctiontypes.LRPAuctionInfo
 
 func (a ByAppGuid) Len() int           { return len(a) }
 func (a ByAppGuid) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }

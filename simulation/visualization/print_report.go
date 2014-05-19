@@ -27,7 +27,7 @@ func PrintReport(client auctiontypes.TestRepPoolClient, results []auctiontypes.A
 	fmt.Println("Rounds Distributions")
 	for _, result := range results {
 		roundsDistribution[result.NumRounds] += 1
-		auctionedInstances[result.Instance.InstanceGuid] = true
+		auctionedInstances[result.LRPStartAuction.InstanceGuid] = true
 	}
 
 	for i := 1; i <= rules.MaxRounds; i++ {
@@ -52,7 +52,7 @@ func PrintReport(client auctiontypes.TestRepPoolClient, results []auctiontypes.A
 		repString := fmt.Sprintf(guidFormat, guid)
 
 		instanceString := ""
-		instances := client.Instances(guid)
+		instances := client.LRPAuctionInfos(guid)
 
 		availableColors := []string{"red", "cyan", "yellow", "gray", "purple", "green"}
 		colorLookup := map[string]string{"red": redColor, "green": greenColor, "cyan": cyanColor, "yellow": yellowColor, "gray": lightGrayColor, "purple": purpleColor}

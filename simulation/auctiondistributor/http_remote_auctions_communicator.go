@@ -27,7 +27,7 @@ func (h *httpRemoteAuctions) RemoteAuction(auctionRequest auctiontypes.AuctionRe
 	if err != nil {
 		fmt.Println("FAILED! TO AUCTION", err)
 		return auctiontypes.AuctionResult{
-			Instance: auctionRequest.Instance,
+			LRPStartAuction: auctionRequest.LRPStartAuction,
 		}, err
 	}
 

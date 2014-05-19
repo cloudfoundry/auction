@@ -92,7 +92,7 @@ func (r *SVGReport) drawInstances(report *Report) {
 		r.SVG.Rect(x, y, instanceBoxSize, instanceSize, "fill:#f7f7f7")
 		instances := report.InstancesByRep[guid]
 		for _, instance := range instances {
-			instanceWidth := int(float64(instanceSize) * instance.Resources.MemoryMB)
+			instanceWidth := instanceSize * instance.MemoryMB
 			style := instanceStyle(instance.AppGuid)
 			if report.IsAuctionedInstance(instance) {
 				r.SVG.Rect(x, y, instanceWidth, instanceSize, style)

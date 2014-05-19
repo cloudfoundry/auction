@@ -12,6 +12,7 @@ Get the scores from the subset of reps
 
 func pickAmongBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
+	auctionInfo := auctiontypes.NewLRPAuctionInfo(auctionRequest.LRPStartAuction)
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		//pick a subset
@@ -19,7 +20,7 @@ func pickAmongBestAuction(client auctiontypes.RepPoolClient, auctionRequest auct
 
 		//get everyone's score, if they're all full: bail
 		numCommunications += len(firstRoundReps)
-		firstRoundScores := client.Score(firstRoundReps, auctionRequest.Instance)
+		firstRoundScores := client.Score(firstRoundReps, auctionInfo)
 		if firstRoundScores.AllFailed() {
 			continue
 		}
@@ -28,13 +29,13 @@ func pickAmongBestAuction(client auctiontypes.RepPoolClient, auctionRequest auct
 
 		winner := top5Winners.Shuffle()[0]
 
-		result := client.ScoreThenTentativelyReserve([]string{winner.Rep}, auctionRequest.Instance)[0]
+		result := client.ScoreThenTentativelyReserve([]string{winner.Rep}, auctionInfo)[0]
 		numCommunications += 1
 		if result.Error != "" {
 			continue
 		}
 
-		client.Claim(winner.Rep, auctionRequest.Instance)
+		client.Claim(winner.Rep, auctionRequest.LRPStartAuction)
 		numCommunications += 1
 
 		return winner.Rep, rounds, numCommunications

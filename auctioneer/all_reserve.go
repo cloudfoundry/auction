@@ -11,6 +11,7 @@ Tell the subset of reps to reserve
 */
 func allReserveAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
+	auctionInfo := auctiontypes.NewLRPAuctionInfo(auctionRequest.LRPStartAuction)
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		//pick a subset
@@ -18,7 +19,7 @@ func allReserveAuction(client auctiontypes.RepPoolClient, auctionRequest auction
 
 		//reserve everyone
 		numCommunications += len(firstRoundReps)
-		scores := client.ScoreThenTentativelyReserve(firstRoundReps, auctionRequest.Instance)
+		scores := client.ScoreThenTentativelyReserve(firstRoundReps, auctionInfo)
 
 		if scores.AllFailed() {
 			continue
@@ -27,9 +28,9 @@ func allReserveAuction(client auctiontypes.RepPoolClient, auctionRequest auction
 		orderedReps := scores.FilterErrors().Shuffle().Sort().Reps()
 
 		numCommunications += len(orderedReps)
-		client.Claim(orderedReps[0], auctionRequest.Instance)
+		client.Claim(orderedReps[0], auctionRequest.LRPStartAuction)
 		if len(orderedReps) > 1 {
-			client.ReleaseReservation(orderedReps[1:], auctionRequest.Instance)
+			client.ReleaseReservation(orderedReps[1:], auctionInfo)
 		}
 
 		return orderedReps[0], rounds, numCommunications

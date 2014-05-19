@@ -27,7 +27,7 @@ func New(client auctiontypes.RepPoolClient) *auctionRunner {
 
 func (a *auctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.AuctionRequest) (auctiontypes.AuctionResult, error) {
 	result := auctiontypes.AuctionResult{
-		Instance: auctionRequest.Instance,
+		LRPStartAuction: auctionRequest.LRPStartAuction,
 	}
 
 	t := time.Now()

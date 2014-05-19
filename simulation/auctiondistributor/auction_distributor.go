@@ -8,6 +8,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctioneer"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
 type AuctionCommunicator func(auctiontypes.AuctionRequest) (auctiontypes.AuctionResult, error)
@@ -37,7 +38,7 @@ func NewRemoteAuctionDistributor(hosts []string, client auctiontypes.TestRepPool
 	}
 }
 
-func (ad *AuctionDistributor) HoldAuctionsFor(instances []auctiontypes.Instance, representatives []string, rules auctiontypes.AuctionRules) *visualization.Report {
+func (ad *AuctionDistributor) HoldAuctionsFor(instances []models.LRPStartAuction, representatives []string, rules auctiontypes.AuctionRules) *visualization.Report {
 	fmt.Printf("\nStarting Auctions\n\n")
 	bar := pb.StartNew(len(instances))
 
@@ -45,12 +46,12 @@ func (ad *AuctionDistributor) HoldAuctionsFor(instances []auctiontypes.Instance,
 	semaphore := make(chan bool, ad.maxConcurrent)
 	c := make(chan auctiontypes.AuctionResult)
 	for _, inst := range instances {
-		go func(inst auctiontypes.Instance) {
+		go func(inst models.LRPStartAuction) {
 			semaphore <- true
 			result, _ := ad.communicator(auctiontypes.AuctionRequest{
-				Instance: inst,
-				RepGuids: representatives,
-				Rules:    rules,
+				LRPStartAuction: inst,
+				RepGuids:        representatives,
+				Rules:           rules,
 			})
 			result.Duration = time.Since(t)
 			c <- result

@@ -7,6 +7,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/rabbit/rabbitclient"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
 var errorResponse = []byte("error")
@@ -30,25 +31,25 @@ func Start(rabbitUrl string, rep *auctionrep.AuctionRep) {
 		return successResponse
 	})
 
-	server.Handle("set_instances", func(req []byte) []byte {
-		var instances []auctiontypes.Instance
+	server.Handle("set_lrp_auction_infos", func(req []byte) []byte {
+		var instances []auctiontypes.LRPAuctionInfo
 
 		err := json.Unmarshal(req, &instances)
 		if err != nil {
 			return errorResponse
 		}
 
-		rep.SetInstances(instances)
+		rep.SetLRPAuctionInfos(instances)
 		return successResponse
 	})
 
-	server.Handle("instances", func(_ []byte) []byte {
-		out, _ := json.Marshal(rep.Instances())
+	server.Handle("lrp_auction_infos", func(_ []byte) []byte {
+		out, _ := json.Marshal(rep.LRPAuctionInfos())
 		return out
 	})
 
 	server.Handle("score", func(req []byte) []byte {
-		var inst auctiontypes.Instance
+		var inst auctiontypes.LRPAuctionInfo
 
 		err := json.Unmarshal(req, &inst)
 		if err != nil {
@@ -71,7 +72,7 @@ func Start(rabbitUrl string, rep *auctionrep.AuctionRep) {
 	})
 
 	server.Handle("score_then_tentatively_reserve", func(req []byte) []byte {
-		var inst auctiontypes.Instance
+		var inst auctiontypes.LRPAuctionInfo
 
 		err := json.Unmarshal(req, &inst)
 		if err != nil {
@@ -94,7 +95,7 @@ func Start(rabbitUrl string, rep *auctionrep.AuctionRep) {
 	})
 
 	server.Handle("release-reservation", func(req []byte) []byte {
-		var instance auctiontypes.Instance
+		var instance auctiontypes.LRPAuctionInfo
 
 		err := json.Unmarshal(req, &instance)
 		if err != nil {
@@ -107,7 +108,7 @@ func Start(rabbitUrl string, rep *auctionrep.AuctionRep) {
 	})
 
 	server.Handle("claim", func(req []byte) []byte {
-		var instance auctiontypes.Instance
+		var instance models.LRPStartAuction
 
 		err := json.Unmarshal(req, &instance)
 		if err != nil {

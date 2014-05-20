@@ -25,7 +25,12 @@ func pickAmongBestAuction(client auctiontypes.RepPoolClient, auctionRequest auct
 			continue
 		}
 
-		top5Winners := firstRoundScores.FilterErrors().Shuffle().Sort()[:5]
+		winners := firstRoundScores.FilterErrors().Shuffle().Sort()
+		max := 5
+		if len(winners) < max {
+			max = len(winners)
+		}
+		top5Winners := winners[:max]
 
 		winner := top5Winners.Shuffle()[0]
 

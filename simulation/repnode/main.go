@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"strings"
 
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
@@ -9,6 +10,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsserver"
 	"github.com/cloudfoundry-incubator/auction/communication/rabbit/reprabbitserver"
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
+	"github.com/cloudfoundry/yagnats"
 )
 
 var memoryMB = flag.Int("memoryMB", 100, "total available memory in MB")
@@ -37,7 +39,23 @@ func main() {
 	rep := auctionrep.New(*guid, repDelegate)
 
 	if *natsAddrs != "" {
-		go repnatsserver.Start(strings.Split(*natsAddrs, ","), rep)
+		client := yagnats.NewClient()
+
+		clusterInfo := &yagnats.ConnectionCluster{}
+
+		for _, addr := range strings.Split(*natsAddrs, ",") {
+			clusterInfo.Members = append(clusterInfo.Members, &yagnats.ConnectionInfo{
+				Addr: addr,
+			})
+		}
+
+		err := client.Connect(clusterInfo)
+
+		if err != nil {
+			log.Fatalln("no nats:", err)
+		}
+
+		go repnatsserver.Start(client, rep)
 	}
 
 	if *rabbitAddr != "" {

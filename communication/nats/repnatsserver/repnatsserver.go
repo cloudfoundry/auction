@@ -14,22 +14,7 @@ import (
 var errorResponse = []byte("error")
 var successResponse = []byte("ok")
 
-func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
-	client := yagnats.NewClient()
-
-	clusterInfo := &yagnats.ConnectionCluster{}
-
-	for _, addr := range natsAddrs {
-		clusterInfo.Members = append(clusterInfo.Members, &yagnats.ConnectionInfo{
-			Addr: addr,
-		})
-	}
-
-	err := client.Connect(clusterInfo)
-	if err != nil {
-		log.Fatalln("no nats:", err)
-	}
-
+func Start(client yagnats.NATSClient, rep *auctionrep.AuctionRep) {
 	guid := rep.Guid()
 
 	client.Subscribe(guid+".total_resources", func(msg *yagnats.Message) {
@@ -150,6 +135,4 @@ func Start(natsAddrs []string, rep *auctionrep.AuctionRep) {
 	})
 
 	fmt.Printf("[%s] listening for nats\n", guid)
-
-	select {}
 }

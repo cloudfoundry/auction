@@ -8,9 +8,9 @@ import (
 )
 
 type AuctionRepDelegate interface {
-	RemainingResources() auctiontypes.Resources
-	TotalResources() auctiontypes.Resources
-	NumInstancesForAppGuid(guid string) int
+	RemainingResources() (auctiontypes.Resources, error)
+	TotalResources() (auctiontypes.Resources, error)
+	NumInstancesForAppGuid(guid string) (int, error)
 
 	Reserve(instance auctiontypes.LRPAuctionInfo) error
 	ReleaseReservation(instance auctiontypes.LRPAuctionInfo) error
@@ -46,13 +46,23 @@ func (rep *AuctionRep) Score(instance auctiontypes.LRPAuctionInfo) (float64, err
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	remaining := rep.delegate.RemainingResources()
+	remaining, err := rep.delegate.RemainingResources()
+	if err != nil {
+		return 0, err
+	}
+
 	if !rep.hasRoomFor(instance, remaining) {
 		return 0, auctiontypes.InsufficientResources
 	}
 
-	total := rep.delegate.TotalResources()
-	nInstances := rep.delegate.NumInstancesForAppGuid(instance.AppGuid)
+	total, err := rep.delegate.TotalResources()
+	if err != nil {
+		return 0, err
+	}
+	nInstances, err := rep.delegate.NumInstancesForAppGuid(instance.AppGuid)
+	if err != nil {
+		return 0, err
+	}
 
 	return rep.score(remaining, total, nInstances), nil
 }
@@ -61,18 +71,27 @@ func (rep *AuctionRep) ScoreThenTentativelyReserve(instance auctiontypes.LRPAuct
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	remaining := rep.delegate.RemainingResources()
+	remaining, err := rep.delegate.RemainingResources()
+	if err != nil {
+		return 0, err
+	}
 	if !rep.hasRoomFor(instance, remaining) {
 		return 0, auctiontypes.InsufficientResources
 	}
 
 	//score first
-	total := rep.delegate.TotalResources()
-	nInstances := rep.delegate.NumInstancesForAppGuid(instance.AppGuid)
+	total, err := rep.delegate.TotalResources()
+	if err != nil {
+		return 0, err
+	}
+	nInstances, err := rep.delegate.NumInstancesForAppGuid(instance.AppGuid)
+	if err != nil {
+		return 0, err
+	}
 	score := rep.score(remaining, total, nInstances)
 
 	//then reserve
-	err := rep.delegate.Reserve(instance)
+	err = rep.delegate.Reserve(instance)
 	if err != nil {
 		return 0, err
 	}
@@ -94,8 +113,11 @@ func (rep *AuctionRep) Run(instance models.LRPStartAuction) error {
 	return rep.delegate.Run(instance)
 }
 
+// The following are used only in simulation
+
 func (rep *AuctionRep) TotalResources() auctiontypes.Resources {
-	return rep.delegate.TotalResources()
+	totalResources, _ := rep.delegate.TotalResources()
+	return totalResources
 }
 
 func (rep *AuctionRep) Reset() {

@@ -25,18 +25,18 @@ func New(totalResources auctiontypes.Resources) auctionrep.SimulationAuctionRepD
 	}
 }
 
-func (rep *SimulationRepDelegate) RemainingResources() auctiontypes.Resources {
+func (rep *SimulationRepDelegate) RemainingResources() (auctiontypes.Resources, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	return rep.remainingResources()
+	return rep.remainingResources(), nil
 }
 
-func (rep *SimulationRepDelegate) TotalResources() auctiontypes.Resources {
-	return rep.totalResources
+func (rep *SimulationRepDelegate) TotalResources() (auctiontypes.Resources, error) {
+	return rep.totalResources, nil
 }
 
-func (rep *SimulationRepDelegate) NumInstancesForAppGuid(guid string) int {
+func (rep *SimulationRepDelegate) NumInstancesForAppGuid(guid string) (int, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
@@ -48,7 +48,7 @@ func (rep *SimulationRepDelegate) NumInstancesForAppGuid(guid string) int {
 		}
 	}
 
-	return n
+	return n, nil
 }
 
 func (rep *SimulationRepDelegate) Reserve(instance auctiontypes.LRPAuctionInfo) error {

@@ -18,7 +18,8 @@ import (
 
 var natsAddrs = flag.String("natsAddrs", "", "nats server addresses")
 var rabbitAddr = flag.String("rabbitAddr", "", "rabbit server addresses")
-var timeout = flag.Duration("timeout", 500*time.Millisecond, "timeout for entire auction")
+var timeout = flag.Duration("timeout", 500*time.Millisecond, "timeout for nats responses")
+var runTimeout = flag.Duration("runTimeout", 10*time.Second, "timeout for run to respond")
 var maxConcurrent = flag.Int("maxConcurrent", 1000, "number of concurrent auctions to hold")
 var httpAddr = flag.String("httpAddr", "0.0.0.0:48710", "http address to listen on")
 
@@ -58,11 +59,11 @@ func main() {
 			log.Fatalln("no nats:", err)
 		}
 
-		repClient = repnatsclient.New(client, *timeout)
+		repClient = repnatsclient.New(client, *timeout, *runTimeout)
 	}
 
 	if *rabbitAddr != "" {
-		repClient = reprabbitclient.New(*rabbitAddr, *timeout)
+		repClient = reprabbitclient.New(*rabbitAddr, *timeout, *runTimeout)
 	}
 
 	semaphore := make(chan bool, *maxConcurrent)

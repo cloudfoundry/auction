@@ -17,11 +17,12 @@ var TimeoutError = errors.New("timeout")
 var RequestFailedError = errors.New("request failed")
 
 type RepRabbitClient struct {
-	client  rabbitclient.RabbitClientInterface
-	timeout time.Duration
+	client     rabbitclient.RabbitClientInterface
+	timeout    time.Duration
+	runTimeout time.Duration
 }
 
-func New(rabbitUrl string, timeout time.Duration) *RepRabbitClient {
+func New(rabbitUrl string, timeout time.Duration, runTimeout time.Duration) *RepRabbitClient {
 	guid := util.RandomGuid()
 	client := rabbitclient.NewClient(guid, rabbitUrl)
 	err := client.ConnectAndEstablish()
@@ -30,12 +31,13 @@ func New(rabbitUrl string, timeout time.Duration) *RepRabbitClient {
 	}
 
 	return &RepRabbitClient{
-		client:  client,
-		timeout: timeout,
+		client:     client,
+		timeout:    timeout,
+		runTimeout: runTimeout,
 	}
 }
 
-func (rep *RepRabbitClient) request(guid string, subject string, req interface{}, resp interface{}) (err error) {
+func (rep *RepRabbitClient) request(guid string, subject string, req interface{}, resp interface{}, timeout time.Duration) (err error) {
 	payload := []byte{}
 	if req != nil {
 		payload, err = json.Marshal(req)
@@ -44,7 +46,7 @@ func (rep *RepRabbitClient) request(guid string, subject string, req interface{}
 		}
 	}
 
-	response, err := rep.client.Request(guid, subject, payload, rep.timeout)
+	response, err := rep.client.Request(guid, subject, payload, timeout)
 
 	if err != nil {
 		return err
@@ -61,45 +63,12 @@ func (rep *RepRabbitClient) request(guid string, subject string, req interface{}
 	return nil
 }
 
-func (rep *RepRabbitClient) TotalResources(guid string) auctiontypes.Resources {
-	var totalResources auctiontypes.Resources
-	err := rep.request(guid, "total_resources", []byte{}, &totalResources)
-	if err != nil {
-		panic(err)
-	}
-	return totalResources
-}
-
-func (rep *RepRabbitClient) LRPAuctionInfos(guid string) []auctiontypes.LRPAuctionInfo {
-	var instances []auctiontypes.LRPAuctionInfo
-	err := rep.request(guid, "lrp_auction_infos", nil, &instances)
-	if err != nil {
-		panic(err)
-	}
-
-	return instances
-}
-
-func (rep *RepRabbitClient) Reset(guid string) {
-	err := rep.request(guid, "reset", nil, nil)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (rep *RepRabbitClient) SetLRPAuctionInfos(guid string, instances []auctiontypes.LRPAuctionInfo) {
-	err := rep.request(guid, "set_lrp_auction_infos", instances, nil)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func (rep *RepRabbitClient) batch(subject string, guids []string, instance auctiontypes.LRPAuctionInfo) auctiontypes.ScoreResults {
 	c := make(chan auctiontypes.ScoreResult)
 	for _, guid := range guids {
 		go func(guid string) {
 			var response auctiontypes.ScoreResult
-			err := rep.request(guid, subject, instance, &response)
+			err := rep.request(guid, subject, instance, &response, rep.timeout)
 			if err != nil {
 				c <- auctiontypes.ScoreResult{
 					Error: err.Error(),
@@ -130,7 +99,7 @@ func (rep *RepRabbitClient) ReleaseReservation(guids []string, instance auctiont
 	allReceived.Add(len(guids))
 	for _, guid := range guids {
 		go func(guid string) {
-			rep.request(guid, "release-reservation", instance, nil)
+			rep.request(guid, "release-reservation", instance, nil, rep.timeout)
 			allReceived.Done()
 		}(guid)
 	}
@@ -139,8 +108,43 @@ func (rep *RepRabbitClient) ReleaseReservation(guids []string, instance auctiont
 }
 
 func (rep *RepRabbitClient) Run(guid string, instance models.LRPStartAuction) {
-	err := rep.request(guid, "run", instance, nil)
+	err := rep.request(guid, "run", instance, nil, rep.runTimeout)
 	if err != nil {
 		log.Println("failed to run:", err)
+	}
+}
+
+// SIMULATION ONLY
+
+func (rep *RepRabbitClient) TotalResources(guid string) auctiontypes.Resources {
+	var totalResources auctiontypes.Resources
+	err := rep.request(guid, "total_resources", []byte{}, &totalResources, rep.timeout)
+	if err != nil {
+		panic(err)
+	}
+	return totalResources
+}
+
+func (rep *RepRabbitClient) LRPAuctionInfos(guid string) []auctiontypes.LRPAuctionInfo {
+	var instances []auctiontypes.LRPAuctionInfo
+	err := rep.request(guid, "lrp_auction_infos", nil, &instances, rep.timeout)
+	if err != nil {
+		panic(err)
+	}
+
+	return instances
+}
+
+func (rep *RepRabbitClient) Reset(guid string) {
+	err := rep.request(guid, "reset", nil, nil, rep.timeout)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (rep *RepRabbitClient) SetLRPAuctionInfos(guid string, instances []auctiontypes.LRPAuctionInfo) {
+	err := rep.request(guid, "set_lrp_auction_infos", instances, nil, rep.timeout)
+	if err != nil {
+		panic(err)
 	}
 }

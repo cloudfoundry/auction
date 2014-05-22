@@ -51,6 +51,7 @@ var repResources = auctiontypes.Resources{
 var maxConcurrent int
 
 var timeout time.Duration
+var runTimeout time.Duration
 var auctionDistributor *auctiondistributor.AuctionDistributor
 
 var svgReport *visualization.SVGReport
@@ -66,6 +67,7 @@ func init() {
 	flag.StringVar(&communicationMode, "communicationMode", "inprocess", "one of inprocess, nats, rabbit, ketchup")
 	flag.StringVar(&auctioneerMode, "auctioneerMode", "inprocess", "one of inprocess, remote")
 	flag.DurationVar(&timeout, "timeout", 500*time.Millisecond, "timeout when waiting for responses from remote calls")
+	flag.DurationVar(&runTimeout, "runTimeout", 10*time.Second, "timeout when waiting for the run command to respond")
 
 	flag.StringVar(&(auctionrunner.DefaultRules.Algorithm), "algorithm", auctionrunner.DefaultRules.Algorithm, "the auction algorithm to use")
 	flag.IntVar(&(auctionrunner.DefaultRules.MaxRounds), "maxRounds", auctionrunner.DefaultRules.MaxRounds, "the maximum number of rounds per auction")
@@ -95,14 +97,14 @@ var _ = BeforeSuite(func() {
 		}
 	case NATS:
 		natsAddrs := startNATS()
-		client = repnatsclient.New(natsRunner.MessageBus, timeout)
+		client = repnatsclient.New(natsRunner.MessageBus, timeout, runTimeout)
 		guids = launchExternalReps("-natsAddrs", natsAddrs)
 		if auctioneerMode == Remote {
 			hosts = launchExternalAuctioneers("-natsAddrs", natsAddrs)
 		}
 	case Rabbit:
 		rabbitAddr := startRabbit()
-		client = reprabbitclient.New(rabbitAddr, timeout)
+		client = reprabbitclient.New(rabbitAddr, timeout, runTimeout)
 		guids = launchExternalReps("-rabbitAddr", rabbitAddr)
 		if auctioneerMode == Remote {
 			hosts = launchExternalAuctioneers("-rabbitAddr", rabbitAddr)
@@ -279,7 +281,7 @@ func ketchupNATSClient() auctiontypes.TestRepPoolClient {
 	err := natsClient.Connect(clusterInfo)
 	Ω(err).ShouldNot(HaveOccurred())
 
-	return repnatsclient.New(natsClient, timeout)
+	return repnatsclient.New(natsClient, timeout, runTimeout)
 }
 
 func startReport() {

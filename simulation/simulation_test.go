@@ -17,7 +17,7 @@ var _ = Describe("Auction", func() {
 
 	newInstance := func(appGuid string, memoryMB int) models.LRPStartAuction {
 		return models.LRPStartAuction{
-			Guid:         appGuid,
+			ProcessGuid:  appGuid,
 			InstanceGuid: util.NewGuid("INS"),
 			MemoryMB:     memoryMB,
 			DiskMB:       1,

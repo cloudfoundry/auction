@@ -59,7 +59,7 @@ type LRPAuctionInfo struct {
 
 func NewLRPAuctionInfo(info models.LRPStartAuction) LRPAuctionInfo {
 	return LRPAuctionInfo{
-		AppGuid:      info.Guid,
+		AppGuid:      info.ProcessGuid,
 		InstanceGuid: info.InstanceGuid,
 		DiskMB:       info.DiskMB,
 		MemoryMB:     info.MemoryMB,

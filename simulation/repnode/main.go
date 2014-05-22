@@ -8,7 +8,6 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsserver"
-	"github.com/cloudfoundry-incubator/auction/communication/rabbit/reprabbitserver"
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
 	"github.com/cloudfoundry/yagnats"
 )
@@ -18,7 +17,6 @@ var diskMB = flag.Int("diskMB", 100, "total available disk in MB")
 var containers = flag.Int("containers", 100, "total available containers")
 var guid = flag.String("guid", "", "guid")
 var natsAddrs = flag.String("natsAddrs", "", "nats server addresses")
-var rabbitAddr = flag.String("rabbitAddr", "", "rabbit server address")
 
 func main() {
 	flag.Parse()
@@ -27,8 +25,8 @@ func main() {
 		panic("need guid")
 	}
 
-	if *natsAddrs == "" && *rabbitAddr == "" {
-		panic("need nats or rabbit addr")
+	if *natsAddrs == "" {
+		panic("need nats addr")
 	}
 
 	repDelegate := simulationrepdelegate.New(auctiontypes.Resources{
@@ -56,10 +54,6 @@ func main() {
 		}
 
 		go repnatsserver.Start(client, rep)
-	}
-
-	if *rabbitAddr != "" {
-		go reprabbitserver.Start(*rabbitAddr, rep)
 	}
 
 	select {}

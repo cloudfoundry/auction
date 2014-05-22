@@ -12,12 +12,10 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsclient"
-	"github.com/cloudfoundry-incubator/auction/communication/rabbit/reprabbitclient"
 	"github.com/cloudfoundry/yagnats"
 )
 
 var natsAddrs = flag.String("natsAddrs", "", "nats server addresses")
-var rabbitAddr = flag.String("rabbitAddr", "", "rabbit server addresses")
 var timeout = flag.Duration("timeout", 500*time.Millisecond, "timeout for nats responses")
 var runTimeout = flag.Duration("runTimeout", 10*time.Second, "timeout for run to respond")
 var maxConcurrent = flag.Int("maxConcurrent", 1000, "number of concurrent auctions to hold")
@@ -28,12 +26,8 @@ var errorResponse = []byte("error")
 func main() {
 	flag.Parse()
 
-	if *natsAddrs == "" && *rabbitAddr == "" {
-		panic("need nats or rabbit addr")
-	}
-
-	if *natsAddrs != "" && *rabbitAddr != "" {
-		panic("can't have both nats and rabbit addrs, choose one")
+	if *natsAddrs == "" {
+		panic("need nats addr")
 	}
 
 	if *httpAddr == "" {
@@ -42,29 +36,23 @@ func main() {
 
 	var repClient auctiontypes.RepPoolClient
 
-	if *natsAddrs != "" {
-		client := yagnats.NewClient()
+	client := yagnats.NewClient()
 
-		clusterInfo := &yagnats.ConnectionCluster{}
+	clusterInfo := &yagnats.ConnectionCluster{}
 
-		for _, addr := range strings.Split(*natsAddrs, ",") {
-			clusterInfo.Members = append(clusterInfo.Members, &yagnats.ConnectionInfo{
-				Addr: addr,
-			})
-		}
-
-		err := client.Connect(clusterInfo)
-
-		if err != nil {
-			log.Fatalln("no nats:", err)
-		}
-
-		repClient = repnatsclient.New(client, *timeout, *runTimeout)
+	for _, addr := range strings.Split(*natsAddrs, ",") {
+		clusterInfo.Members = append(clusterInfo.Members, &yagnats.ConnectionInfo{
+			Addr: addr,
+		})
 	}
 
-	if *rabbitAddr != "" {
-		repClient = reprabbitclient.New(*rabbitAddr, *timeout, *runTimeout)
+	err := client.Connect(clusterInfo)
+
+	if err != nil {
+		log.Fatalln("no nats:", err)
 	}
+
+	repClient = repnatsclient.New(client, *timeout, *runTimeout)
 
 	semaphore := make(chan bool, *maxConcurrent)
 

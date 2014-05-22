@@ -14,7 +14,7 @@ The `auctionrep` package provides an implementation of `AuctionRep`.  These `Auc
 
 The auctioneers must be able to communicate with the auctionreps via some protocol.  The communication package provides implementations for `servers` (to be run on the representative nodes) and `clients` to be constructed and used on the `auctioneer` node.
 
-Currently `Auction` provides two remote communication packages: `nats` and `rabbit`.
+Currently `Auction` provides one remote communication packages: `nats`.
 
 ## Simulation
 
@@ -22,4 +22,4 @@ Because communication has been separated from implementation, and because the im
 
 This is done in the simulation package which is the defacto "test suite" that ensures the auction is played correctly.  As new scheduling features are added, a corresponding simulation should be added to the simulation suite.
 
-In addition to `nats` and `rabbit`, the simulation suite provides an *inprocess* means of communication.  This allows a feel of representatives and auctioneers to be started as goroutines in-process and allows for rapid iteration on the underlying scheduling algorithm.
+In addition to `nats`, the simulation suite provides an *inprocess* means of communication.  This allows a feel of representatives and auctioneers to be started as goroutines in-process and allows for rapid iteration on the underlying scheduling algorithm.

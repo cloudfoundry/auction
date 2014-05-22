@@ -12,7 +12,6 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsclient"
-	"github.com/cloudfoundry-incubator/auction/communication/rabbit/reprabbitclient"
 	"github.com/cloudfoundry-incubator/auction/simulation/auctiondistributor"
 	"github.com/cloudfoundry-incubator/auction/simulation/communication/inprocess"
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
@@ -34,7 +33,6 @@ var auctioneerMode string
 
 const InProcess = "inprocess"
 const NATS = "nats"
-const Rabbit = "rabbit"
 const KetchupNATS = "ketchup-nats"
 const Remote = "remote"
 
@@ -64,7 +62,7 @@ var client auctiontypes.TestRepPoolClient
 var guids []string
 
 func init() {
-	flag.StringVar(&communicationMode, "communicationMode", "inprocess", "one of inprocess, nats, rabbit, ketchup")
+	flag.StringVar(&communicationMode, "communicationMode", "inprocess", "one of inprocess, nats, ketchup")
 	flag.StringVar(&auctioneerMode, "auctioneerMode", "inprocess", "one of inprocess, remote")
 	flag.DurationVar(&timeout, "timeout", 500*time.Millisecond, "timeout when waiting for responses from remote calls")
 	flag.DurationVar(&runTimeout, "runTimeout", 10*time.Second, "timeout when waiting for the run command to respond")
@@ -101,13 +99,6 @@ var _ = BeforeSuite(func() {
 		guids = launchExternalReps("-natsAddrs", natsAddrs)
 		if auctioneerMode == Remote {
 			hosts = launchExternalAuctioneers("-natsAddrs", natsAddrs)
-		}
-	case Rabbit:
-		rabbitAddr := startRabbit()
-		client = reprabbitclient.New(rabbitAddr, timeout, runTimeout)
-		guids = launchExternalReps("-rabbitAddr", rabbitAddr)
-		if auctioneerMode == Remote {
-			hosts = launchExternalAuctioneers("-rabbitAddr", rabbitAddr)
 		}
 	case KetchupNATS:
 		guids = computeKetchupGuids()
@@ -172,14 +163,6 @@ func startNATS() string {
 	natsRunner = natsrunner.NewNATSRunner(natsPort)
 	natsRunner.Start()
 	return strings.Join(natsAddrs, ",")
-}
-
-func startRabbit() string {
-	rabbitSession, err := gexec.Start(exec.Command("rabbitmq-server"), GinkgoWriter, GinkgoWriter)
-	Ω(err).ShouldNot(HaveOccurred())
-	Eventually(rabbitSession, 2).Should(gbytes.Say("Starting broker... completed"))
-	sessionsToTerminate = append(sessionsToTerminate, rabbitSession)
-	return "amqp://127.0.0.1"
 }
 
 func launchExternalReps(communicationFlag string, communicationValue string) []string {

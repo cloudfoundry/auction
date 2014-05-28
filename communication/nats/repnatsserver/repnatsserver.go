@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/communication/nats"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/cloudfoundry/yagnats"
 )
@@ -14,37 +16,61 @@ import (
 var errorResponse = []byte("error")
 var successResponse = []byte("ok")
 
-func Start(client yagnats.NATSClient, rep *auctionrep.AuctionRep) {
-	guid := rep.Guid()
+type RepNatsServer struct {
+	guid   string
+	rep    *auctionrep.AuctionRep
+	client yagnats.NATSClient
+}
 
-	client.Subscribe(guid+".total_resources", func(msg *yagnats.Message) {
-		jresources, _ := json.Marshal(rep.TotalResources())
-		client.Publish(msg.ReplyTo, jresources)
+func New(client yagnats.NATSClient, rep *auctionrep.AuctionRep) *RepNatsServer {
+	return &RepNatsServer{
+		guid:   rep.Guid(),
+		rep:    rep,
+		client: client,
+	}
+}
+
+func (s *RepNatsServer) Run(sigChan <-chan os.Signal, ready chan<- struct{}) error {
+	subjects := nats.NewSubjects(s.guid)
+
+	s.start(subjects)
+	fmt.Println("rep nats server", s.guid, "listening")
+	close(ready)
+
+	<-sigChan
+	s.stop(subjects)
+	return nil
+}
+
+func (s *RepNatsServer) start(subjects nats.Subjects) {
+	s.client.Subscribe(subjects.TotalResources, func(msg *yagnats.Message) {
+		jresources, _ := json.Marshal(s.rep.TotalResources())
+		s.client.Publish(msg.ReplyTo, jresources)
 	})
 
-	client.Subscribe(guid+".reset", func(msg *yagnats.Message) {
-		rep.Reset()
-		client.Publish(msg.ReplyTo, successResponse)
+	s.client.Subscribe(subjects.Reset, func(msg *yagnats.Message) {
+		s.rep.Reset()
+		s.client.Publish(msg.ReplyTo, successResponse)
 	})
 
-	client.Subscribe(guid+".set_lrp_auction_infos", func(msg *yagnats.Message) {
+	s.client.Subscribe(subjects.SetLrpAuctionInfos, func(msg *yagnats.Message) {
 		var instances []auctiontypes.LRPAuctionInfo
 
 		err := json.Unmarshal(msg.Payload, &instances)
 		if err != nil {
-			client.Publish(msg.ReplyTo, errorResponse)
+			s.client.Publish(msg.ReplyTo, errorResponse)
 		}
 
-		rep.SetLRPAuctionInfos(instances)
-		client.Publish(msg.ReplyTo, successResponse)
+		s.rep.SetLRPAuctionInfos(instances)
+		s.client.Publish(msg.ReplyTo, successResponse)
 	})
 
-	client.Subscribe(guid+".lrp_auction_infos", func(msg *yagnats.Message) {
-		jinstances, _ := json.Marshal(rep.LRPAuctionInfos())
-		client.Publish(msg.ReplyTo, jinstances)
+	s.client.Subscribe(subjects.LrpAuctionInfos, func(msg *yagnats.Message) {
+		jinstances, _ := json.Marshal(s.rep.LRPAuctionInfos())
+		s.client.Publish(msg.ReplyTo, jinstances)
 	})
 
-	client.Subscribe(guid+".score", func(msg *yagnats.Message) {
+	s.client.Subscribe(subjects.Score, func(msg *yagnats.Message) {
 		var inst auctiontypes.LRPAuctionInfo
 
 		err := json.Unmarshal(msg.Payload, &inst)
@@ -53,15 +79,15 @@ func Start(client yagnats.NATSClient, rep *auctionrep.AuctionRep) {
 		}
 
 		response := auctiontypes.ScoreResult{
-			Rep: guid,
+			Rep: s.guid,
 		}
 
 		defer func() {
 			payload, _ := json.Marshal(response)
-			client.Publish(msg.ReplyTo, payload)
+			s.client.Publish(msg.ReplyTo, payload)
 		}()
 
-		score, err := rep.Score(inst)
+		score, err := s.rep.Score(inst)
 		if err != nil {
 			response.Error = err.Error()
 			return
@@ -70,7 +96,7 @@ func Start(client yagnats.NATSClient, rep *auctionrep.AuctionRep) {
 		response.Score = score
 	})
 
-	client.Subscribe(guid+".score_then_tentatively_reserve", func(msg *yagnats.Message) {
+	s.client.Subscribe(subjects.ScoreThenTentativelyReserve, func(msg *yagnats.Message) {
 		var inst auctiontypes.LRPAuctionInfo
 
 		err := json.Unmarshal(msg.Payload, &inst)
@@ -79,15 +105,15 @@ func Start(client yagnats.NATSClient, rep *auctionrep.AuctionRep) {
 		}
 
 		response := auctiontypes.ScoreResult{
-			Rep: guid,
+			Rep: s.guid,
 		}
 
 		defer func() {
 			payload, _ := json.Marshal(response)
-			client.Publish(msg.ReplyTo, payload)
+			s.client.Publish(msg.ReplyTo, payload)
 		}()
 
-		score, err := rep.ScoreThenTentativelyReserve(inst)
+		score, err := s.rep.ScoreThenTentativelyReserve(inst)
 		if err != nil {
 			response.Error = err.Error()
 			return
@@ -96,43 +122,48 @@ func Start(client yagnats.NATSClient, rep *auctionrep.AuctionRep) {
 		response.Score = score
 	})
 
-	client.Subscribe(guid+".release-reservation", func(msg *yagnats.Message) {
+	s.client.Subscribe(subjects.ReleaseReservation, func(msg *yagnats.Message) {
 		var inst auctiontypes.LRPAuctionInfo
 
 		responsePayload := errorResponse
 		defer func() {
-			client.Publish(msg.ReplyTo, responsePayload)
+			s.client.Publish(msg.ReplyTo, responsePayload)
 		}()
 
 		err := json.Unmarshal(msg.Payload, &inst)
 		if err != nil {
-			log.Println(guid, "invalid score_then_tentatively_reserve request:", err)
+			log.Println(s.guid, "invalid score_then_tentatively_reserve request:", err)
 			return
 		}
 
-		rep.ReleaseReservation(inst) //need to handle error
+		s.rep.ReleaseReservation(inst) //need to handle error
 
 		responsePayload = successResponse
 	})
 
-	client.Subscribe(guid+".run", func(msg *yagnats.Message) {
+	s.client.Subscribe(subjects.Run, func(msg *yagnats.Message) {
 		var inst models.LRPStartAuction
 
 		responsePayload := errorResponse
 		defer func() {
-			client.Publish(msg.ReplyTo, responsePayload)
+			s.client.Publish(msg.ReplyTo, responsePayload)
 		}()
 
 		err := json.Unmarshal(msg.Payload, &inst)
 		if err != nil {
-			log.Println(guid, "invalid score_then_tentatively_reserve request:", err)
+			log.Println(s.guid, "invalid score_then_tentatively_reserve request:", err)
 			return
 		}
 
-		rep.Run(inst) //need to handle error
+		s.rep.Run(inst) //need to handle error
 
 		responsePayload = successResponse
 	})
 
-	fmt.Printf("[%s] listening for nats\n", guid)
+}
+
+func (s *RepNatsServer) stop(subjects nats.Subjects) {
+	for _, topic := range subjects.Slice() {
+		s.client.UnsubscribeAll(topic)
+	}
 }

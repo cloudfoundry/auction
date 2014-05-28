@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/communication/nats"
 	"github.com/cloudfoundry-incubator/auction/util"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/cloudfoundry/yagnats"
@@ -30,7 +31,7 @@ func New(client yagnats.NATSClient, timeout time.Duration, runTimeout time.Durat
 	}
 }
 
-func (rep *RepNatsClient) publishWithTimeout(guid string, subject string, req interface{}, resp interface{}, timeout time.Duration) (err error) {
+func (rep *RepNatsClient) publishWithTimeout(subject string, req interface{}, resp interface{}, timeout time.Duration) (err error) {
 	replyTo := util.RandomGuid()
 	c := make(chan []byte, 1)
 
@@ -50,7 +51,7 @@ func (rep *RepNatsClient) publishWithTimeout(guid string, subject string, req in
 		}
 	}
 
-	rep.client.PublishWithReplyTo(guid+"."+subject, replyTo, payload)
+	rep.client.PublishWithReplyTo(subject, replyTo, payload)
 
 	select {
 	case payload := <-c:
@@ -132,11 +133,12 @@ func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, instance a
 	for _, guid := range guids {
 		go func(guid string) {
 			result := auctiontypes.ScoreResult{}
-			err := rep.publishWithTimeout(guid, "score_then_tentatively_reserve", instance, &result, rep.timeout)
+			subjects := nats.NewSubjects(guid)
+			err := rep.publishWithTimeout(subjects.ScoreThenTentativelyReserve, instance, &result, rep.timeout)
 			if err != nil {
 				log.Println("errored getting a reservation:", err.Error())
 				result = auctiontypes.ScoreResult{Error: err.Error()}
-				rep.publishWithTimeout(guid, "release-reservation", instance, nil, rep.timeout)
+				rep.publishWithTimeout(subjects.ReleaseReservation, instance, nil, rep.timeout)
 			}
 			resultChan <- result
 		}(guid)
@@ -156,7 +158,8 @@ func (rep *RepNatsClient) ReleaseReservation(guids []string, instance auctiontyp
 
 	for _, guid := range guids {
 		go func(guid string) {
-			err := rep.publishWithTimeout(guid, "release-reservation", instance, nil, rep.timeout)
+			subjects := nats.NewSubjects(guid)
+			err := rep.publishWithTimeout(subjects.ReleaseReservation, instance, nil, rep.timeout)
 			if err != nil {
 				log.Println("errored releasing a rservation:", err.Error())
 			}
@@ -168,7 +171,8 @@ func (rep *RepNatsClient) ReleaseReservation(guids []string, instance auctiontyp
 }
 
 func (rep *RepNatsClient) Run(guid string, instance models.LRPStartAuction) {
-	err := rep.publishWithTimeout(guid, "run", instance, nil, rep.runTimeout)
+	subjects := nats.NewSubjects(guid)
+	err := rep.publishWithTimeout(subjects.Run, instance, nil, rep.runTimeout)
 	if err != nil {
 		log.Println("failed to run:", err.Error())
 	}
@@ -178,7 +182,8 @@ func (rep *RepNatsClient) Run(guid string, instance models.LRPStartAuction) {
 
 func (rep *RepNatsClient) TotalResources(guid string) auctiontypes.Resources {
 	var totalResources auctiontypes.Resources
-	err := rep.publishWithTimeout(guid, "total_resources", nil, &totalResources, rep.timeout)
+	subjects := nats.NewSubjects(guid)
+	err := rep.publishWithTimeout(subjects.TotalResources, nil, &totalResources, rep.timeout)
 	if err != nil {
 		//test only, so panic is OK
 		panic(err)
@@ -189,7 +194,8 @@ func (rep *RepNatsClient) TotalResources(guid string) auctiontypes.Resources {
 
 func (rep *RepNatsClient) LRPAuctionInfos(guid string) []auctiontypes.LRPAuctionInfo {
 	var instances []auctiontypes.LRPAuctionInfo
-	err := rep.publishWithTimeout(guid, "lrp_auction_infos", nil, &instances, rep.timeout)
+	subjects := nats.NewSubjects(guid)
+	err := rep.publishWithTimeout(subjects.LrpAuctionInfos, nil, &instances, rep.timeout)
 	if err != nil {
 		//test only, so panic is OK
 		panic(err)
@@ -199,7 +205,8 @@ func (rep *RepNatsClient) LRPAuctionInfos(guid string) []auctiontypes.LRPAuction
 }
 
 func (rep *RepNatsClient) Reset(guid string) {
-	err := rep.publishWithTimeout(guid, "reset", nil, nil, rep.timeout)
+	subjects := nats.NewSubjects(guid)
+	err := rep.publishWithTimeout(subjects.Reset, nil, nil, rep.timeout)
 	if err != nil {
 		//test only, so panic is OK
 		panic(err)
@@ -207,7 +214,8 @@ func (rep *RepNatsClient) Reset(guid string) {
 }
 
 func (rep *RepNatsClient) SetLRPAuctionInfos(guid string, instances []auctiontypes.LRPAuctionInfo) {
-	err := rep.publishWithTimeout(guid, "set_lrp_auction_infos", instances, nil, rep.timeout)
+	subjects := nats.NewSubjects(guid)
+	err := rep.publishWithTimeout(subjects.SetLrpAuctionInfos, instances, nil, rep.timeout)
 	if err != nil {
 		//test only, so panic is OK
 		panic(err)

@@ -7,9 +7,11 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsserver"
+	repnatsserver "github.com/cloudfoundry-incubator/auction/communication/nats/repnatsserver"
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
 	"github.com/cloudfoundry/yagnats"
+	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/sigmon"
 )
 
 var memoryMB = flag.Int("memoryMB", 100, "total available memory in MB")
@@ -53,7 +55,14 @@ func main() {
 			log.Fatalln("no nats:", err)
 		}
 
-		go repnatsserver.Start(client, rep)
+		log.Println("starting rep nats server")
+		natsRunner := repnatsserver.New(client, rep)
+		server := ifrit.Envoke(natsRunner)
+		monitor := ifrit.Envoke(sigmon.New(server))
+		err = <-monitor.Wait()
+		if err != nil {
+			println("NATS SERVER EXITED WITH ERROR: ", err.Error())
+		}
 	}
 
 	select {}

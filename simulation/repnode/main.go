@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	repnatsserver "github.com/cloudfoundry-incubator/auction/communication/nats/repnatsserver"
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
+	"github.com/cloudfoundry/gosteno"
 	"github.com/cloudfoundry/yagnats"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/sigmon"
@@ -56,9 +58,10 @@ func main() {
 		}
 
 		log.Println("starting rep nats server")
-		natsRunner := repnatsserver.New(client, rep)
+		natsRunner := repnatsserver.New(client, rep, gosteno.NewLogger(*guid))
 		server := ifrit.Envoke(natsRunner)
 		monitor := ifrit.Envoke(sigmon.New(server))
+		fmt.Println("rep node listening")
 		err = <-monitor.Wait()
 		if err != nil {
 			println("NATS SERVER EXITED WITH ERROR: ", err.Error())

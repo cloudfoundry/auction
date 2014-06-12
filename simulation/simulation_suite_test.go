@@ -17,6 +17,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
 	"github.com/cloudfoundry-incubator/auction/util"
+	"github.com/cloudfoundry/gosteno"
 	"github.com/cloudfoundry/gunk/natsrunner"
 	"github.com/cloudfoundry/yagnats"
 	. "github.com/onsi/ginkgo"
@@ -95,7 +96,7 @@ var _ = BeforeSuite(func() {
 		}
 	case NATS:
 		natsAddrs := startNATS()
-		client = repnatsclient.New(natsRunner.MessageBus, timeout, runTimeout)
+		client = repnatsclient.New(natsRunner.MessageBus, timeout, runTimeout, gosteno.NewLogger("test"))
 		guids = launchExternalReps("-natsAddrs", natsAddrs)
 		if auctioneerMode == Remote {
 			hosts = launchExternalAuctioneers("-natsAddrs", natsAddrs)
@@ -264,7 +265,7 @@ func ketchupNATSClient() auctiontypes.TestRepPoolClient {
 	err := natsClient.Connect(clusterInfo)
 	Ω(err).ShouldNot(HaveOccurred())
 
-	return repnatsclient.New(natsClient, timeout, runTimeout)
+	return repnatsclient.New(natsClient, timeout, runTimeout, gosteno.NewLogger("test"))
 }
 
 func startReport() {

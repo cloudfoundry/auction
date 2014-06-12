@@ -30,6 +30,12 @@ type AuctionRep struct {
 	lock     *sync.Mutex
 }
 
+type RepInstanceScoreInfo struct {
+	RemainingResources     auctiontypes.Resources
+	TotalResources         auctiontypes.Resources
+	NumInstancesForAppGuid int
+}
+
 func New(guid string, delegate AuctionRepDelegate) *AuctionRep {
 	return &AuctionRep{
 		guid:     guid,
@@ -42,53 +48,40 @@ func (rep *AuctionRep) Guid() string {
 	return rep.guid
 }
 
+// must lock here; the publicly visible operations should be atomic
 func (rep *AuctionRep) Score(instance auctiontypes.LRPAuctionInfo) (float64, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	remaining, err := rep.delegate.RemainingResources()
+	repInstanceScoreInfo, err := rep.repInstanceScoreInfo(instance)
 	if err != nil {
 		return 0, err
 	}
 
-	if !rep.hasRoomFor(instance, remaining) {
-		return 0, auctiontypes.InsufficientResources
-	}
-
-	total, err := rep.delegate.TotalResources()
-	if err != nil {
-		return 0, err
-	}
-	nInstances, err := rep.delegate.NumInstancesForAppGuid(instance.AppGuid)
+	err = rep.satisfiesConstraints(instance, repInstanceScoreInfo)
 	if err != nil {
 		return 0, err
 	}
 
-	return rep.score(remaining, total, nInstances), nil
+	return rep.score(repInstanceScoreInfo), nil
 }
 
+// must lock here; the publicly visible operations should be atomic
 func (rep *AuctionRep) ScoreThenTentativelyReserve(instance auctiontypes.LRPAuctionInfo) (float64, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	remaining, err := rep.delegate.RemainingResources()
+	repInstanceScoreInfo, err := rep.repInstanceScoreInfo(instance)
 	if err != nil {
 		return 0, err
-	}
-	if !rep.hasRoomFor(instance, remaining) {
-		return 0, auctiontypes.InsufficientResources
 	}
 
-	//score first
-	total, err := rep.delegate.TotalResources()
+	err = rep.satisfiesConstraints(instance, repInstanceScoreInfo)
 	if err != nil {
 		return 0, err
 	}
-	nInstances, err := rep.delegate.NumInstancesForAppGuid(instance.AppGuid)
-	if err != nil {
-		return 0, err
-	}
-	score := rep.score(remaining, total, nInstances)
+
+	score := rep.score(repInstanceScoreInfo)
 
 	//then reserve
 	err = rep.delegate.Reserve(instance)
@@ -99,6 +92,7 @@ func (rep *AuctionRep) ScoreThenTentativelyReserve(instance auctiontypes.LRPAuct
 	return score, nil
 }
 
+// must lock here; the publicly visible operations should be atomic
 func (rep *AuctionRep) ReleaseReservation(instance auctiontypes.LRPAuctionInfo) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
@@ -106,6 +100,7 @@ func (rep *AuctionRep) ReleaseReservation(instance auctiontypes.LRPAuctionInfo) 
 	return rep.delegate.ReleaseReservation(instance)
 }
 
+// must lock here; the publicly visible operations should be atomic
 func (rep *AuctionRep) Run(instance models.LRPStartAuction) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
@@ -113,13 +108,14 @@ func (rep *AuctionRep) Run(instance models.LRPStartAuction) error {
 	return rep.delegate.Run(instance)
 }
 
-// The following are used only in simulation
-
+// simulation-only
 func (rep *AuctionRep) TotalResources() auctiontypes.Resources {
 	totalResources, _ := rep.delegate.TotalResources()
 	return totalResources
 }
 
+// simulation-only
+// must lock here; the publicly visible operations should be atomic
 func (rep *AuctionRep) Reset() {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
@@ -132,6 +128,8 @@ func (rep *AuctionRep) Reset() {
 	simDelegate.SetLRPAuctionInfos([]auctiontypes.LRPAuctionInfo{})
 }
 
+// simulation-only
+// must lock here; the publicly visible operations should be atomic
 func (rep *AuctionRep) SetLRPAuctionInfos(instances []auctiontypes.LRPAuctionInfo) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
@@ -144,6 +142,8 @@ func (rep *AuctionRep) SetLRPAuctionInfos(instances []auctiontypes.LRPAuctionInf
 	simDelegate.SetLRPAuctionInfos(instances)
 }
 
+// simulation-only
+// must lock here; the publicly visible operations should be atomic
 func (rep *AuctionRep) LRPAuctionInfos() []auctiontypes.LRPAuctionInfo {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
@@ -156,21 +156,52 @@ func (rep *AuctionRep) LRPAuctionInfos() []auctiontypes.LRPAuctionInfo {
 	return simDelegate.LRPAuctionInfos()
 }
 
-// internals -- no locks here the operations above should be atomic
+// private internals -- no locks here
+func (rep *AuctionRep) repInstanceScoreInfo(instance auctiontypes.LRPAuctionInfo) (RepInstanceScoreInfo, error) {
+	remaining, err := rep.delegate.RemainingResources()
+	if err != nil {
+		return RepInstanceScoreInfo{}, err
+	}
 
-func (rep *AuctionRep) hasRoomFor(instance auctiontypes.LRPAuctionInfo, remaining auctiontypes.Resources) bool {
+	total, err := rep.delegate.TotalResources()
+	if err != nil {
+		return RepInstanceScoreInfo{}, err
+	}
+
+	nInstances, err := rep.delegate.NumInstancesForAppGuid(instance.AppGuid)
+	if err != nil {
+		return RepInstanceScoreInfo{}, err
+	}
+
+	return RepInstanceScoreInfo{
+		RemainingResources:     remaining,
+		TotalResources:         total,
+		NumInstancesForAppGuid: nInstances,
+	}, nil
+}
+
+// private internals -- no locks here
+func (rep *AuctionRep) satisfiesConstraints(instance auctiontypes.LRPAuctionInfo, repInstanceScoreInfo RepInstanceScoreInfo) error {
+	remaining := repInstanceScoreInfo.RemainingResources
 	hasEnoughMemory := remaining.MemoryMB >= instance.MemoryMB
 	hasEnoughDisk := remaining.DiskMB >= instance.DiskMB
 	hasEnoughContainers := remaining.Containers > 0
 
-	return hasEnoughMemory && hasEnoughDisk && hasEnoughContainers
+	if hasEnoughMemory && hasEnoughDisk && hasEnoughContainers {
+		return nil
+	} else {
+		return auctiontypes.InsufficientResources
+	}
 }
 
-func (rep *AuctionRep) score(remaining auctiontypes.Resources, total auctiontypes.Resources, nInstances int) float64 {
-	fMemory := 1.0 - float64(remaining.MemoryMB)/float64(total.MemoryMB)
-	fDisk := 1.0 - float64(remaining.DiskMB)/float64(total.DiskMB)
-	fContainers := 1.0 - float64(remaining.Containers)/float64(total.Containers)
-	fResources := (fMemory + fDisk + fContainers) / 3.0
+// private internals -- no locks here
+func (rep *AuctionRep) score(repInstanceScoreInfo RepInstanceScoreInfo) float64 {
+	remaining := repInstanceScoreInfo.RemainingResources
+	total := repInstanceScoreInfo.TotalResources
 
-	return fResources + float64(nInstances)
+	fractionUsedContainers := 1.0 - float64(remaining.Containers)/float64(total.Containers)
+	fractionUsedDisk := 1.0 - float64(remaining.DiskMB)/float64(total.DiskMB)
+	fractionUsedMemory := 1.0 - float64(remaining.MemoryMB)/float64(total.MemoryMB)
+
+	return ((fractionUsedContainers + fractionUsedDisk + fractionUsedMemory) / 3.0) + float64(repInstanceScoreInfo.NumInstancesForAppGuid)
 }

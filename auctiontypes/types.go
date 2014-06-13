@@ -57,6 +57,14 @@ type LRPAuctionInfo struct {
 	MemoryMB     int    `json:"m"`
 }
 
+type SimulatedInstance struct {
+	ProcessGuid  string
+	InstanceGuid string
+	Index        int
+	MemoryMB     int
+	DiskMB       int
+}
+
 func NewLRPAuctionInfo(info models.LRPStartAuction) LRPAuctionInfo {
 	return LRPAuctionInfo{
 		AppGuid:      info.ProcessGuid,
@@ -77,7 +85,7 @@ type TestRepPoolClient interface {
 	RepPoolClient
 
 	TotalResources(guid string) Resources
-	LRPAuctionInfos(guid string) []LRPAuctionInfo
-	SetLRPAuctionInfos(guid string, instances []LRPAuctionInfo)
+	SimulatedInstances(guid string) []SimulatedInstance
+	SetSimulatedInstances(guid string, instances []SimulatedInstance)
 	Reset(guid string)
 }

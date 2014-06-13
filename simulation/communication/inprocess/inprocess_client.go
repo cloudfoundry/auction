@@ -50,12 +50,12 @@ func (client *InprocessClient) TotalResources(guid string) auctiontypes.Resource
 	return client.reps[guid].TotalResources()
 }
 
-func (client *InprocessClient) LRPAuctionInfos(guid string) []auctiontypes.LRPAuctionInfo {
-	return client.reps[guid].LRPAuctionInfos()
+func (client *InprocessClient) SimulatedInstances(guid string) []auctiontypes.SimulatedInstance {
+	return client.reps[guid].SimulatedInstances()
 }
 
-func (client *InprocessClient) SetLRPAuctionInfos(guid string, instances []auctiontypes.LRPAuctionInfo) {
-	client.reps[guid].SetLRPAuctionInfos(instances)
+func (client *InprocessClient) SetSimulatedInstances(guid string, instances []auctiontypes.SimulatedInstance) {
+	client.reps[guid].SetSimulatedInstances(instances)
 }
 
 func (client *InprocessClient) Reset(guid string) {

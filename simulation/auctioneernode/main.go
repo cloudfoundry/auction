@@ -12,6 +12,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsclient"
+	"github.com/cloudfoundry/gosteno"
 	"github.com/cloudfoundry/yagnats"
 )
 
@@ -52,7 +53,7 @@ func main() {
 		log.Fatalln("no nats:", err)
 	}
 
-	repClient = repnatsclient.New(client, *timeout, *runTimeout)
+	repClient = repnatsclient.New(client, *timeout, *runTimeout, gosteno.NewLogger("auctioneer"))
 
 	semaphore := make(chan bool, *maxConcurrent)
 

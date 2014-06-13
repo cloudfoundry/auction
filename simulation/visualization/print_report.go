@@ -52,7 +52,7 @@ func PrintReport(client auctiontypes.TestRepPoolClient, results []auctiontypes.A
 		repString := fmt.Sprintf(guidFormat, guid)
 
 		instanceString := ""
-		instances := client.LRPAuctionInfos(guid)
+		instances := client.SimulatedInstances(guid)
 
 		availableColors := []string{"red", "cyan", "yellow", "gray", "purple", "green"}
 		colorLookup := map[string]string{"red": redColor, "green": greenColor, "cyan": cyanColor, "yellow": yellowColor, "gray": lightGrayColor, "purple": purpleColor}
@@ -61,8 +61,8 @@ func PrintReport(client auctiontypes.TestRepPoolClient, results []auctiontypes.A
 		newCounts := map[string]int{}
 		for _, instance := range instances {
 			key := "green"
-			if _, ok := colorLookup[instance.AppGuid]; ok {
-				key = instance.AppGuid
+			if _, ok := colorLookup[instance.ProcessGuid]; ok {
+				key = instance.ProcessGuid
 			}
 			if auctionedInstances[instance.InstanceGuid] {
 				newCounts[key] += 1

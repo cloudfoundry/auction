@@ -177,20 +177,20 @@ func (s *RepNatsServer) start(subjects nats.Subjects) {
 		s.client.Publish(msg.ReplyTo, successResponse)
 	})
 
-	s.client.Subscribe(subjects.SetLrpAuctionInfos, func(msg *yagnats.Message) {
-		var instances []auctiontypes.LRPAuctionInfo
+	s.client.Subscribe(subjects.SetSimulatedInstances, func(msg *yagnats.Message) {
+		var instances []auctiontypes.SimulatedInstance
 
 		err := json.Unmarshal(msg.Payload, &instances)
 		if err != nil {
 			s.client.Publish(msg.ReplyTo, errorResponse)
 		}
 
-		s.rep.SetLRPAuctionInfos(instances)
+		s.rep.SetSimulatedInstances(instances)
 		s.client.Publish(msg.ReplyTo, successResponse)
 	})
 
-	s.client.Subscribe(subjects.LrpAuctionInfos, func(msg *yagnats.Message) {
-		jinstances, _ := json.Marshal(s.rep.LRPAuctionInfos())
+	s.client.Subscribe(subjects.SimulatedInstances, func(msg *yagnats.Message) {
+		jinstances, _ := json.Marshal(s.rep.SimulatedInstances())
 		s.client.Publish(msg.ReplyTo, jinstances)
 	})
 }

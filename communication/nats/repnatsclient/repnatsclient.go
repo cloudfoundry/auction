@@ -255,10 +255,10 @@ func (rep *RepNatsClient) TotalResources(guid string) auctiontypes.Resources {
 	return totalResources
 }
 
-func (rep *RepNatsClient) LRPAuctionInfos(guid string) []auctiontypes.LRPAuctionInfo {
-	var instances []auctiontypes.LRPAuctionInfo
+func (rep *RepNatsClient) SimulatedInstances(guid string) []auctiontypes.SimulatedInstance {
+	var instances []auctiontypes.SimulatedInstance
 	subjects := nats.NewSubjects(guid)
-	err := rep.publishWithTimeout(subjects.LrpAuctionInfos, nil, &instances, rep.timeout)
+	err := rep.publishWithTimeout(subjects.SimulatedInstances, nil, &instances, rep.timeout)
 	if err != nil {
 		//test only, so panic is OK
 		panic(err)
@@ -276,9 +276,9 @@ func (rep *RepNatsClient) Reset(guid string) {
 	}
 }
 
-func (rep *RepNatsClient) SetLRPAuctionInfos(guid string, instances []auctiontypes.LRPAuctionInfo) {
+func (rep *RepNatsClient) SetSimulatedInstances(guid string, instances []auctiontypes.SimulatedInstance) {
 	subjects := nats.NewSubjects(guid)
-	err := rep.publishWithTimeout(subjects.SetLrpAuctionInfos, instances, nil, rep.timeout)
+	err := rep.publishWithTimeout(subjects.SetSimulatedInstances, instances, nil, rep.timeout)
 	if err != nil {
 		//test only, so panic is OK
 		panic(err)

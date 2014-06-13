@@ -20,8 +20,8 @@ type AuctionRepDelegate interface {
 //Used in simulation
 type SimulationAuctionRepDelegate interface {
 	AuctionRepDelegate
-	SetLRPAuctionInfos(instances []auctiontypes.LRPAuctionInfo)
-	LRPAuctionInfos() []auctiontypes.LRPAuctionInfo
+	SetSimulatedInstances(instances []auctiontypes.SimulatedInstance)
+	SimulatedInstances() []auctiontypes.SimulatedInstance
 }
 
 type AuctionRep struct {
@@ -125,12 +125,12 @@ func (rep *AuctionRep) Reset() {
 		println("not reseting")
 		return
 	}
-	simDelegate.SetLRPAuctionInfos([]auctiontypes.LRPAuctionInfo{})
+	simDelegate.SetSimulatedInstances([]auctiontypes.SimulatedInstance{})
 }
 
 // simulation-only
 // must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) SetLRPAuctionInfos(instances []auctiontypes.LRPAuctionInfo) {
+func (rep *AuctionRep) SetSimulatedInstances(instances []auctiontypes.SimulatedInstance) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
@@ -139,21 +139,21 @@ func (rep *AuctionRep) SetLRPAuctionInfos(instances []auctiontypes.LRPAuctionInf
 		println("not setting instances")
 		return
 	}
-	simDelegate.SetLRPAuctionInfos(instances)
+	simDelegate.SetSimulatedInstances(instances)
 }
 
 // simulation-only
 // must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) LRPAuctionInfos() []auctiontypes.LRPAuctionInfo {
+func (rep *AuctionRep) SimulatedInstances() []auctiontypes.SimulatedInstance {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
 	simDelegate, ok := rep.delegate.(SimulationAuctionRepDelegate)
 	if !ok {
 		println("not fetching instances")
-		return []auctiontypes.LRPAuctionInfo{}
+		return []auctiontypes.SimulatedInstance{}
 	}
-	return simDelegate.LRPAuctionInfos()
+	return simDelegate.SimulatedInstances()
 }
 
 // private internals -- no locks here

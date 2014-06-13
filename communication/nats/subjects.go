@@ -5,8 +5,8 @@ import "reflect"
 type Subjects struct {
 	TotalResources              string
 	Reset                       string
-	LrpAuctionInfos             string
-	SetLrpAuctionInfos          string
+	SimulatedInstances          string
+	SetSimulatedInstances       string
 	Score                       string
 	ScoreThenTentativelyReserve string
 	ReleaseReservation          string
@@ -15,11 +15,11 @@ type Subjects struct {
 
 func NewSubjects(guid string) Subjects {
 	return Subjects{
-		TotalResources:     guid + ".total_resources",
-		Reset:              guid + ".reset",
-		LrpAuctionInfos:    guid + ".lrp_auction_infos",
-		SetLrpAuctionInfos: guid + ".set_lrp_auction_infos",
-		Score:              guid + ".score",
+		TotalResources:        guid + ".total_resources",
+		Reset:                 guid + ".reset",
+		SimulatedInstances:    guid + ".simulated_instances",
+		SetSimulatedInstances: guid + ".set_simulated_instances",
+		Score: guid + ".score",
 		ScoreThenTentativelyReserve: guid + ".score_then_tentatively_reserve",
 		ReleaseReservation:          guid + ".release-reservation",
 		Run:                         guid + ".run",

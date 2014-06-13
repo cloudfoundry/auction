@@ -12,7 +12,7 @@ import (
 
 type SimulationRepDelegate struct {
 	lock           *sync.Mutex
-	instances      map[string]auctiontypes.LRPAuctionInfo
+	instances      map[string]auctiontypes.SimulatedInstance
 	totalResources auctiontypes.Resources
 }
 
@@ -21,7 +21,7 @@ func New(totalResources auctiontypes.Resources) auctionrep.SimulationAuctionRepD
 		totalResources: totalResources,
 
 		lock:      &sync.Mutex{},
-		instances: map[string]auctiontypes.LRPAuctionInfo{},
+		instances: map[string]auctiontypes.SimulatedInstance{},
 	}
 }
 
@@ -43,7 +43,7 @@ func (rep *SimulationRepDelegate) NumInstancesForAppGuid(guid string) (int, erro
 	n := 0
 
 	for _, instance := range rep.instances {
-		if instance.AppGuid == guid {
+		if instance.ProcessGuid == guid {
 			n += 1
 		}
 	}
@@ -65,7 +65,12 @@ func (rep *SimulationRepDelegate) Reserve(instance auctiontypes.LRPAuctionInfo) 
 		return auctiontypes.InsufficientResources
 	}
 
-	rep.instances[instance.InstanceGuid] = instance
+	rep.instances[instance.InstanceGuid] = auctiontypes.SimulatedInstance{
+		ProcessGuid:  instance.AppGuid,
+		InstanceGuid: instance.InstanceGuid,
+		MemoryMB:     instance.MemoryMB,
+		DiskMB:       instance.DiskMB,
+	}
 
 	return nil
 }
@@ -100,11 +105,11 @@ func (rep *SimulationRepDelegate) Run(instance models.LRPStartAuction) error {
 
 //simulation only
 
-func (rep *SimulationRepDelegate) SetLRPAuctionInfos(instances []auctiontypes.LRPAuctionInfo) {
+func (rep *SimulationRepDelegate) SetSimulatedInstances(instances []auctiontypes.SimulatedInstance) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	instancesMap := map[string]auctiontypes.LRPAuctionInfo{}
+	instancesMap := map[string]auctiontypes.SimulatedInstance{}
 	for _, instance := range instances {
 		instancesMap[instance.InstanceGuid] = instance
 	}
@@ -112,11 +117,11 @@ func (rep *SimulationRepDelegate) SetLRPAuctionInfos(instances []auctiontypes.LR
 	rep.instances = instancesMap
 }
 
-func (rep *SimulationRepDelegate) LRPAuctionInfos() []auctiontypes.LRPAuctionInfo {
+func (rep *SimulationRepDelegate) SimulatedInstances() []auctiontypes.SimulatedInstance {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	result := []auctiontypes.LRPAuctionInfo{}
+	result := []auctiontypes.SimulatedInstance{}
 	for _, instance := range rep.instances {
 		result = append(result, instance)
 	}

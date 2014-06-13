@@ -44,7 +44,7 @@ func NewRemoteAuctionDistributor(hosts []string, client auctiontypes.SimulationR
 	}
 }
 
-func (ad *AuctionDistributor) HoldAuctionsFor(instances []models.LRPStartAuction, representatives []string, rules auctiontypes.AuctionRules) *visualization.Report {
+func (ad *AuctionDistributor) HoldAuctionsFor(instances []models.LRPStartAuction, representatives []string, rules auctiontypes.StartAuctionRules) *visualization.Report {
 	fmt.Printf("\nStarting Auctions\n\n")
 	bar := pb.StartNew(len(instances))
 

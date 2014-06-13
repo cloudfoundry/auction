@@ -113,9 +113,9 @@ var _ = Describe("Auction", func() {
 							permutedInstances[i] = instances[index]
 						}
 
-						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctionrunner.DefaultRules)
+						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctionrunner.DefaultStartAuctionRules)
 
-						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultRules)
+						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
 
 						svgReport.DrawReportCard(i, 0, report)
 						reports = append(reports, report)
@@ -142,9 +142,9 @@ var _ = Describe("Auction", func() {
 					It("should distribute evenly", func() {
 						instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
-						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctionrunner.DefaultRules)
+						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctionrunner.DefaultStartAuctionRules)
 
-						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultRules)
+						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
 
 						svgReport.DrawReportCard(i, 1, report)
 						reports = append(reports, report)
@@ -170,9 +170,9 @@ var _ = Describe("Auction", func() {
 					It("should distribute evenly", func() {
 						instances := generateLRPStartAuctionsForAppGuid(napps[i], "red", 1)
 
-						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctionrunner.DefaultRules)
+						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctionrunner.DefaultStartAuctionRules)
 
-						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultRules)
+						visualization.PrintReport(client, report.AuctionResults, guids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
 
 						svgReport.DrawReportCard(i, 2, report)
 						reports = append(reports, report)

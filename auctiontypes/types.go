@@ -56,7 +56,7 @@ type SimulationAuctionRepDelegate interface {
 type StartAuctionRequest struct {
 	LRPStartAuction models.LRPStartAuction
 	RepGuids        RepGuids
-	Rules           AuctionRules
+	Rules           StartAuctionRules
 }
 
 type StartAuctionResult struct {
@@ -81,7 +81,7 @@ type StopAuctionResult struct {
 	Duration          time.Duration
 }
 
-type AuctionRules struct {
+type StartAuctionRules struct {
 	Algorithm      string
 	MaxRounds      int
 	MaxBiddingPool float64

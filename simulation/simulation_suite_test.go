@@ -276,7 +276,7 @@ func startReport() {
 
 func finishReport() {
 	svgReport.Done()
-	exec.Command("open", "-a", "safari", reportName).Run()
+	// exec.Command("open", "-a", "safari", reportName).Run()
 
 	reportJSONName := fmt.Sprintf("./runs/%s_%s_pool%.1f_conc%d.json", auctionrunner.DefaultRules.Algorithm, communicationMode, auctionrunner.DefaultRules.MaxBiddingPool, maxConcurrent)
 	data, err := json.Marshal(reports)

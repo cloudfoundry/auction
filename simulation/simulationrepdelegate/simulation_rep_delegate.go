@@ -51,6 +51,21 @@ func (rep *SimulationRepDelegate) NumInstancesForAppGuid(guid string) (int, erro
 	return n, nil
 }
 
+func (rep *SimulationRepDelegate) InstanceGuidsForProcessGuidAndIndex(processGuid string, index int) ([]string, error) {
+	rep.lock.Lock()
+	defer rep.lock.Unlock()
+
+	instanceGuids := []string{}
+
+	for _, instance := range rep.instances {
+		if instance.ProcessGuid == processGuid && instance.Index == index {
+			instanceGuids = append(instanceGuids, instance.InstanceGuid)
+		}
+	}
+
+	return instanceGuids, nil
+}
+
 func (rep *SimulationRepDelegate) Reserve(instance auctiontypes.LRPAuctionInfo) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
@@ -99,6 +114,20 @@ func (rep *SimulationRepDelegate) Run(instance models.LRPStartAuction) error {
 	}
 
 	//start the app asynchronously!
+
+	return nil
+}
+
+func (rep *SimulationRepDelegate) Stop(instanceGuid string) error {
+	rep.lock.Lock()
+	defer rep.lock.Unlock()
+
+	_, ok := rep.instances[instanceGuid]
+	if !ok {
+		return errors.New(fmt.Sprintf("no reservation for instance %s", instanceGuid))
+	}
+
+	delete(rep.instances, instanceGuid)
 
 	return nil
 }

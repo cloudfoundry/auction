@@ -10,7 +10,7 @@ import (
 
 type Report struct {
 	RepGuids                     []string
-	AuctionResults               []auctiontypes.AuctionResult
+	AuctionResults               []auctiontypes.StartAuctionResult
 	InstancesByRep               map[string][]auctiontypes.SimulatedInstance
 	AuctionDuration              time.Duration
 	auctionedInstancesByInstGuid map[string]bool

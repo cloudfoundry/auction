@@ -9,8 +9,8 @@ import (
 
 type FakeAuctionRunner struct {
 	lock                     *sync.Mutex
-	auctionRequest           auctiontypes.AuctionRequest
-	runLRPStartAuctionResult auctiontypes.AuctionResult
+	auctionRequest           auctiontypes.StartAuctionRequest
+	runLRPStartAuctionResult auctiontypes.StartAuctionResult
 	runLRPStartAuctionError  error
 	auctionDuration          time.Duration
 }
@@ -22,7 +22,7 @@ func NewFakeAuctionRunner(auctionDuration time.Duration) *FakeAuctionRunner {
 	}
 }
 
-func (r *FakeAuctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.AuctionRequest) (auctiontypes.AuctionResult, error) {
+func (r *FakeAuctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.StartAuctionRequest) (auctiontypes.StartAuctionResult, error) {
 	r.lock.Lock()
 	r.auctionRequest = auctionRequest
 	r.lock.Unlock()
@@ -34,7 +34,7 @@ func (r *FakeAuctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.Aucti
 	return r.runLRPStartAuctionResult, r.runLRPStartAuctionError
 }
 
-func (r *FakeAuctionRunner) SetStartAuctionResult(result auctiontypes.AuctionResult) {
+func (r *FakeAuctionRunner) SetStartAuctionResult(result auctiontypes.StartAuctionResult) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	r.runLRPStartAuctionResult = result
@@ -46,7 +46,7 @@ func (r *FakeAuctionRunner) SetStartAuctionError(err error) {
 	r.runLRPStartAuctionError = err
 }
 
-func (r *FakeAuctionRunner) GetStartAuctionRequest() auctiontypes.AuctionRequest {
+func (r *FakeAuctionRunner) GetStartAuctionRequest() auctiontypes.StartAuctionRequest {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 

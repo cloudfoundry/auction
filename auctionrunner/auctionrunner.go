@@ -25,8 +25,8 @@ func New(client auctiontypes.RepPoolClient) *auctionRunner {
 	}
 }
 
-func (a *auctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.AuctionRequest) (auctiontypes.AuctionResult, error) {
-	result := auctiontypes.AuctionResult{
+func (a *auctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.StartAuctionRequest) (auctiontypes.StartAuctionResult, error) {
+	result := auctiontypes.StartAuctionResult{
 		LRPStartAuction: auctionRequest.LRPStartAuction,
 	}
 
@@ -54,4 +54,8 @@ func (a *auctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.AuctionRe
 	}
 
 	return result, nil
+}
+
+func (a *auctionRunner) RunLRPStopAuction(auctionRequest auctiontypes.StopAuctionRequest) {
+	stopAuction(a.client, auctionRequest)
 }

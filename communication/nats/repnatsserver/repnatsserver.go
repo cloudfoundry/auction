@@ -87,6 +87,40 @@ func (s *RepNatsServer) start(subjects nats.Subjects) {
 		response.Score = score
 	})
 
+	s.client.Subscribe(subjects.StopScore, func(msg *yagnats.Message) {
+		s.logger.Infod(map[string]interface{}{
+			"guid": s.guid,
+		}, "rep-nats-server.stop-score.handling")
+		var stopAuctionInfo auctiontypes.LRPStopAuctionInfo
+
+		err := json.Unmarshal(msg.Payload, &stopAuctionInfo)
+		if err != nil {
+			s.logger.Errord(map[string]interface{}{
+				"error": err.Error(),
+				"guid":  s.guid,
+			}, "rep-nats-server.stop-score.failed-to-unmarshal-auction-info")
+			return
+		}
+
+		response := auctiontypes.StopScoreResult{
+			Rep: s.guid,
+		}
+
+		defer func() {
+			payload, _ := json.Marshal(response)
+			s.client.Publish(msg.ReplyTo, payload)
+		}()
+
+		score, instanceGuids, err := s.rep.StopScore(stopAuctionInfo)
+		if err != nil {
+			response.Error = err.Error()
+			return
+		}
+
+		response.Score = score
+		response.InstanceGuids = instanceGuids
+	})
+
 	s.client.Subscribe(subjects.ScoreThenTentativelyReserve, func(msg *yagnats.Message) {
 		s.logger.Infod(map[string]interface{}{
 			"guid": s.guid,
@@ -166,6 +200,31 @@ func (s *RepNatsServer) start(subjects nats.Subjects) {
 		}
 
 		s.rep.Run(inst) //need to handle error
+
+		responsePayload = successResponse
+	})
+
+	s.client.Subscribe(subjects.Stop, func(msg *yagnats.Message) {
+		s.logger.Infod(map[string]interface{}{
+			"guid": s.guid,
+		}, "rep-nats-server.stop.handling")
+		var instanceGuid string
+
+		responsePayload := errorResponse
+		defer func() {
+			s.client.Publish(msg.ReplyTo, responsePayload)
+		}()
+
+		err := json.Unmarshal(msg.Payload, &instanceGuid)
+		if err != nil {
+			s.logger.Errord(map[string]interface{}{
+				"error": err.Error(),
+				"guid":  s.guid,
+			}, "rep-nats-server.stop.failed-to-unmarshal-auction-info")
+			return
+		}
+
+		s.rep.Stop(instanceGuid) //need to handle error
 
 		responsePayload = successResponse
 	})

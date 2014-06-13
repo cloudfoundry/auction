@@ -8,21 +8,25 @@ type Subjects struct {
 	SimulatedInstances          string
 	SetSimulatedInstances       string
 	Score                       string
+	StopScore                   string
 	ScoreThenTentativelyReserve string
 	ReleaseReservation          string
 	Run                         string
+	Stop                        string
 }
 
 func NewSubjects(guid string) Subjects {
 	return Subjects{
-		TotalResources:        guid + ".total_resources",
+		TotalResources:        guid + ".total-resources",
 		Reset:                 guid + ".reset",
-		SimulatedInstances:    guid + ".simulated_instances",
-		SetSimulatedInstances: guid + ".set_simulated_instances",
-		Score: guid + ".score",
-		ScoreThenTentativelyReserve: guid + ".score_then_tentatively_reserve",
+		SimulatedInstances:    guid + ".simulated-instances",
+		SetSimulatedInstances: guid + ".set-simulated-instances",
+		Score:                       guid + ".score",
+		StopScore:                   guid + ".stop-score",
+		ScoreThenTentativelyReserve: guid + ".score-then-tentatively-reserve",
 		ReleaseReservation:          guid + ".release-reservation",
 		Run:                         guid + ".run",
+		Stop:                        guid + ".stop",
 	}
 }
 

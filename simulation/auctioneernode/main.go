@@ -57,13 +57,13 @@ func main() {
 
 	semaphore := make(chan bool, *maxConcurrent)
 
-	http.HandleFunc("/auction", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/start-auction", func(w http.ResponseWriter, r *http.Request) {
 		semaphore <- true
 		defer func() {
 			<-semaphore
 		}()
 
-		var auctionRequest auctiontypes.AuctionRequest
+		var auctionRequest auctiontypes.StartAuctionRequest
 		err := json.NewDecoder(r.Body).Decode(&auctionRequest)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -71,6 +71,25 @@ func main() {
 		}
 
 		auctionResult, _ := auctionrunner.New(repClient).RunLRPStartAuction(auctionRequest)
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(auctionResult)
+	})
+
+	http.HandleFunc("/stop-auction", func(w http.ResponseWriter, r *http.Request) {
+		semaphore <- true
+		defer func() {
+			<-semaphore
+		}()
+
+		var auctionRequest auctiontypes.StopAuctionRequest
+		err := json.NewDecoder(r.Body).Decode(&auctionRequest)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		auctionResult, _ := auctionrunner.New(repClient).RunLRPStopAuction(auctionRequest)
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(auctionResult)

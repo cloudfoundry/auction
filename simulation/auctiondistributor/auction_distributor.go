@@ -2,6 +2,7 @@ package auctiondistributor
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/cheggaaa/pb"
@@ -11,12 +12,14 @@ import (
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
-type AuctionCommunicator func(auctiontypes.AuctionRequest) (auctiontypes.AuctionResult, error)
+type StartAuctionCommunicator func(auctiontypes.StartAuctionRequest) (auctiontypes.StartAuctionResult, error)
+type StopAuctionCommunicator func(auctiontypes.StopAuctionRequest)
 
 type AuctionDistributor struct {
-	client        auctiontypes.TestRepPoolClient
-	communicator  AuctionCommunicator
-	maxConcurrent int
+	client            auctiontypes.TestRepPoolClient
+	startCommunicator StartAuctionCommunicator
+	stopCommunicator  StopAuctionCommunicator
+	maxConcurrent     int
 }
 
 func NewInProcessAuctionDistributor(client auctiontypes.TestRepPoolClient, maxConcurrent int) *AuctionDistributor {
@@ -24,17 +27,21 @@ func NewInProcessAuctionDistributor(client auctiontypes.TestRepPoolClient, maxCo
 	return &AuctionDistributor{
 		client:        client,
 		maxConcurrent: maxConcurrent,
-		communicator: func(auctionRequest auctiontypes.AuctionRequest) (auctiontypes.AuctionResult, error) {
+		startCommunicator: func(auctionRequest auctiontypes.StartAuctionRequest) (auctiontypes.StartAuctionResult, error) {
 			return auctionRunner.RunLRPStartAuction(auctionRequest)
+		},
+		stopCommunicator: func(auctionRequest auctiontypes.StopAuctionRequest) {
+			auctionRunner.RunLRPStopAuction(auctionRequest)
 		},
 	}
 }
 
 func NewRemoteAuctionDistributor(hosts []string, client auctiontypes.TestRepPoolClient, maxConcurrent int) *AuctionDistributor {
 	return &AuctionDistributor{
-		client:        client,
-		maxConcurrent: maxConcurrent,
-		communicator:  newHttpRemoteAuctions(hosts).RemoteAuction,
+		client:            client,
+		maxConcurrent:     maxConcurrent,
+		startCommunicator: newHttpRemoteAuctions(hosts).RemoteStartAuction,
+		stopCommunicator:  newHttpRemoteAuctions(hosts).RemoteStopAuction,
 	}
 }
 
@@ -44,11 +51,11 @@ func (ad *AuctionDistributor) HoldAuctionsFor(instances []models.LRPStartAuction
 
 	t := time.Now()
 	semaphore := make(chan bool, ad.maxConcurrent)
-	c := make(chan auctiontypes.AuctionResult)
+	c := make(chan auctiontypes.StartAuctionResult)
 	for _, inst := range instances {
 		go func(inst models.LRPStartAuction) {
 			semaphore <- true
-			result, _ := ad.communicator(auctiontypes.AuctionRequest{
+			result, _ := ad.startCommunicator(auctiontypes.StartAuctionRequest{
 				LRPStartAuction: inst,
 				RepGuids:        representatives,
 				Rules:           rules,
@@ -59,7 +66,7 @@ func (ad *AuctionDistributor) HoldAuctionsFor(instances []models.LRPStartAuction
 		}(inst)
 	}
 
-	results := []auctiontypes.AuctionResult{}
+	results := []auctiontypes.StartAuctionResult{}
 	for _ = range instances {
 		results = append(results, <-c)
 		bar.Increment()
@@ -76,4 +83,20 @@ func (ad *AuctionDistributor) HoldAuctionsFor(instances []models.LRPStartAuction
 	}
 
 	return report
+}
+
+func (ad *AuctionDistributor) HoldStopAuctions(stopAuctions []models.LRPStopAuction, representatives []string) {
+	wg := &sync.WaitGroup{}
+	wg.Add(len(stopAuctions))
+	for _, stopAuction := range stopAuctions {
+		go func(stopAuction models.LRPStopAuction) {
+			ad.stopCommunicator(auctiontypes.StopAuctionRequest{
+				LRPStopAuction: stopAuction,
+				RepGuids:       representatives,
+			})
+			wg.Done()
+		}(stopAuction)
+	}
+
+	wg.Wait()
 }

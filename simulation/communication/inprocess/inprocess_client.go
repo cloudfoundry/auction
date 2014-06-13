@@ -85,6 +85,43 @@ func (client *InprocessClient) score(guid string, instance auctiontypes.LRPAucti
 	return
 }
 
+func (client *InprocessClient) stopScore(guid string, auctionInfo auctiontypes.LRPStopAuctionInfo, c chan auctiontypes.StopScoreResult) {
+	result := auctiontypes.StopScoreResult{
+		Rep: guid,
+	}
+	defer func() {
+		c <- result
+	}()
+
+	if client.beSlowAndPossiblyTimeout(guid) {
+		result.Error = "timeout"
+		return
+	}
+
+	score, instanceGuids, err := client.reps[guid].StopScore(auctionInfo)
+	if err != nil {
+		result.Error = err.Error()
+		return
+	}
+
+	result.InstanceGuids = instanceGuids
+	result.Score = score
+}
+
+func (client *InprocessClient) StopScore(representatives []string, stopAuctionInfo auctiontypes.LRPStopAuctionInfo) auctiontypes.StopScoreResults {
+	c := make(chan auctiontypes.StopScoreResult)
+	for _, guid := range representatives {
+		go client.stopScore(guid, stopAuctionInfo, c)
+	}
+
+	results := auctiontypes.StopScoreResults{}
+	for _ = range representatives {
+		results = append(results, <-c)
+	}
+
+	return results
+}
+
 func (client *InprocessClient) Score(representatives []string, instance auctiontypes.LRPAuctionInfo) auctiontypes.ScoreResults {
 	c := make(chan auctiontypes.ScoreResult)
 	for _, guid := range representatives {
@@ -155,4 +192,10 @@ func (client *InprocessClient) Run(guid string, instance models.LRPStartAuction)
 	client.beSlowAndPossiblyTimeout(guid)
 
 	client.reps[guid].Run(instance)
+}
+
+func (client *InprocessClient) Stop(guid string, instanceGuid string) {
+	client.beSlowAndPossiblyTimeout(guid)
+
+	client.reps[guid].Stop(instanceGuid)
 }

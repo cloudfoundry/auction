@@ -10,51 +10,71 @@ import (
 var InsufficientResources = errors.New("insufficient resources for instance")
 
 type AuctionRunner interface {
-	RunLRPStartAuction(auctionRequest AuctionRequest) (AuctionResult, error)
+	RunLRPStartAuction(auctionRequest StartAuctionRequest) (StartAuctionResult, error)
+	RunLRPStopAuction(auctionRequest StopAuctionRequest)
 }
 
-type AuctionRequest struct {
-	LRPStartAuction models.LRPStartAuction `json:"a"`
-	RepGuids        RepGuids               `json:"rg"`
-	Rules           AuctionRules           `json:"r"`
+type StartAuctionRequest struct {
+	LRPStartAuction models.LRPStartAuction
+	RepGuids        RepGuids
+	Rules           AuctionRules
 }
 
-type AuctionResult struct {
-	LRPStartAuction   models.LRPStartAuction `json:"i"`
-	Winner            string                 `json:"w"`
-	NumRounds         int                    `json:"nr"`
-	NumCommunications int                    `json:"nc"`
-	BiddingDuration   time.Duration          `json:"bd"`
-	Duration          time.Duration          `json:"d"`
+type StartAuctionResult struct {
+	LRPStartAuction   models.LRPStartAuction
+	Winner            string
+	NumRounds         int
+	NumCommunications int
+	BiddingDuration   time.Duration
+	Duration          time.Duration
+}
+
+type StopAuctionRequest struct {
+	LRPStopAuction models.LRPStopAuction
+	RepGuids       RepGuids
 }
 
 type AuctionRules struct {
-	Algorithm      string  `json:"alg"`
-	MaxRounds      int     `json:"mr"`
-	MaxBiddingPool float64 `json:"mb"`
+	Algorithm      string
+	MaxRounds      int
+	MaxBiddingPool float64
 }
 
 type RepGuids []string
 
 type ScoreResult struct {
-	Rep   string  `json:"r"`
-	Score float64 `json:"s"`
-	Error string  `json:"e"`
+	Rep   string
+	Score float64
+	Error string
 }
 
 type ScoreResults []ScoreResult
 
+type StopScoreResult struct {
+	Rep           string
+	InstanceGuids []string
+	Score         float64
+	Error         string
+}
+
+type StopScoreResults []StopScoreResult
+
 type Resources struct {
-	DiskMB     int `json:"d"`
-	MemoryMB   int `json:"m"`
-	Containers int `json:"c,omitempty"`
+	DiskMB     int
+	MemoryMB   int
+	Containers int
 }
 
 type LRPAuctionInfo struct {
-	AppGuid      string `json:"a"`
-	InstanceGuid string `json:"i"`
-	DiskMB       int    `json:"d"`
-	MemoryMB     int    `json:"m"`
+	AppGuid      string
+	InstanceGuid string
+	DiskMB       int
+	MemoryMB     int
+}
+
+type LRPStopAuctionInfo struct {
+	ProcessGuid string
+	Index       int
 }
 
 type SimulatedInstance struct {
@@ -76,9 +96,11 @@ func NewLRPAuctionInfo(info models.LRPStartAuction) LRPAuctionInfo {
 
 type RepPoolClient interface {
 	Score(guids []string, instance LRPAuctionInfo) ScoreResults
+	StopScore(guids []string, stopAuctionInfo LRPStopAuctionInfo) StopScoreResults
 	ScoreThenTentativelyReserve(guids []string, instance LRPAuctionInfo) ScoreResults
 	ReleaseReservation(guids []string, instance LRPAuctionInfo)
 	Run(guid string, instance models.LRPStartAuction)
+	Stop(guid string, instanceGuid string)
 }
 
 type TestRepPoolClient interface {

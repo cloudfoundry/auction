@@ -9,7 +9,7 @@ Tell the subset of reps to reserve
         Tell the winner to run and the others to release
 
 */
-func allReserveAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) (string, int, int) {
+func allReserveAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
 	auctionInfo := auctiontypes.NewLRPAuctionInfo(auctionRequest.LRPStartAuction)
 

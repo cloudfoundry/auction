@@ -74,7 +74,8 @@ func (rep *RepNatsClient) Score(guids []string, instance auctiontypes.LRPAuction
 	payload, _ := json.Marshal(instance)
 
 	for _, guid := range guids {
-		rep.client.PublishWithReplyTo(guid+".score", replyTo, payload)
+		subjects := nats.NewSubjects(guid)
+		rep.client.PublishWithReplyTo(subjects.Score, replyTo, payload)
 	}
 
 	done := make(chan struct{})
@@ -105,6 +106,83 @@ func (rep *RepNatsClient) Score(guids []string, instance auctiontypes.LRPAuction
 		"num-rep-guids":       len(guids),
 		"num-scores-received": len(results),
 	}, "rep-nats-client.score.fetched")
+
+	return results
+}
+
+func (rep *RepNatsClient) StopScore(guids []string, stopAuctionInfo auctiontypes.LRPStopAuctionInfo) auctiontypes.StopScoreResults {
+	rep.logger.Infod(map[string]interface{}{
+		"stop-auction-info": stopAuctionInfo,
+		"num-rep-guids":     len(guids),
+	}, "rep-nats-client.stop-score.fetching")
+
+	replyTo := util.RandomGuid()
+
+	allReceived := new(sync.WaitGroup)
+	allReceived.Add(len(guids))
+	responses := make(chan auctiontypes.StopScoreResult, len(guids))
+
+	n := 0
+	subscriptionID, err := rep.client.Subscribe(replyTo, func(msg *yagnats.Message) {
+		n++
+		defer allReceived.Done()
+		var result auctiontypes.StopScoreResult
+		err := json.Unmarshal(msg.Payload, &result)
+		if err != nil {
+			rep.logger.Infod(map[string]interface{}{
+				"unparseable-message": msg.Payload,
+				"error":               err.Error(),
+			}, "rep-nats-client.stop-score.failed-to-parse-message")
+			return
+		}
+
+		responses <- result
+	})
+
+	if err != nil {
+		rep.logger.Errord(map[string]interface{}{
+			"error": err.Error(),
+		}, "rep-nats-client.stop-score.failed-to-fetch")
+		return []auctiontypes.StopScoreResult{}
+	}
+
+	defer rep.client.Unsubscribe(subscriptionID)
+
+	payload, _ := json.Marshal(stopAuctionInfo)
+
+	for _, guid := range guids {
+		subjects := nats.NewSubjects(guid)
+		rep.client.PublishWithReplyTo(subjects.StopScore, replyTo, payload)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		allReceived.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(rep.timeout):
+		rep.logger.Info("rep-nats-client.stop-score.did-not-receive-all-scores")
+	}
+
+	results := auctiontypes.StopScoreResults{}
+
+	for {
+		select {
+		case res := <-responses:
+			results = append(results, res)
+		default:
+			return results
+		}
+	}
+
+	rep.logger.Infod(map[string]interface{}{
+		"stop-auction-info":   stopAuctionInfo,
+		"num-rep-guids":       len(guids),
+		"num-scores-received": len(results),
+	}, "rep-nats-client.stop-score.fetched")
 
 	return results
 }
@@ -200,6 +278,29 @@ func (rep *RepNatsClient) Run(guid string, instance models.LRPStartAuction) {
 		"auction-info": instance,
 		"rep-guid":     guid,
 	}, "rep-nats-client.run.done")
+}
+
+func (rep *RepNatsClient) Stop(guid string, instanceGuid string) {
+	rep.logger.Infod(map[string]interface{}{
+		"instance-guid": instanceGuid,
+		"rep-guid":      guid,
+	}, "rep-nats-client.stop.starting")
+
+	subjects := nats.NewSubjects(guid)
+	err := rep.publishWithTimeout(subjects.Stop, instanceGuid, nil, rep.timeout)
+
+	if err != nil {
+		rep.logger.Errord(map[string]interface{}{
+			"error":         err.Error(),
+			"instance-guid": instanceGuid,
+			"rep-guid":      guid,
+		}, "rep-nats-client.stop.failed")
+	}
+
+	rep.logger.Infod(map[string]interface{}{
+		"instance-guid": instanceGuid,
+		"rep-guid":      guid,
+	}, "rep-nats-client.stop.done")
 }
 
 func (rep *RepNatsClient) publishWithTimeout(subject string, req interface{}, resp interface{}, timeout time.Duration) (err error) {

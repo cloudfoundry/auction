@@ -11,7 +11,7 @@ Get the scores from the subset of reps
 
 */
 
-func allRescoreAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.AuctionRequest) (string, int, int) {
+func allRescoreAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
 	auctionInfo := auctiontypes.NewLRPAuctionInfo(auctionRequest.LRPStartAuction)
 

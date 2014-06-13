@@ -19,7 +19,7 @@ const grayColor = "\x1b[90m"
 const lightGrayColor = "\x1b[37m"
 const purpleColor = "\x1b[35m"
 
-func PrintReport(client auctiontypes.TestRepPoolClient, results []auctiontypes.AuctionResult, representatives []string, duration time.Duration, rules auctiontypes.AuctionRules) {
+func PrintReport(client auctiontypes.TestRepPoolClient, results []auctiontypes.StartAuctionResult, representatives []string, duration time.Duration, rules auctiontypes.AuctionRules) {
 	roundsDistribution := map[int]int{}
 	auctionedInstances := map[string]bool{}
 

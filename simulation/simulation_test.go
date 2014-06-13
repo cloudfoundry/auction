@@ -8,16 +8,21 @@ import (
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 )
+
+func init() {
+	format.MaxDepth = 1
+}
 
 var _ = Ω
 
 var _ = Describe("Auction", func() {
 	var initialDistributions map[int][]auctiontypes.SimulatedInstance
 
-	newSimulatedInstance := func(appGuid string, index int, memoryMB int) auctiontypes.SimulatedInstance {
+	newSimulatedInstance := func(processGuid string, index int, memoryMB int) auctiontypes.SimulatedInstance {
 		return auctiontypes.SimulatedInstance{
-			ProcessGuid:  appGuid,
+			ProcessGuid:  processGuid,
 			InstanceGuid: util.NewGuid("INS"),
 			Index:        index,
 			MemoryMB:     memoryMB,
@@ -29,6 +34,14 @@ var _ = Describe("Auction", func() {
 		instances := []auctiontypes.SimulatedInstance{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newSimulatedInstance(util.NewGrayscaleGuid("AAA"), index, memoryMB))
+		}
+		return instances
+	}
+
+	generateSimulatedInstancesForProcessGuid := func(processGuid string, numInstances int, index int, memoryMB int) []auctiontypes.SimulatedInstance {
+		instances := []auctiontypes.SimulatedInstance{}
+		for i := 0; i < numInstances; i++ {
+			instances = append(instances, newSimulatedInstance(processGuid, index, memoryMB))
 		}
 		return instances
 	}
@@ -171,6 +184,124 @@ var _ = Describe("Auction", func() {
 					})
 				})
 			}
+		})
+
+		Context("Shutting down duplicate instances", func() {
+			processGuid := util.NewGrayscaleGuid("AAA")
+
+			Context("when there are duplicate instances on executors with disaparate resource availabilities", func() {
+				BeforeEach(func() {
+					initialDistributions[0] = generateUniqueSimulatedInstances(50, 0, 1)
+					initialDistributions[0] = append(initialDistributions[0], generateSimulatedInstancesForProcessGuid(processGuid, 1, 0, 1)...)
+
+					initialDistributions[1] = generateUniqueSimulatedInstances(30, 0, 1)
+					initialDistributions[1] = append(initialDistributions[1], generateSimulatedInstancesForProcessGuid(processGuid, 1, 0, 1)...)
+				})
+
+				It("should favor removing the instance from the heavy-laden executor", func() {
+					stopAuctions := []models.LRPStopAuction{
+						{
+							ProcessGuid: processGuid,
+							Index:       0,
+						},
+					}
+
+					auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+
+					instancesOn0 := client.SimulatedInstances(guids[0])
+					instancesOn1 := client.SimulatedInstances(guids[1])
+
+					Ω(instancesOn0).Should(HaveLen(50))
+					Ω(instancesOn1).Should(HaveLen(31))
+				})
+			})
+
+			Context("when the executor with more available resources already has another instance of the app running", func() {
+				BeforeEach(func() {
+					initialDistributions[0] = generateUniqueSimulatedInstances(50, 0, 1)
+					initialDistributions[0] = append(initialDistributions[0], generateSimulatedInstancesForProcessGuid(processGuid, 1, 0, 1)...)
+
+					initialDistributions[1] = generateUniqueSimulatedInstances(30, 0, 1)
+					initialDistributions[1] = append(initialDistributions[1], generateSimulatedInstancesForProcessGuid(processGuid, 1, 0, 1)...)
+					initialDistributions[1] = append(initialDistributions[1], generateSimulatedInstancesForProcessGuid(processGuid, 1, 1, 1)...)
+				})
+
+				It("should favor leaving the instance on the more heavy-laden executor", func() {
+					stopAuctions := []models.LRPStopAuction{
+						{
+							ProcessGuid: processGuid,
+							Index:       0,
+						},
+					}
+
+					auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+
+					instancesOn0 := client.SimulatedInstances(guids[0])
+					instancesOn1 := client.SimulatedInstances(guids[1])
+
+					Ω(instancesOn0).Should(HaveLen(51))
+					Ω(instancesOn1).Should(HaveLen(31))
+				})
+			})
+
+			Context("when the executor with fewer available resources has two instances running", func() {
+				BeforeEach(func() {
+					initialDistributions[0] = generateUniqueSimulatedInstances(50, 0, 1)
+					initialDistributions[0] = append(initialDistributions[0], generateSimulatedInstancesForProcessGuid(processGuid, 1, 0, 1)...)
+
+					initialDistributions[1] = generateUniqueSimulatedInstances(30, 0, 1)
+					initialDistributions[1] = append(initialDistributions[1], generateSimulatedInstancesForProcessGuid(processGuid, 2, 0, 1)...)
+				})
+
+				It("should favor removing the instance from the heavy-laden executor", func() {
+					stopAuctions := []models.LRPStopAuction{
+						{
+							ProcessGuid: processGuid,
+							Index:       0,
+						},
+					}
+
+					auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+
+					instancesOn0 := client.SimulatedInstances(guids[0])
+					instancesOn1 := client.SimulatedInstances(guids[1])
+
+					Ω(instancesOn0).Should(HaveLen(50))
+					Ω(instancesOn1).Should(HaveLen(31))
+				})
+			})
+
+			Context("when there are very many duplicate instances out there", func() {
+				BeforeEach(func() {
+					initialDistributions[0] = generateSimulatedInstancesForProcessGuid(processGuid, 50, 0, 1)
+					initialDistributions[0] = append(initialDistributions[0], generateSimulatedInstancesForProcessGuid(processGuid, 90-50, 1, 1)...)
+
+					initialDistributions[1] = generateSimulatedInstancesForProcessGuid(processGuid, 30, 0, 1)
+					initialDistributions[1] = append(initialDistributions[1], generateSimulatedInstancesForProcessGuid(processGuid, 90-30, 1, 1)...)
+
+					initialDistributions[2] = generateSimulatedInstancesForProcessGuid(processGuid, 70, 0, 1)
+					initialDistributions[2] = append(initialDistributions[2], generateSimulatedInstancesForProcessGuid(processGuid, 90-70, 1, 1)...)
+				})
+
+				It("should stop all but 1", func() {
+					stopAuctions := []models.LRPStopAuction{
+						{
+							ProcessGuid: processGuid,
+							Index:       1,
+						},
+					}
+
+					auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+
+					instancesOn0 := client.SimulatedInstances(guids[0])
+					instancesOn1 := client.SimulatedInstances(guids[1])
+					instancesOn2 := client.SimulatedInstances(guids[2])
+
+					Ω(instancesOn0).Should(HaveLen(50))
+					Ω(instancesOn1).Should(HaveLen(31))
+					Ω(instancesOn2).Should(HaveLen(70))
+				})
+			})
 		})
 	})
 })

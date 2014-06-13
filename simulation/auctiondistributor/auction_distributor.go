@@ -15,13 +15,13 @@ type StartAuctionCommunicator func(auctiontypes.StartAuctionRequest) (auctiontyp
 type StopAuctionCommunicator func(auctiontypes.StopAuctionRequest) (auctiontypes.StopAuctionResult, error)
 
 type AuctionDistributor struct {
-	client            auctiontypes.TestRepPoolClient
+	client            auctiontypes.SimulationRepPoolClient
 	startCommunicator StartAuctionCommunicator
 	stopCommunicator  StopAuctionCommunicator
 	maxConcurrent     int
 }
 
-func NewInProcessAuctionDistributor(client auctiontypes.TestRepPoolClient, maxConcurrent int) *AuctionDistributor {
+func NewInProcessAuctionDistributor(client auctiontypes.SimulationRepPoolClient, maxConcurrent int) *AuctionDistributor {
 	auctionRunner := auctionrunner.New(client)
 	return &AuctionDistributor{
 		client:        client,
@@ -35,7 +35,7 @@ func NewInProcessAuctionDistributor(client auctiontypes.TestRepPoolClient, maxCo
 	}
 }
 
-func NewRemoteAuctionDistributor(hosts []string, client auctiontypes.TestRepPoolClient, maxConcurrent int) *AuctionDistributor {
+func NewRemoteAuctionDistributor(hosts []string, client auctiontypes.SimulationRepPoolClient, maxConcurrent int) *AuctionDistributor {
 	return &AuctionDistributor{
 		client:            client,
 		maxConcurrent:     maxConcurrent,

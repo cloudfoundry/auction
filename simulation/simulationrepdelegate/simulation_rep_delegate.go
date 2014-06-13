@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-
-	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
@@ -16,7 +14,7 @@ type SimulationRepDelegate struct {
 	totalResources auctiontypes.Resources
 }
 
-func New(totalResources auctiontypes.Resources) auctionrep.SimulationAuctionRepDelegate {
+func New(totalResources auctiontypes.Resources) auctiontypes.SimulationAuctionRepDelegate {
 	return &SimulationRepDelegate{
 		totalResources: totalResources,
 

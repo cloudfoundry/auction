@@ -8,28 +8,9 @@ import (
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
-type AuctionRepDelegate interface {
-	RemainingResources() (auctiontypes.Resources, error)
-	TotalResources() (auctiontypes.Resources, error)
-	NumInstancesForAppGuid(guid string) (int, error)
-	InstanceGuidsForProcessGuidAndIndex(guid string, index int) ([]string, error)
-
-	Reserve(instance auctiontypes.LRPAuctionInfo) error
-	ReleaseReservation(instance auctiontypes.LRPAuctionInfo) error
-	Run(instance models.LRPStartAuction) error
-	Stop(instanceGuid string) error
-}
-
-//Used in simulation
-type SimulationAuctionRepDelegate interface {
-	AuctionRepDelegate
-	SetSimulatedInstances(instances []auctiontypes.SimulatedInstance)
-	SimulatedInstances() []auctiontypes.SimulatedInstance
-}
-
 type AuctionRep struct {
 	guid     string
-	delegate AuctionRepDelegate
+	delegate auctiontypes.AuctionRepDelegate
 	lock     *sync.Mutex
 }
 
@@ -44,7 +25,7 @@ type RepStopIndexScoreInfo struct {
 	InstanceGuidsForProcessIndex []string
 }
 
-func New(guid string, delegate AuctionRepDelegate) *AuctionRep {
+func New(guid string, delegate auctiontypes.AuctionRepDelegate) *AuctionRep {
 	return &AuctionRep{
 		guid:     guid,
 		delegate: delegate,
@@ -154,7 +135,7 @@ func (rep *AuctionRep) Reset() {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	simDelegate, ok := rep.delegate.(SimulationAuctionRepDelegate)
+	simDelegate, ok := rep.delegate.(auctiontypes.SimulationAuctionRepDelegate)
 	if !ok {
 		println("not reseting")
 		return
@@ -168,7 +149,7 @@ func (rep *AuctionRep) SetSimulatedInstances(instances []auctiontypes.SimulatedI
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	simDelegate, ok := rep.delegate.(SimulationAuctionRepDelegate)
+	simDelegate, ok := rep.delegate.(auctiontypes.SimulationAuctionRepDelegate)
 	if !ok {
 		println("not setting instances")
 		return
@@ -182,7 +163,7 @@ func (rep *AuctionRep) SimulatedInstances() []auctiontypes.SimulatedInstance {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	simDelegate, ok := rep.delegate.(SimulationAuctionRepDelegate)
+	simDelegate, ok := rep.delegate.(auctiontypes.SimulationAuctionRepDelegate)
 	if !ok {
 		println("not fetching instances")
 		return []auctiontypes.SimulatedInstance{}

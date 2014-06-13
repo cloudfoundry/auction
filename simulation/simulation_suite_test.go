@@ -59,7 +59,7 @@ var reports []*visualization.Report
 
 var sessionsToTerminate []*gexec.Session
 var natsRunner *natsrunner.NATSRunner
-var client auctiontypes.TestRepPoolClient
+var client auctiontypes.SimulationRepPoolClient
 var guids []string
 
 func init() {
@@ -138,7 +138,7 @@ var _ = AfterSuite(func() {
 	}
 })
 
-func buildInProcessReps() (auctiontypes.TestRepPoolClient, []string) {
+func buildInProcessReps() (auctiontypes.SimulationRepPoolClient, []string) {
 	inprocess.LatencyMin = 1 * time.Millisecond
 	inprocess.LatencyMax = 2 * time.Millisecond
 	inprocess.Timeout = 50 * time.Millisecond
@@ -247,7 +247,7 @@ func ketchupAuctioneerHosts() []string {
 	}
 }
 
-func ketchupNATSClient() auctiontypes.TestRepPoolClient {
+func ketchupNATSClient() auctiontypes.SimulationRepPoolClient {
 	natsAddrs := []string{
 		"10.10.50.20:4222",
 		"10.10.114.20:4222",

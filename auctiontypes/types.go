@@ -3,7 +3,6 @@ package auctiontypes
 import (
 	"errors"
 	"time"
-
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
@@ -13,6 +12,44 @@ var NothingToStop = errors.New("found nothing to stop")
 type AuctionRunner interface {
 	RunLRPStartAuction(auctionRequest StartAuctionRequest) (StartAuctionResult, error)
 	RunLRPStopAuction(auctionRequest StopAuctionRequest) (StopAuctionResult, error)
+}
+
+type RepPoolClient interface {
+	Score(guids []string, instance LRPAuctionInfo) ScoreResults
+	StopScore(guids []string, stopAuctionInfo LRPStopAuctionInfo) StopScoreResults
+	ScoreThenTentativelyReserve(guids []string, instance LRPAuctionInfo) ScoreResults
+	ReleaseReservation(guids []string, instance LRPAuctionInfo)
+	Run(guid string, instance models.LRPStartAuction)
+	Stop(guid string, instanceGuid string)
+}
+
+type AuctionRepDelegate interface {
+	RemainingResources() (Resources, error)
+	TotalResources() (Resources, error)
+	NumInstancesForAppGuid(guid string) (int, error)
+	InstanceGuidsForProcessGuidAndIndex(guid string, index int) ([]string, error)
+
+	Reserve(instance LRPAuctionInfo) error
+	ReleaseReservation(instance LRPAuctionInfo) error
+	Run(instance models.LRPStartAuction) error
+	Stop(instanceGuid string) error
+}
+
+//Used in simulation
+type SimulationRepPoolClient interface {
+	RepPoolClient
+
+	TotalResources(guid string) Resources
+	SimulatedInstances(guid string) []SimulatedInstance
+	SetSimulatedInstances(guid string, instances []SimulatedInstance)
+	Reset(guid string)
+}
+
+//Used in simulation
+type SimulationAuctionRepDelegate interface {
+	AuctionRepDelegate
+	SetSimulatedInstances(instances []SimulatedInstance)
+	SimulatedInstances() []SimulatedInstance
 }
 
 type StartAuctionRequest struct {
@@ -101,22 +138,4 @@ func NewLRPAuctionInfo(info models.LRPStartAuction) LRPAuctionInfo {
 		DiskMB:       info.DiskMB,
 		MemoryMB:     info.MemoryMB,
 	}
-}
-
-type RepPoolClient interface {
-	Score(guids []string, instance LRPAuctionInfo) ScoreResults
-	StopScore(guids []string, stopAuctionInfo LRPStopAuctionInfo) StopScoreResults
-	ScoreThenTentativelyReserve(guids []string, instance LRPAuctionInfo) ScoreResults
-	ReleaseReservation(guids []string, instance LRPAuctionInfo)
-	Run(guid string, instance models.LRPStartAuction)
-	Stop(guid string, instanceGuid string)
-}
-
-type TestRepPoolClient interface {
-	RepPoolClient
-
-	TotalResources(guid string) Resources
-	SimulatedInstances(guid string) []SimulatedInstance
-	SetSimulatedInstances(guid string, instances []SimulatedInstance)
-	Reset(guid string)
 }

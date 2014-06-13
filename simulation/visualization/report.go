@@ -129,7 +129,7 @@ func (r *Report) WaitTimeStats() Stat {
 	return NewStat(waitTimes)
 }
 
-func FetchAndSortInstances(client auctiontypes.TestRepPoolClient, repGuids []string) map[string][]auctiontypes.SimulatedInstance {
+func FetchAndSortInstances(client auctiontypes.SimulationRepPoolClient, repGuids []string) map[string][]auctiontypes.SimulatedInstance {
 	instancesByRepGuid := map[string][]auctiontypes.SimulatedInstance{}
 	for _, guid := range repGuids {
 		instances := client.SimulatedInstances(guid)

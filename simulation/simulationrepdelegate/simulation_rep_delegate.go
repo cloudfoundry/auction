@@ -35,14 +35,14 @@ func (rep *SimulationRepDelegate) TotalResources() (auctiontypes.Resources, erro
 	return rep.totalResources, nil
 }
 
-func (rep *SimulationRepDelegate) NumInstancesForProcessGuid(repGuid string) (int, error) {
+func (rep *SimulationRepDelegate) NumInstancesForProcessGuid(processGuid string) (int, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
 	n := 0
 
 	for _, instance := range rep.instances {
-		if instance.ProcessGuid == repGuid {
+		if instance.ProcessGuid == processGuid {
 			n += 1
 		}
 	}

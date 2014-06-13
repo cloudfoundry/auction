@@ -65,8 +65,8 @@ type RepPoolClient interface {
 type AuctionRepDelegate interface {
 	RemainingResources() (Resources, error)
 	TotalResources() (Resources, error)
-	NumInstancesForProcessGuid(repGuid string) (int, error)
-	InstanceGuidsForProcessGuidAndIndex(repGuid string, index int) ([]string, error)
+	NumInstancesForProcessGuid(processGuid string) (int, error)
+	InstanceGuidsForProcessGuidAndIndex(processGuid string, index int) ([]string, error)
 
 	Reserve(startAuctionInfo StartAuctionInfo) error
 	ReleaseReservation(startAuctionInfo StartAuctionInfo) error

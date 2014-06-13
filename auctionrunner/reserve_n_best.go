@@ -4,7 +4,7 @@ import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
 /*
 
-Get the scores from the subset of reps
+Get the bids from the subset of reps
 	Tell the top 5 to reserve
 		Pick the best from that set and release the others
 
@@ -12,15 +12,15 @@ Get the scores from the subset of reps
 
 func reserveNBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
-	auctionInfo := auctiontypes.NewLRPStartAuctionInfo(auctionRequest.LRPStartAuction)
+	auctionInfo := auctiontypes.NewStartAuctionInfoFromLRPStartAuction(auctionRequest.LRPStartAuction)
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		//pick a subset
 		firstRoundReps := auctionRequest.RepGuids.RandomSubsetByFraction(auctionRequest.Rules.MaxBiddingPool)
 
-		//get everyone's score, if they're all full: bail
+		//get everyone's bid, if they're all full: bail
 		numCommunications += len(firstRoundReps)
-		firstRoundScores := client.Score(firstRoundReps, auctionInfo)
+		firstRoundScores := client.BidForStartAuction(firstRoundReps, auctionInfo)
 		if firstRoundScores.AllFailed() {
 			continue
 		}
@@ -35,13 +35,13 @@ func reserveNBestAuction(client auctiontypes.RepPoolClient, auctionRequest aucti
 
 		//ask them to reserve
 		numCommunications += len(winners)
-		winners = client.ScoreThenTentativelyReserve(winners.Reps(), auctionInfo)
+		winners = client.RebidThenTentativelyReserve(winners.Reps(), auctionInfo)
 		//if they're all out of space, try again
 		if winners.AllFailed() {
 			continue
 		}
 
-		//order by score: the first is the winner, all others release
+		//order by bid: the first is the winner, all others release
 		orderedReps := winners.FilterErrors().Shuffle().Sort().Reps()
 
 		numCommunications += len(winners)

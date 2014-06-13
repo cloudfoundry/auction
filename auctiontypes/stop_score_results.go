@@ -6,15 +6,15 @@ import (
 	"github.com/cloudfoundry-incubator/auction/util"
 )
 
-func (a StopScoreResults) Len() int           { return len(a) }
-func (a StopScoreResults) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a StopScoreResults) Less(i, j int) bool { return a[i].Score < a[j].Score }
+func (a StopAuctionBids) Len() int           { return len(a) }
+func (a StopAuctionBids) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a StopAuctionBids) Less(i, j int) bool { return a[i].Bid < a[j].Bid }
 
-func (v StopScoreResults) AllFailed() bool {
+func (v StopAuctionBids) AllFailed() bool {
 	return len(v.FilterErrors()) == 0
 }
 
-func (v StopScoreResults) Reps() RepGuids {
+func (v StopAuctionBids) Reps() RepGuids {
 	out := RepGuids{}
 	for _, r := range v {
 		out = append(out, r.Rep)
@@ -23,7 +23,7 @@ func (v StopScoreResults) Reps() RepGuids {
 	return out
 }
 
-func (v StopScoreResults) InstanceGuids() []string {
+func (v StopAuctionBids) InstanceGuids() []string {
 	out := RepGuids{}
 	for _, r := range v {
 		out = append(out, r.InstanceGuids...)
@@ -32,8 +32,8 @@ func (v StopScoreResults) InstanceGuids() []string {
 	return out
 }
 
-func (v StopScoreResults) FilterErrors() StopScoreResults {
-	out := StopScoreResults{}
+func (v StopAuctionBids) FilterErrors() StopAuctionBids {
+	out := StopAuctionBids{}
 	for _, r := range v {
 		if r.Error == "" {
 			out = append(out, r)
@@ -43,8 +43,8 @@ func (v StopScoreResults) FilterErrors() StopScoreResults {
 	return out
 }
 
-func (v StopScoreResults) Shuffle() StopScoreResults {
-	out := make(StopScoreResults, len(v))
+func (v StopAuctionBids) Shuffle() StopAuctionBids {
+	out := make(StopAuctionBids, len(v))
 
 	perm := util.R.Perm(len(v))
 	for i, index := range perm {
@@ -54,7 +54,7 @@ func (v StopScoreResults) Shuffle() StopScoreResults {
 	return out
 }
 
-func (v StopScoreResults) Sort() StopScoreResults {
+func (v StopAuctionBids) Sort() StopAuctionBids {
 	sort.Sort(v)
 	return v
 }

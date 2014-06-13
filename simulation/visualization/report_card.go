@@ -34,7 +34,7 @@ const ReportCardHeight = border*3 + instanceBoxSize
 type SVGReport struct {
 	SVG            *svg.SVG
 	f              *os.File
-	scores         []float64
+	bids           []float64
 	communications []float64
 	waitTimes      []float64
 	width          int
@@ -67,7 +67,7 @@ func (r *SVGReport) DrawHeader(communicationMode string, rules auctiontypes.Star
 }
 
 func (r *SVGReport) drawResults() {
-	r.SVG.Text(border, 90, fmt.Sprintf("Score: %.2f | Wait Time: %.2fs | Communications: %.0f", stats.StatsSum(r.scores), stats.StatsSum(r.waitTimes), stats.StatsSum(r.communications)), `text-anchor:start;font-size:32px;font-family:Helvetica Neue`)
+	r.SVG.Text(border, 90, fmt.Sprintf("Bid: %.2f | Wait Time: %.2fs | Communications: %.0f", stats.StatsSum(r.bids), stats.StatsSum(r.waitTimes), stats.StatsSum(r.communications)), `text-anchor:start;font-size:32px;font-family:Helvetica Neue`)
 }
 
 func (r *SVGReport) DrawReportCard(x, y int, report *Report) {
@@ -78,7 +78,7 @@ func (r *SVGReport) DrawReportCard(x, y int, report *Report) {
 	y = r.drawRoundsHistogram(report, y+binSpacing*4)
 	r.drawText(report, y+binSpacing*4)
 
-	r.scores = append(r.scores, report.DistributionScore())
+	r.bids = append(r.bids, report.DistributionScore())
 	r.communications = append(r.communications, report.CommStats().Total)
 	r.waitTimes = append(r.waitTimes, report.AuctionDuration.Seconds())
 
@@ -209,9 +209,9 @@ func binUp(binBoundaries []float64, sortedData []float64) []float64 {
 	return bins
 }
 
-func instanceStyle(appGuid string) string {
-	components := strings.Split(appGuid, "-")
-	color := appGuid
+func instanceStyle(processGuid string) string {
+	components := strings.Split(processGuid, "-")
+	color := processGuid
 	if len(components) > 1 {
 		color = components[len(components)-1]
 	}

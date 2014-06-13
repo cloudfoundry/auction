@@ -5,13 +5,13 @@ import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 /*
 
 Tell the subset of reps to reserve
-    Pick the winner (lowest score)
+    Pick the winner (lowest bid)
         Tell the winner to run and the others to release
 
 */
 func allReserveAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
-	auctionInfo := auctiontypes.NewLRPStartAuctionInfo(auctionRequest.LRPStartAuction)
+	auctionInfo := auctiontypes.NewStartAuctionInfoFromLRPStartAuction(auctionRequest.LRPStartAuction)
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		//pick a subset
@@ -19,13 +19,13 @@ func allReserveAuction(client auctiontypes.RepPoolClient, auctionRequest auction
 
 		//reserve everyone
 		numCommunications += len(firstRoundReps)
-		scores := client.ScoreThenTentativelyReserve(firstRoundReps, auctionInfo)
+		bids := client.RebidThenTentativelyReserve(firstRoundReps, auctionInfo)
 
-		if scores.AllFailed() {
+		if bids.AllFailed() {
 			continue
 		}
 
-		orderedReps := scores.FilterErrors().Shuffle().Sort().Reps()
+		orderedReps := bids.FilterErrors().Shuffle().Sort().Reps()
 
 		numCommunications += len(orderedReps)
 		client.Run(orderedReps[0], auctionRequest.LRPStartAuction)

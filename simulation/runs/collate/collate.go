@@ -16,7 +16,7 @@ func main() {
 		// "pick_among_best",
 		"reserve_n_best",
 		// "all_reserve",
-		"all_rescore",
+		"all_rebid",
 	}
 	out := "<html><head></head><body><table>"
 	// for _, comm := range []string{"inprocess", "nats", "ketchup"} {
@@ -43,18 +43,18 @@ func main() {
 				data, _ := ioutil.ReadFile(fname + ".json")
 				reports := []*visualization.Report{}
 				json.Unmarshal(data, &reports)
-				scores := 0.0
+				bids := 0.0
 				communication := 0.0
 				waitTimes := 0.0
 				for _, report := range reports {
 					waitTimes += report.AuctionDuration.Seconds()
 					communication += report.CommStats().Total
-					scores += report.DistributionScore()
+					bids += report.DistributionScore()
 				}
 
 				out += "<td>"
 				out += fmt.Sprintf(`<a href="../imac/%s.svg">`, fname)
-				out += fmt.Sprintf(`<div style="background-color:%s;">%.3f</div>`, scoreColor(scores), scores)
+				out += fmt.Sprintf(`<div style="background-color:%s;">%.3f</div>`, bidColor(bids), bids)
 				out += fmt.Sprintf(`<div style="background-color:%s;">%.2f</div>`, waitColor(waitTimes), waitTimes)
 				out += fmt.Sprintf("<div>%d</div>", int(communication))
 				out += "</a>"
@@ -68,8 +68,8 @@ func main() {
 	ioutil.WriteFile("./present.html", []byte(out), 0777)
 }
 
-func scoreColor(score float64) string {
-	scaled := 1 - score/0.3 //0 is great (white), 0.3 is worst (red)
+func bidColor(bid float64) string {
+	scaled := 1 - bid/0.3 //0 is great (white), 0.3 is worst (red)
 	rg := 80 + scaled*(255-80)
 	if rg < 0 {
 		rg = 0

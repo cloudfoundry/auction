@@ -32,8 +32,8 @@ func (a *auctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.StartAuct
 
 	t := time.Now()
 	switch auctionRequest.Rules.Algorithm {
-	case "all_rescore":
-		result.Winner, result.NumRounds, result.NumCommunications = allRescoreAuction(a.client, auctionRequest)
+	case "all_rebid":
+		result.Winner, result.NumRounds, result.NumCommunications = allRebidAuction(a.client, auctionRequest)
 	case "all_reserve":
 		result.Winner, result.NumRounds, result.NumCommunications = allReserveAuction(a.client, auctionRequest)
 	case "pick_among_best":

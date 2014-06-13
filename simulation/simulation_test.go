@@ -41,9 +41,9 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	newLRPStartAuction := func(appGuid string, memoryMB int) models.LRPStartAuction {
+	newLRPStartAuction := func(processGuid string, memoryMB int) models.LRPStartAuction {
 		return models.LRPStartAuction{
-			ProcessGuid:  appGuid,
+			ProcessGuid:  processGuid,
 			InstanceGuid: util.NewGuid("INS"),
 			MemoryMB:     memoryMB,
 			DiskMB:       1,
@@ -70,10 +70,10 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	generateLRPStartAuctionsForAppGuid := func(numInstances int, appGuid string, memoryMB int) []models.LRPStartAuction {
+	generateLRPStartAuctionsForProcessGuid := func(numInstances int, processGuid string, memoryMB int) []models.LRPStartAuction {
 		instances := []models.LRPStartAuction{}
 		for i := 0; i < numInstances; i++ {
-			instances = append(instances, newLRPStartAuction(appGuid, memoryMB))
+			instances = append(instances, newLRPStartAuction(processGuid, memoryMB))
 		}
 		return instances
 	}
@@ -168,7 +168,7 @@ var _ = Describe("Auction", func() {
 					})
 
 					It("should distribute evenly", func() {
-						instances := generateLRPStartAuctionsForAppGuid(napps[i], "red", 1)
+						instances := generateLRPStartAuctionsForProcessGuid(napps[i], "red", 1)
 
 						report := auctionDistributor.HoldAuctionsFor(instances, guids[:nexec[i]], auctionrunner.DefaultStartAuctionRules)
 

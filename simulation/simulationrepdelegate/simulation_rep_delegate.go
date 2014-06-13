@@ -35,7 +35,7 @@ func (rep *SimulationRepDelegate) TotalResources() (auctiontypes.Resources, erro
 	return rep.totalResources, nil
 }
 
-func (rep *SimulationRepDelegate) NumInstancesForAppGuid(guid string) (int, error) {
+func (rep *SimulationRepDelegate) NumInstancesForProcessGuid(guid string) (int, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
@@ -65,7 +65,7 @@ func (rep *SimulationRepDelegate) InstanceGuidsForProcessGuidAndIndex(processGui
 	return instanceGuids, nil
 }
 
-func (rep *SimulationRepDelegate) Reserve(startAuctionInfo auctiontypes.LRPStartAuctionInfo) error {
+func (rep *SimulationRepDelegate) Reserve(startAuctionInfo auctiontypes.StartAuctionInfo) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
@@ -80,7 +80,7 @@ func (rep *SimulationRepDelegate) Reserve(startAuctionInfo auctiontypes.LRPStart
 	}
 
 	rep.instances[startAuctionInfo.InstanceGuid] = auctiontypes.SimulatedInstance{
-		ProcessGuid:  startAuctionInfo.AppGuid,
+		ProcessGuid:  startAuctionInfo.ProcessGuid,
 		InstanceGuid: startAuctionInfo.InstanceGuid,
 		MemoryMB:     startAuctionInfo.MemoryMB,
 		DiskMB:       startAuctionInfo.DiskMB,
@@ -89,7 +89,7 @@ func (rep *SimulationRepDelegate) Reserve(startAuctionInfo auctiontypes.LRPStart
 	return nil
 }
 
-func (rep *SimulationRepDelegate) ReleaseReservation(startAuctionInfo auctiontypes.LRPStartAuctionInfo) error {
+func (rep *SimulationRepDelegate) ReleaseReservation(startAuctionInfo auctiontypes.StartAuctionInfo) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 

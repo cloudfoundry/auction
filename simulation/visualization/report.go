@@ -133,15 +133,15 @@ func FetchAndSortInstances(client auctiontypes.SimulationRepPoolClient, repGuids
 	instancesByRepGuid := map[string][]auctiontypes.SimulatedInstance{}
 	for _, guid := range repGuids {
 		instances := client.SimulatedInstances(guid)
-		sort.Sort(ByAppGuid(instances))
+		sort.Sort(ByProcessGuid(instances))
 		instancesByRepGuid[guid] = instances
 	}
 
 	return instancesByRepGuid
 }
 
-type ByAppGuid []auctiontypes.SimulatedInstance
+type ByProcessGuid []auctiontypes.SimulatedInstance
 
-func (a ByAppGuid) Len() int           { return len(a) }
-func (a ByAppGuid) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByAppGuid) Less(i, j int) bool { return a[i].ProcessGuid < a[j].ProcessGuid }
+func (a ByProcessGuid) Len() int           { return len(a) }
+func (a ByProcessGuid) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByProcessGuid) Less(i, j int) bool { return a[i].ProcessGuid < a[j].ProcessGuid }

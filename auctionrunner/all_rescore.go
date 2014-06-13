@@ -4,24 +4,24 @@ import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
 /*
 
-Get the scores from the subset of reps
-    Pick the winner (lowest score)
-        Tell the winner to reserve and the others to rescore
-        	If the winner still has the lowest score we are done, otherwise, repeat
+Get the bids from the subset of reps
+    Pick the winner (lowest bid)
+        Tell the winner to reserve and the others to rebid
+        	If the winner still has the lowest bid we are done, otherwise, repeat
 
 */
 
-func allRescoreAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int) {
+func allRebidAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
-	auctionInfo := auctiontypes.NewLRPStartAuctionInfo(auctionRequest.LRPStartAuction)
+	auctionInfo := auctiontypes.NewStartAuctionInfoFromLRPStartAuction(auctionRequest.LRPStartAuction)
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		//pick a subset
 		firstRoundReps := auctionRequest.RepGuids.RandomSubsetByFraction(auctionRequest.Rules.MaxBiddingPool)
 
-		//get everyone's score, if they're all full: bail
+		//get everyone's bid, if they're all full: bail
 		numCommunications += len(firstRoundReps)
-		firstRoundScores := client.Score(firstRoundReps, auctionInfo)
+		firstRoundScores := client.BidForStartAuction(firstRoundReps, auctionInfo)
 		if firstRoundScores.AllFailed() {
 			continue
 		}
@@ -30,22 +30,22 @@ func allRescoreAuction(client auctiontypes.RepPoolClient, auctionRequest auction
 
 		// tell the winner to reserve
 		numCommunications += 1
-		winnerRecast := client.ScoreThenTentativelyReserve([]string{winner.Rep}, auctionInfo)[0]
+		winnerRecast := client.RebidThenTentativelyReserve([]string{winner.Rep}, auctionInfo)[0]
 
-		//get everyone's score again
+		//get everyone's bid again
 		secondRoundReps := firstRoundReps.Without(winner.Rep)
 		numCommunications += len(secondRoundReps)
-		secondRoundScores := client.Score(secondRoundReps, auctionInfo)
+		secondRoundScores := client.BidForStartAuction(secondRoundReps, auctionInfo)
 
 		//if the winner ran out of space: bail
 		if winnerRecast.Error != "" {
 			continue
 		}
 
-		// if the second place winner has a better score than the original winner: bail
+		// if the second place winner has a better bid than the original winner: bail
 		if !secondRoundScores.AllFailed() {
 			secondPlace := secondRoundScores.FilterErrors().Shuffle().Sort()[0]
-			if secondPlace.Score < winnerRecast.Score {
+			if secondPlace.Bid < winnerRecast.Bid {
 				client.ReleaseReservation([]string{winner.Rep}, auctionInfo)
 				numCommunications += 1
 				continue

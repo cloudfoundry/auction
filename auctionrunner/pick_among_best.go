@@ -4,7 +4,7 @@ import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
 /*
 
-Get the scores from the subset of reps
+Get the bids from the subset of reps
 	Select the best 5
 		Pick a winner randomly from that set
 
@@ -12,15 +12,15 @@ Get the scores from the subset of reps
 
 func pickAmongBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
-	auctionInfo := auctiontypes.NewLRPStartAuctionInfo(auctionRequest.LRPStartAuction)
+	auctionInfo := auctiontypes.NewStartAuctionInfoFromLRPStartAuction(auctionRequest.LRPStartAuction)
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		//pick a subset
 		firstRoundReps := auctionRequest.RepGuids.RandomSubsetByFraction(auctionRequest.Rules.MaxBiddingPool)
 
-		//get everyone's score, if they're all full: bail
+		//get everyone's bid, if they're all full: bail
 		numCommunications += len(firstRoundReps)
-		firstRoundScores := client.Score(firstRoundReps, auctionInfo)
+		firstRoundScores := client.BidForStartAuction(firstRoundReps, auctionInfo)
 		if firstRoundScores.AllFailed() {
 			continue
 		}
@@ -29,7 +29,7 @@ func pickAmongBestAuction(client auctiontypes.RepPoolClient, auctionRequest auct
 
 		winner := top5Winners.Shuffle()[0]
 
-		result := client.ScoreThenTentativelyReserve([]string{winner.Rep}, auctionInfo)[0]
+		result := client.RebidThenTentativelyReserve([]string{winner.Rep}, auctionInfo)[0]
 		numCommunications += 1
 		if result.Error != "" {
 			continue

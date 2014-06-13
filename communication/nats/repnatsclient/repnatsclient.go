@@ -33,29 +33,29 @@ func New(client yagnats.NATSClient, timeout time.Duration, runTimeout time.Durat
 	}
 }
 
-func (rep *RepNatsClient) Score(guids []string, startAuctionInfo auctiontypes.LRPStartAuctionInfo) auctiontypes.ScoreResults {
+func (rep *RepNatsClient) BidForStartAuction(guids []string, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
 	rep.logger.Infod(map[string]interface{}{
 		"start-auction-info": startAuctionInfo,
 		"num-rep-guids":      len(guids),
-	}, "rep-nats-client.score.fetching")
+	}, "rep-nats-client.bid.fetching")
 
 	replyTo := util.RandomGuid()
 
 	allReceived := new(sync.WaitGroup)
 	allReceived.Add(len(guids))
-	responses := make(chan auctiontypes.ScoreResult, len(guids))
+	responses := make(chan auctiontypes.StartAuctionBid, len(guids))
 
 	n := 0
 	subscriptionID, err := rep.client.Subscribe(replyTo, func(msg *yagnats.Message) {
 		n++
 		defer allReceived.Done()
-		var result auctiontypes.ScoreResult
+		var result auctiontypes.StartAuctionBid
 		err := json.Unmarshal(msg.Payload, &result)
 		if err != nil {
 			rep.logger.Infod(map[string]interface{}{
 				"unparseable-message": msg.Payload,
 				"error":               err.Error(),
-			}, "rep-nats-client.score.failed-to-parse-message")
+			}, "rep-nats-client.bid.failed-to-parse-message")
 			return
 		}
 
@@ -65,8 +65,8 @@ func (rep *RepNatsClient) Score(guids []string, startAuctionInfo auctiontypes.LR
 	if err != nil {
 		rep.logger.Errord(map[string]interface{}{
 			"error": err.Error(),
-		}, "rep-nats-client.score.failed-to-fetch")
-		return auctiontypes.ScoreResults{}
+		}, "rep-nats-client.bid.failed-to-fetch")
+		return auctiontypes.StartAuctionBids{}
 	}
 
 	defer rep.client.Unsubscribe(subscriptionID)
@@ -75,7 +75,7 @@ func (rep *RepNatsClient) Score(guids []string, startAuctionInfo auctiontypes.LR
 
 	for _, guid := range guids {
 		subjects := nats.NewSubjects(guid)
-		rep.client.PublishWithReplyTo(subjects.Score, replyTo, payload)
+		rep.client.PublishWithReplyTo(subjects.Bid, replyTo, payload)
 	}
 
 	done := make(chan struct{})
@@ -87,10 +87,10 @@ func (rep *RepNatsClient) Score(guids []string, startAuctionInfo auctiontypes.LR
 	select {
 	case <-done:
 	case <-time.After(rep.timeout):
-		rep.logger.Info("rep-nats-client.score.did-not-receive-all-scores")
+		rep.logger.Info("rep-nats-client.bid.did-not-receive-all-bids")
 	}
 
-	results := auctiontypes.ScoreResults{}
+	results := auctiontypes.StartAuctionBids{}
 
 	for {
 		select {
@@ -102,37 +102,37 @@ func (rep *RepNatsClient) Score(guids []string, startAuctionInfo auctiontypes.LR
 	}
 
 	rep.logger.Infod(map[string]interface{}{
-		"start-auction-info":  startAuctionInfo,
-		"num-rep-guids":       len(guids),
-		"num-scores-received": len(results),
-	}, "rep-nats-client.score.fetched")
+		"start-auction-info": startAuctionInfo,
+		"num-rep-guids":      len(guids),
+		"num-bids-received":  len(results),
+	}, "rep-nats-client.bid.fetched")
 
 	return results
 }
 
-func (rep *RepNatsClient) StopScore(guids []string, stopAuctionInfo auctiontypes.LRPStopAuctionInfo) auctiontypes.StopScoreResults {
+func (rep *RepNatsClient) BidForStopAuction(guids []string, stopAuctionInfo auctiontypes.StopAuctionInfo) auctiontypes.StopAuctionBids {
 	rep.logger.Infod(map[string]interface{}{
 		"stop-auction-info": stopAuctionInfo,
 		"num-rep-guids":     len(guids),
-	}, "rep-nats-client.stop-score.fetching")
+	}, "rep-nats-client.stop-bid.fetching")
 
 	replyTo := util.RandomGuid()
 
 	allReceived := new(sync.WaitGroup)
 	allReceived.Add(len(guids))
-	responses := make(chan auctiontypes.StopScoreResult, len(guids))
+	responses := make(chan auctiontypes.StopAuctionBid, len(guids))
 
 	n := 0
 	subscriptionID, err := rep.client.Subscribe(replyTo, func(msg *yagnats.Message) {
 		n++
 		defer allReceived.Done()
-		var result auctiontypes.StopScoreResult
+		var result auctiontypes.StopAuctionBid
 		err := json.Unmarshal(msg.Payload, &result)
 		if err != nil {
 			rep.logger.Infod(map[string]interface{}{
 				"unparseable-message": msg.Payload,
 				"error":               err.Error(),
-			}, "rep-nats-client.stop-score.failed-to-parse-message")
+			}, "rep-nats-client.stop-bid.failed-to-parse-message")
 			return
 		}
 
@@ -142,8 +142,8 @@ func (rep *RepNatsClient) StopScore(guids []string, stopAuctionInfo auctiontypes
 	if err != nil {
 		rep.logger.Errord(map[string]interface{}{
 			"error": err.Error(),
-		}, "rep-nats-client.stop-score.failed-to-fetch")
-		return []auctiontypes.StopScoreResult{}
+		}, "rep-nats-client.stop-bid.failed-to-fetch")
+		return []auctiontypes.StopAuctionBid{}
 	}
 
 	defer rep.client.Unsubscribe(subscriptionID)
@@ -164,10 +164,10 @@ func (rep *RepNatsClient) StopScore(guids []string, stopAuctionInfo auctiontypes
 	select {
 	case <-done:
 	case <-time.After(rep.timeout):
-		rep.logger.Info("rep-nats-client.stop-score.did-not-receive-all-scores")
+		rep.logger.Info("rep-nats-client.stop-bid.did-not-receive-all-bids")
 	}
 
-	results := auctiontypes.StopScoreResults{}
+	results := auctiontypes.StopAuctionBids{}
 
 	for {
 		select {
@@ -179,54 +179,54 @@ func (rep *RepNatsClient) StopScore(guids []string, stopAuctionInfo auctiontypes
 	}
 
 	rep.logger.Infod(map[string]interface{}{
-		"stop-auction-info":   stopAuctionInfo,
-		"num-rep-guids":       len(guids),
-		"num-scores-received": len(results),
-	}, "rep-nats-client.stop-score.fetched")
+		"stop-auction-info": stopAuctionInfo,
+		"num-rep-guids":     len(guids),
+		"num-bids-received": len(results),
+	}, "rep-nats-client.stop-bid.fetched")
 
 	return results
 }
 
-func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, startAuctionInfo auctiontypes.LRPStartAuctionInfo) auctiontypes.ScoreResults {
+func (rep *RepNatsClient) RebidThenTentativelyReserve(guids []string, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
 	rep.logger.Infod(map[string]interface{}{
 		"start-auction-info": startAuctionInfo,
 		"num-rep-guids":      len(guids),
-	}, "rep-nats-client.score-then-tentatively-reserve.starting")
+	}, "rep-nats-client.bid-then-tentatively-reserve.starting")
 
-	resultChan := make(chan auctiontypes.ScoreResult, 0)
+	resultChan := make(chan auctiontypes.StartAuctionBid, 0)
 	for _, guid := range guids {
 		go func(guid string) {
-			result := auctiontypes.ScoreResult{}
+			result := auctiontypes.StartAuctionBid{}
 			subjects := nats.NewSubjects(guid)
 			err := rep.publishWithTimeout(subjects.ScoreThenTentativelyReserve, startAuctionInfo, &result, rep.timeout)
 			if err != nil {
 				rep.logger.Infod(map[string]interface{}{
 					"error":    err.Error(),
 					"rep-guid": guid,
-				}, "rep-nats-client.score-then-tentatively-reserve.failed")
+				}, "rep-nats-client.bid-then-tentatively-reserve.failed")
 
-				result = auctiontypes.ScoreResult{Error: err.Error()}
+				result = auctiontypes.StartAuctionBid{Error: err.Error()}
 				rep.publishWithTimeout(subjects.ReleaseReservation, startAuctionInfo, nil, rep.timeout)
 			}
 			resultChan <- result
 		}(guid)
 	}
 
-	results := auctiontypes.ScoreResults{}
+	results := auctiontypes.StartAuctionBids{}
 	for _ = range guids {
 		results = append(results, <-resultChan)
 	}
 
 	rep.logger.Infod(map[string]interface{}{
-		"start-auction-info":  startAuctionInfo,
-		"num-rep-guids":       len(guids),
-		"num-scores-received": len(results),
-	}, "rep-nats-client.score-then-tentatively-reserve.done")
+		"start-auction-info": startAuctionInfo,
+		"num-rep-guids":      len(guids),
+		"num-bids-received":  len(results),
+	}, "rep-nats-client.bid-then-tentatively-reserve.done")
 
 	return results
 }
 
-func (rep *RepNatsClient) ReleaseReservation(guids []string, startAuctionInfo auctiontypes.LRPStartAuctionInfo) {
+func (rep *RepNatsClient) ReleaseReservation(guids []string, startAuctionInfo auctiontypes.StartAuctionInfo) {
 	rep.logger.Infod(map[string]interface{}{
 		"start-auction-info":   startAuctionInfo,
 		"rep-guids-to-release": guids,

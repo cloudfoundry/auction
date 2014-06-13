@@ -6,15 +6,15 @@ import (
 	"github.com/cloudfoundry-incubator/auction/util"
 )
 
-func (a ScoreResults) Len() int           { return len(a) }
-func (a ScoreResults) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ScoreResults) Less(i, j int) bool { return a[i].Score < a[j].Score }
+func (a StartAuctionBids) Len() int           { return len(a) }
+func (a StartAuctionBids) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a StartAuctionBids) Less(i, j int) bool { return a[i].Bid < a[j].Bid }
 
-func (v ScoreResults) AllFailed() bool {
+func (v StartAuctionBids) AllFailed() bool {
 	return len(v.FilterErrors()) == 0
 }
 
-func (v ScoreResults) Reps() RepGuids {
+func (v StartAuctionBids) Reps() RepGuids {
 	out := RepGuids{}
 	for _, r := range v {
 		out = append(out, r.Rep)
@@ -23,8 +23,8 @@ func (v ScoreResults) Reps() RepGuids {
 	return out
 }
 
-func (v ScoreResults) FilterErrors() ScoreResults {
-	out := ScoreResults{}
+func (v StartAuctionBids) FilterErrors() StartAuctionBids {
+	out := StartAuctionBids{}
 	for _, r := range v {
 		if r.Error == "" {
 			out = append(out, r)
@@ -34,8 +34,8 @@ func (v ScoreResults) FilterErrors() ScoreResults {
 	return out
 }
 
-func (v ScoreResults) Shuffle() ScoreResults {
-	out := make(ScoreResults, len(v))
+func (v StartAuctionBids) Shuffle() StartAuctionBids {
+	out := make(StartAuctionBids, len(v))
 
 	perm := util.R.Perm(len(v))
 	for i, index := range perm {
@@ -45,7 +45,7 @@ func (v ScoreResults) Shuffle() ScoreResults {
 	return out
 }
 
-func (v ScoreResults) Sort() ScoreResults {
+func (v StartAuctionBids) Sort() StartAuctionBids {
 	sort.Sort(v)
 	return v
 }

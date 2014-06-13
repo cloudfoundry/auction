@@ -40,19 +40,19 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 
 	fmt.Println("Distribution")
 	maxGuidLength := 0
-	for _, guid := range representatives {
-		if len(guid) > maxGuidLength {
-			maxGuidLength = len(guid)
+	for _, repGuid := range representatives {
+		if len(repGuid) > maxGuidLength {
+			maxGuidLength = len(repGuid)
 		}
 	}
 	guidFormat := fmt.Sprintf("%%%ds", maxGuidLength)
 
 	numNew := 0
-	for _, guid := range representatives {
-		repString := fmt.Sprintf(guidFormat, guid)
+	for _, repGuid := range representatives {
+		repString := fmt.Sprintf(guidFormat, repGuid)
 
 		instanceString := ""
-		instances := client.SimulatedInstances(guid)
+		instances := client.SimulatedInstances(repGuid)
 
 		availableColors := []string{"red", "cyan", "yellow", "gray", "purple", "green"}
 		colorLookup := map[string]string{"red": redColor, "green": greenColor, "cyan": cyanColor, "yellow": yellowColor, "gray": lightGrayColor, "purple": purpleColor}
@@ -75,7 +75,7 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 			instanceString += strings.Repeat(colorLookup[col]+"○"+defaultStyle, originalCounts[col])
 			instanceString += strings.Repeat(colorLookup[col]+"●"+defaultStyle, newCounts[col])
 		}
-		instanceString += strings.Repeat(grayColor+"○"+defaultStyle, client.TotalResources(guid).Containers-len(instances))
+		instanceString += strings.Repeat(grayColor+"○"+defaultStyle, client.TotalResources(repGuid).Containers-len(instances))
 
 		fmt.Printf("  %s: %s\n", repString, instanceString)
 	}

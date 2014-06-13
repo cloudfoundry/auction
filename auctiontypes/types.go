@@ -54,19 +54,19 @@ type StartAuctionRules struct {
 type RepGuids []string
 
 type RepPoolClient interface {
-	BidForStartAuction(guids []string, startAuctionInfo StartAuctionInfo) StartAuctionBids
-	BidForStopAuction(guids []string, stopAuctionInfo StopAuctionInfo) StopAuctionBids
-	RebidThenTentativelyReserve(guids []string, startAuctionInfo StartAuctionInfo) StartAuctionBids
-	ReleaseReservation(guids []string, startAuctionInfo StartAuctionInfo)
-	Run(guid string, startAuctionInfo models.LRPStartAuction)
-	Stop(guid string, instanceGuid string)
+	BidForStartAuction(repGuids []string, startAuctionInfo StartAuctionInfo) StartAuctionBids
+	BidForStopAuction(repGuids []string, stopAuctionInfo StopAuctionInfo) StopAuctionBids
+	RebidThenTentativelyReserve(repGuids []string, startAuctionInfo StartAuctionInfo) StartAuctionBids
+	ReleaseReservation(repGuids []string, startAuctionInfo StartAuctionInfo)
+	Run(repGuid string, startAuctionInfo models.LRPStartAuction)
+	Stop(repGuid string, instanceGuid string)
 }
 
 type AuctionRepDelegate interface {
 	RemainingResources() (Resources, error)
 	TotalResources() (Resources, error)
-	NumInstancesForProcessGuid(guid string) (int, error)
-	InstanceGuidsForProcessGuidAndIndex(guid string, index int) ([]string, error)
+	NumInstancesForProcessGuid(repGuid string) (int, error)
+	InstanceGuidsForProcessGuidAndIndex(repGuid string, index int) ([]string, error)
 
 	Reserve(startAuctionInfo StartAuctionInfo) error
 	ReleaseReservation(startAuctionInfo StartAuctionInfo) error
@@ -78,10 +78,10 @@ type AuctionRepDelegate interface {
 type SimulationRepPoolClient interface {
 	RepPoolClient
 
-	TotalResources(guid string) Resources
-	SimulatedInstances(guid string) []SimulatedInstance
-	SetSimulatedInstances(guid string, instances []SimulatedInstance)
-	Reset(guid string)
+	TotalResources(repGuid string) Resources
+	SimulatedInstances(repGuid string) []SimulatedInstance
+	SetSimulatedInstances(repGuid string, instances []SimulatedInstance)
+	Reset(repGuid string)
 }
 
 //simulation-only interface

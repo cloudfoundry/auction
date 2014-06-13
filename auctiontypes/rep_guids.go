@@ -30,16 +30,16 @@ func (r RepGuids) RandomSubsetByFraction(f float64) RepGuids {
 	return r.RandomSubsetByCount(n)
 }
 
-func (r RepGuids) Without(guids ...string) RepGuids {
+func (r RepGuids) Without(repGuids ...string) RepGuids {
 	lookup := map[string]bool{}
-	for _, guid := range guids {
-		lookup[guid] = true
+	for _, repGuid := range repGuids {
+		lookup[repGuid] = true
 	}
 
 	out := RepGuids{}
-	for _, guid := range r {
-		if !lookup[guid] {
-			out = append(out, guid)
+	for _, repGuid := range r {
+		if !lookup[repGuid] {
+			out = append(out, repGuid)
 		}
 	}
 

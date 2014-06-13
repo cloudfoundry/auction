@@ -19,14 +19,14 @@ import (
 var memoryMB = flag.Int("memoryMB", 100, "total available memory in MB")
 var diskMB = flag.Int("diskMB", 100, "total available disk in MB")
 var containers = flag.Int("containers", 100, "total available containers")
-var guid = flag.String("guid", "", "guid")
+var repGuid = flag.String("repGuid", "", "rep-guid")
 var natsAddrs = flag.String("natsAddrs", "", "nats server addresses")
 
 func main() {
 	flag.Parse()
 
-	if *guid == "" {
-		panic("need guid")
+	if *repGuid == "" {
+		panic("need rep-guid")
 	}
 
 	if *natsAddrs == "" {
@@ -38,7 +38,7 @@ func main() {
 		DiskMB:     *diskMB,
 		Containers: *containers,
 	})
-	rep := auctionrep.New(*guid, repDelegate)
+	rep := auctionrep.New(*repGuid, repDelegate)
 
 	if *natsAddrs != "" {
 		client := yagnats.NewClient()
@@ -58,7 +58,7 @@ func main() {
 		}
 
 		log.Println("starting rep nats server")
-		natsRunner := repnatsserver.New(client, rep, gosteno.NewLogger(*guid))
+		natsRunner := repnatsserver.New(client, rep, gosteno.NewLogger(*repGuid))
 		server := ifrit.Envoke(natsRunner)
 		monitor := ifrit.Envoke(sigmon.New(server))
 		fmt.Println("rep node listening")

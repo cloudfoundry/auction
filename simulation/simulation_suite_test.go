@@ -60,7 +60,7 @@ var reports []*visualization.Report
 var sessionsToTerminate []*gexec.Session
 var natsRunner *natsrunner.NATSRunner
 var client auctiontypes.SimulationRepPoolClient
-var guids []string
+var repGuids []string
 
 func init() {
 	flag.StringVar(&communicationMode, "communicationMode", "inprocess", "one of inprocess, nats, ketchup")
@@ -90,19 +90,19 @@ var _ = BeforeSuite(func() {
 	hosts := []string{}
 	switch communicationMode {
 	case InProcess:
-		client, guids = buildInProcessReps()
+		client, repGuids = buildInProcessReps()
 		if auctioneerMode == Remote {
 			panic("it doesn't make sense to use remote auctioneers when the reps are in-process")
 		}
 	case NATS:
 		natsAddrs := startNATS()
 		client = repnatsclient.New(natsRunner.MessageBus, timeout, runTimeout, gosteno.NewLogger("test"))
-		guids = launchExternalReps("-natsAddrs", natsAddrs)
+		repGuids = launchExternalReps("-natsAddrs", natsAddrs)
 		if auctioneerMode == Remote {
 			hosts = launchExternalAuctioneers("-natsAddrs", natsAddrs)
 		}
 	case KetchupNATS:
-		guids = computeKetchupGuids()
+		repGuids = computeKetchupGuids()
 		client = ketchupNATSClient()
 		if auctioneerMode == Remote {
 			hosts = ketchupAuctioneerHosts()
@@ -119,8 +119,8 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	for _, guid := range guids {
-		client.Reset(guid)
+	for _, repGuid := range repGuids {
+		client.Reset(repGuid)
 	}
 
 	util.ResetGuids()
@@ -143,19 +143,19 @@ func buildInProcessReps() (auctiontypes.SimulationRepPoolClient, []string) {
 	inprocess.LatencyMax = 2 * time.Millisecond
 	inprocess.Timeout = 50 * time.Millisecond
 
-	guids := []string{}
+	repGuids := []string{}
 	repMap := map[string]*auctionrep.AuctionRep{}
 
 	for i := 0; i < numReps; i++ {
-		guid := util.NewGuid("REP")
-		guids = append(guids, guid)
+		repGuid := util.NewGuid("REP")
+		repGuids = append(repGuids, repGuid)
 
 		repDelegate := simulationrepdelegate.New(repResources)
-		repMap[guid] = auctionrep.New(guid, repDelegate)
+		repMap[repGuid] = auctionrep.New(repGuid, repDelegate)
 	}
 
 	client := inprocess.New(repMap)
-	return client, guids
+	return client, repGuids
 }
 
 func startNATS() string {
@@ -170,14 +170,14 @@ func launchExternalReps(communicationFlag string, communicationValue string) []s
 	repNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/repnode")
 	Ω(err).ShouldNot(HaveOccurred())
 
-	guids := []string{}
+	repGuids := []string{}
 
 	for i := 0; i < numReps; i++ {
-		guid := util.NewGuid("REP")
+		repGuid := util.NewGuid("REP")
 
 		serverCmd := exec.Command(
 			repNodeBinary,
-			"-guid", guid,
+			"-repGuid", repGuid,
 			communicationFlag, communicationValue,
 			"-memoryMB", fmt.Sprintf("%d", repResources.MemoryMB),
 			"-diskMB", fmt.Sprintf("%d", repResources.DiskMB),
@@ -189,10 +189,10 @@ func launchExternalReps(communicationFlag string, communicationValue string) []s
 		Eventually(sess).Should(gbytes.Say("listening"))
 		sessionsToTerminate = append(sessionsToTerminate, sess)
 
-		guids = append(guids, guid)
+		repGuids = append(repGuids, repGuid)
 	}
 
-	return guids
+	return repGuids
 }
 
 func launchExternalAuctioneers(communicationFlag string, communicationValue string) []string {
@@ -220,16 +220,16 @@ func launchExternalAuctioneers(communicationFlag string, communicationValue stri
 }
 
 func computeKetchupGuids() []string {
-	guids = []string{}
+	repGuids = []string{}
 	for _, name := range []string{"executor_z1", "executor_z2"} {
 		for jobIndex := 0; jobIndex < 5; jobIndex++ {
 			for index := 0; index < 10; index++ {
-				guids = append(guids, fmt.Sprintf("%s-%d-%d", name, jobIndex, index))
+				repGuids = append(repGuids, fmt.Sprintf("%s-%d-%d", name, jobIndex, index))
 			}
 		}
 	}
 
-	return guids
+	return repGuids
 }
 
 func ketchupAuctioneerHosts() []string {

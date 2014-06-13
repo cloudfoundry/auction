@@ -9,7 +9,7 @@ import (
 )
 
 type AuctionRep struct {
-	guid     string
+	repGuid  string
 	delegate auctiontypes.AuctionRepDelegate
 	lock     *sync.Mutex
 }
@@ -25,16 +25,16 @@ type StopIndexScoreInfo struct {
 	InstanceGuidsForProcessIndex []string
 }
 
-func New(guid string, delegate auctiontypes.AuctionRepDelegate) *AuctionRep {
+func New(repGuid string, delegate auctiontypes.AuctionRepDelegate) *AuctionRep {
 	return &AuctionRep{
-		guid:     guid,
+		repGuid:  repGuid,
 		delegate: delegate,
 		lock:     &sync.Mutex{},
 	}
 }
 
 func (rep *AuctionRep) Guid() string {
-	return rep.guid
+	return rep.repGuid
 }
 
 // must lock here; the publicly visible operations should be atomic

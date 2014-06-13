@@ -87,10 +87,10 @@ func (r *SVGReport) DrawReportCard(x, y int, report *Report) {
 
 func (r *SVGReport) drawInstances(report *Report) {
 	y := border
-	for _, guid := range report.RepGuids {
+	for _, repGuid := range report.RepGuids {
 		x := border
 		r.SVG.Rect(x, y, instanceBoxSize, instanceSize, "fill:#f7f7f7")
-		instances := report.InstancesByRep[guid]
+		instances := report.InstancesByRep[repGuid]
 		for _, instance := range instances {
 			instanceWidth := instanceSize * instance.MemoryMB
 			style := instanceStyle(instance.ProcessGuid)

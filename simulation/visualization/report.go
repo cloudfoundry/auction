@@ -131,10 +131,10 @@ func (r *Report) WaitTimeStats() Stat {
 
 func FetchAndSortInstances(client auctiontypes.SimulationRepPoolClient, repGuids []string) map[string][]auctiontypes.SimulatedInstance {
 	instancesByRepGuid := map[string][]auctiontypes.SimulatedInstance{}
-	for _, guid := range repGuids {
-		instances := client.SimulatedInstances(guid)
+	for _, repGuid := range repGuids {
+		instances := client.SimulatedInstances(repGuid)
 		sort.Sort(ByProcessGuid(instances))
-		instancesByRepGuid[guid] = instances
+		instancesByRepGuid[repGuid] = instances
 	}
 
 	return instancesByRepGuid

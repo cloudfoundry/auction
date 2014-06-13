@@ -7,26 +7,26 @@ type Subjects struct {
 	Reset                       string
 	SimulatedInstances          string
 	SetSimulatedInstances       string
-	Bid                         string
-	StopScore                   string
-	ScoreThenTentativelyReserve string
+	BidForStartAuction          string
+	BidForStopAuction           string
+	RebidThenTentativelyReserve string
 	ReleaseReservation          string
 	Run                         string
 	Stop                        string
 }
 
-func NewSubjects(guid string) Subjects {
+func NewSubjects(repGuid string) Subjects {
 	return Subjects{
-		TotalResources:        guid + ".total-resources",
-		Reset:                 guid + ".reset",
-		SimulatedInstances:    guid + ".simulated-instances",
-		SetSimulatedInstances: guid + ".set-simulated-instances",
-		Bid:                         guid + ".bid",
-		StopScore:                   guid + ".stop-bid",
-		ScoreThenTentativelyReserve: guid + ".bid-then-tentatively-reserve",
-		ReleaseReservation:          guid + ".release-reservation",
-		Run:                         guid + ".run",
-		Stop:                        guid + ".stop",
+		TotalResources:              repGuid + ".total-resources",
+		Reset:                       repGuid + ".reset",
+		SimulatedInstances:          repGuid + ".simulated-instances",
+		SetSimulatedInstances:       repGuid + ".set-simulated-instances",
+		BidForStartAuction:          repGuid + ".bid-for-start-auction",
+		BidForStopAuction:           repGuid + ".bid-for-stop-auction",
+		RebidThenTentativelyReserve: repGuid + ".rebid-then-tentatively-reserve",
+		ReleaseReservation:          repGuid + ".release-reservation",
+		Run:                         repGuid + ".run",
+		Stop:                        repGuid + ".stop",
 	}
 }
 

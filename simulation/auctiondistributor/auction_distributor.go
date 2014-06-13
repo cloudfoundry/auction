@@ -2,7 +2,6 @@ package auctiondistributor
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/cheggaaa/pb"
@@ -13,7 +12,7 @@ import (
 )
 
 type StartAuctionCommunicator func(auctiontypes.StartAuctionRequest) (auctiontypes.StartAuctionResult, error)
-type StopAuctionCommunicator func(auctiontypes.StopAuctionRequest)
+type StopAuctionCommunicator func(auctiontypes.StopAuctionRequest) (auctiontypes.StopAuctionResult, error)
 
 type AuctionDistributor struct {
 	client            auctiontypes.TestRepPoolClient
@@ -30,8 +29,8 @@ func NewInProcessAuctionDistributor(client auctiontypes.TestRepPoolClient, maxCo
 		startCommunicator: func(auctionRequest auctiontypes.StartAuctionRequest) (auctiontypes.StartAuctionResult, error) {
 			return auctionRunner.RunLRPStartAuction(auctionRequest)
 		},
-		stopCommunicator: func(auctionRequest auctiontypes.StopAuctionRequest) {
-			auctionRunner.RunLRPStopAuction(auctionRequest)
+		stopCommunicator: func(auctionRequest auctiontypes.StopAuctionRequest) (auctiontypes.StopAuctionResult, error) {
+			return auctionRunner.RunLRPStopAuction(auctionRequest)
 		},
 	}
 }
@@ -85,18 +84,25 @@ func (ad *AuctionDistributor) HoldAuctionsFor(instances []models.LRPStartAuction
 	return report
 }
 
-func (ad *AuctionDistributor) HoldStopAuctions(stopAuctions []models.LRPStopAuction, representatives []string) {
-	wg := &sync.WaitGroup{}
-	wg.Add(len(stopAuctions))
+func (ad *AuctionDistributor) HoldStopAuctions(stopAuctions []models.LRPStopAuction, representatives []string) []auctiontypes.StopAuctionResult {
+	t := time.Now()
+
+	c := make(chan auctiontypes.StopAuctionResult)
 	for _, stopAuction := range stopAuctions {
 		go func(stopAuction models.LRPStopAuction) {
-			ad.stopCommunicator(auctiontypes.StopAuctionRequest{
+			result, _ := ad.stopCommunicator(auctiontypes.StopAuctionRequest{
 				LRPStopAuction: stopAuction,
 				RepGuids:       representatives,
 			})
-			wg.Done()
+			result.Duration = time.Since(t)
+			c <- result
 		}(stopAuction)
 	}
 
-	wg.Wait()
+	results := []auctiontypes.StopAuctionResult{}
+	for _ = range stopAuctions {
+		results = append(results, <-c)
+	}
+
+	return results
 }

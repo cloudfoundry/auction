@@ -3,7 +3,6 @@ package auctiondistributor
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -25,10 +24,7 @@ func (h *httpRemoteAuctions) RemoteStartAuction(auctionRequest auctiontypes.Star
 	payload, _ := json.Marshal(auctionRequest)
 	res, err := http.Post("http://"+host+"/start-auction", "application/json", bytes.NewReader(payload))
 	if err != nil {
-		fmt.Println("FAILED! TO AUCTION", err)
-		return auctiontypes.StartAuctionResult{
-			LRPStartAuction: auctionRequest.LRPStartAuction,
-		}, err
+		return auctiontypes.StartAuctionResult{}, err
 	}
 
 	defer res.Body.Close()
@@ -43,17 +39,23 @@ func (h *httpRemoteAuctions) RemoteStartAuction(auctionRequest auctiontypes.Star
 	return result, nil
 }
 
-func (h *httpRemoteAuctions) RemoteStopAuction(auctionRequest auctiontypes.StopAuctionRequest) {
+func (h *httpRemoteAuctions) RemoteStopAuction(auctionRequest auctiontypes.StopAuctionRequest) (auctiontypes.StopAuctionResult, error) {
 	host := h.hosts[util.R.Intn(len(h.hosts))]
 
 	payload, _ := json.Marshal(auctionRequest)
 	res, err := http.Post("http://"+host+"/stop-auction", "application/json", bytes.NewReader(payload))
 	if err != nil {
-		fmt.Println("FAILED! TO AUCTION", err)
-		return
+		return auctiontypes.StopAuctionResult{}, err
 	}
 
 	defer res.Body.Close()
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return auctiontypes.StopAuctionResult{}, err
+	}
 
-	return
+	var result auctiontypes.StopAuctionResult
+	json.Unmarshal(data, &result)
+
+	return result, nil
 }

@@ -8,10 +8,11 @@ import (
 )
 
 var InsufficientResources = errors.New("insufficient resources for instance")
+var NothingToStop = errors.New("found nothing to stop")
 
 type AuctionRunner interface {
 	RunLRPStartAuction(auctionRequest StartAuctionRequest) (StartAuctionResult, error)
-	RunLRPStopAuction(auctionRequest StopAuctionRequest)
+	RunLRPStopAuction(auctionRequest StopAuctionRequest) (StopAuctionResult, error)
 }
 
 type StartAuctionRequest struct {
@@ -32,6 +33,14 @@ type StartAuctionResult struct {
 type StopAuctionRequest struct {
 	LRPStopAuction models.LRPStopAuction
 	RepGuids       RepGuids
+}
+
+type StopAuctionResult struct {
+	LRPStopAuction    models.LRPStopAuction
+	Winner            string
+	NumCommunications int
+	BiddingDuration   time.Duration
+	Duration          time.Duration
 }
 
 type AuctionRules struct {

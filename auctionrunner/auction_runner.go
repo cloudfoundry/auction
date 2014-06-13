@@ -56,6 +56,15 @@ func (a *auctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.StartAuct
 	return result, nil
 }
 
-func (a *auctionRunner) RunLRPStopAuction(auctionRequest auctiontypes.StopAuctionRequest) {
-	stopAuction(a.client, auctionRequest)
+func (a *auctionRunner) RunLRPStopAuction(auctionRequest auctiontypes.StopAuctionRequest) (auctiontypes.StopAuctionResult, error) {
+	result := auctiontypes.StopAuctionResult{
+		LRPStopAuction: auctionRequest.LRPStopAuction,
+	}
+
+	var err error
+	t := time.Now()
+	result.Winner, result.NumCommunications, err = stopAuction(a.client, auctionRequest)
+	result.BiddingDuration = time.Since(t)
+
+	return result, err
 }

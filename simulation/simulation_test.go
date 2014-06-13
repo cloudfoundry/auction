@@ -8,12 +8,7 @@ import (
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/format"
 )
-
-func init() {
-	format.MaxDepth = 1
-}
 
 var _ = Ω
 
@@ -186,7 +181,7 @@ var _ = Describe("Auction", func() {
 			}
 		})
 
-		Context("Shutting down duplicate instances", func() {
+		Context("Stop Auctions", func() {
 			processGuid := util.NewGrayscaleGuid("AAA")
 
 			Context("when there are duplicate instances on executors with disaparate resource availabilities", func() {
@@ -206,7 +201,9 @@ var _ = Describe("Auction", func() {
 						},
 					}
 
-					auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+					results := auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+					Ω(results).Should(HaveLen(1))
+					Ω(results[0].Winner).Should(Equal("REP-2"))
 
 					instancesOn0 := client.SimulatedInstances(guids[0])
 					instancesOn1 := client.SimulatedInstances(guids[1])
@@ -234,7 +231,9 @@ var _ = Describe("Auction", func() {
 						},
 					}
 
-					auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+					results := auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+					Ω(results).Should(HaveLen(1))
+					Ω(results[0].Winner).Should(Equal("REP-1"))
 
 					instancesOn0 := client.SimulatedInstances(guids[0])
 					instancesOn1 := client.SimulatedInstances(guids[1])
@@ -261,7 +260,9 @@ var _ = Describe("Auction", func() {
 						},
 					}
 
-					auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+					results := auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+					Ω(results).Should(HaveLen(1))
+					Ω(results[0].Winner).Should(Equal("REP-2"))
 
 					instancesOn0 := client.SimulatedInstances(guids[0])
 					instancesOn1 := client.SimulatedInstances(guids[1])
@@ -291,7 +292,9 @@ var _ = Describe("Auction", func() {
 						},
 					}
 
-					auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+					results := auctionDistributor.HoldStopAuctions(stopAuctions, guids)
+					Ω(results).Should(HaveLen(1))
+					Ω(results[0].Winner).Should(Equal("REP-2"))
 
 					instancesOn0 := client.SimulatedInstances(guids[0])
 					instancesOn1 := client.SimulatedInstances(guids[1])

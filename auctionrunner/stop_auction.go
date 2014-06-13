@@ -1,22 +1,22 @@
 package auctionrunner
 
-import (
-	"errors"
+import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-)
+func stopAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StopAuctionRequest) (string, int, error) {
+	numCommunication := 0
 
-func stopAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StopAuctionRequest) error {
 	stopAuctionInfo := auctiontypes.LRPStopAuctionInfo{
 		ProcessGuid: auctionRequest.LRPStopAuction.ProcessGuid,
 		Index:       auctionRequest.LRPStopAuction.Index,
 	}
+
+	numCommunication += len(auctionRequest.RepGuids)
 	stopScoreResults := client.StopScore(auctionRequest.RepGuids, stopAuctionInfo)
 	stopScoreResults = stopScoreResults.FilterErrors()
 
 	instanceGuids := stopScoreResults.InstanceGuids()
 	if len(instanceGuids) <= 1 {
-		return errors.New("found nothing to stop")
+		return "", numCommunication, auctiontypes.NothingToStop
 	}
 
 	stopScoreResults = stopScoreResults.Shuffle()
@@ -25,9 +25,9 @@ func stopAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.
 	lowestScore := 1e9
 
 	for _, stopScoreResult := range stopScoreResults {
-		score := scoreIfRepGuidWins(stopScoreResult)
-		if score < lowestScore {
-			lowestScore = score
+		scoreIfRepGuidWins := stopScoreResult.Score - float64(len(stopScoreResult.InstanceGuids)) + 1
+		if scoreIfRepGuidWins < lowestScore {
+			lowestScore = scoreIfRepGuidWins
 			repGuidWithLoneRemainingInstance = stopScoreResult.Rep
 		}
 	}
@@ -39,13 +39,10 @@ func stopAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.
 		}
 		for _, instanceGuid := range instanceGuidsToStop {
 			//this is terrible
+			numCommunication += 1
 			client.Stop(stopScoreResult.Rep, instanceGuid)
 		}
 	}
 
-	return nil
-}
-
-func scoreIfRepGuidWins(stopScoreResult auctiontypes.StopScoreResult) float64 {
-	return stopScoreResult.Score - float64(len(stopScoreResult.InstanceGuids)) + 1
+	return repGuidWithLoneRemainingInstance, numCommunication, nil
 }

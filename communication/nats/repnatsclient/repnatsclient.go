@@ -205,27 +205,27 @@ func (rep *RepNatsClient) Run(repGuid string, startAuction models.LRPStartAuctio
 	}, "rep-nats-client.run.done")
 }
 
-func (rep *RepNatsClient) Stop(repGuid string, instanceGuid string) {
+func (rep *RepNatsClient) Stop(repGuid string, stopInstance models.StopLRPInstance) {
 	rep.logger.Infod(map[string]interface{}{
-		"instance-guid": instanceGuid,
+		"stop-instance": stopInstance,
 		"rep-guid":      repGuid,
 	}, "rep-nats-client.stop.starting")
 
 	subjects := nats.NewSubjects(repGuid)
-	payload, _ := json.Marshal(instanceGuid)
+	payload, _ := json.Marshal(stopInstance)
 
 	_, err := rep.publishWithTimeout(subjects.Stop, payload, rep.timeout)
 
 	if err != nil {
 		rep.logger.Errord(map[string]interface{}{
 			"error":         err.Error(),
-			"instance-guid": instanceGuid,
+			"stop-instance": stopInstance,
 			"rep-guid":      repGuid,
 		}, "rep-nats-client.stop.failed")
 	}
 
 	rep.logger.Infod(map[string]interface{}{
-		"instance-guid": instanceGuid,
+		"stop-instance": stopInstance,
 		"rep-guid":      repGuid,
 	}, "rep-nats-client.stop.done")
 }

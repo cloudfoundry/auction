@@ -191,9 +191,9 @@ func (s *RepNatsServer) start(subjects nats.Subjects) {
 		s.logger.Infod(map[string]interface{}{
 			"rep-guid": s.repGuid,
 		}, "rep-nats-server.stop.handling")
-		var instanceGuid string
+		var stopInstance models.StopLRPInstance
 
-		err := json.Unmarshal(payload, &instanceGuid)
+		err := json.Unmarshal(payload, &stopInstance)
 		if err != nil {
 			s.logger.Errord(map[string]interface{}{
 				"error":    err.Error(),
@@ -202,7 +202,7 @@ func (s *RepNatsServer) start(subjects nats.Subjects) {
 			return errorResponse
 		}
 
-		s.rep.Stop(instanceGuid) //need to handle error
+		s.rep.Stop(stopInstance) //need to handle error
 
 		return successResponse
 	})

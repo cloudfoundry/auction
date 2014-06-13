@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
 func stopAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StopAuctionRequest) (string, int, error) {
@@ -46,7 +47,11 @@ func stopAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.
 			numCommunication += 1
 			wg.Add(1)
 			go func(repGuid string, instanceGuid string) {
-				client.Stop(repGuid, instanceGuid)
+				client.Stop(repGuid, models.StopLRPInstance{
+					ProcessGuid:  stopAuctionInfo.ProcessGuid,
+					InstanceGuid: instanceGuid,
+					Index:        stopAuctionInfo.Index,
+				})
 				wg.Done()
 			}(stopAuctionBid.Rep, instanceGuid)
 		}

@@ -116,11 +116,11 @@ func (rep *AuctionRep) Run(startAuction models.LRPStartAuction) error {
 }
 
 // must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) Stop(instanceGuid string) error {
+func (rep *AuctionRep) Stop(stopInstance models.StopLRPInstance) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	return rep.delegate.Stop(instanceGuid)
+	return rep.delegate.Stop(stopInstance)
 }
 
 // simulation-only

@@ -194,8 +194,8 @@ func (client *InprocessClient) Run(repGuid string, startAuctionInfo models.LRPSt
 	client.reps[repGuid].Run(startAuctionInfo)
 }
 
-func (client *InprocessClient) Stop(repGuid string, instanceGuid string) {
+func (client *InprocessClient) Stop(repGuid string, stopInstance models.StopLRPInstance) {
 	client.beSlowAndPossiblyTimeout(repGuid)
 
-	client.reps[repGuid].Stop(instanceGuid)
+	client.reps[repGuid].Stop(stopInstance)
 }

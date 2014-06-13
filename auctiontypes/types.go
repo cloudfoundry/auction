@@ -59,7 +59,7 @@ type RepPoolClient interface {
 	RebidThenTentativelyReserve(repGuids []string, startAuctionInfo StartAuctionInfo) StartAuctionBids
 	ReleaseReservation(repGuids []string, startAuctionInfo StartAuctionInfo)
 	Run(repGuid string, startAuctionInfo models.LRPStartAuction)
-	Stop(repGuid string, instanceGuid string)
+	Stop(repGuid string, stopInstance models.StopLRPInstance)
 }
 
 type AuctionRepDelegate interface {
@@ -71,7 +71,7 @@ type AuctionRepDelegate interface {
 	Reserve(startAuctionInfo StartAuctionInfo) error
 	ReleaseReservation(startAuctionInfo StartAuctionInfo) error
 	Run(startAuction models.LRPStartAuction) error
-	Stop(instanceGuid string) error
+	Stop(stopInstance models.StopLRPInstance) error
 }
 
 //simulation-only interface

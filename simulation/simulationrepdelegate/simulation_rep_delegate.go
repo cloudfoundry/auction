@@ -117,16 +117,16 @@ func (rep *SimulationRepDelegate) Run(startAuction models.LRPStartAuction) error
 	return nil
 }
 
-func (rep *SimulationRepDelegate) Stop(instanceGuid string) error {
+func (rep *SimulationRepDelegate) Stop(stopInstance models.StopLRPInstance) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	_, ok := rep.instances[instanceGuid]
+	_, ok := rep.instances[stopInstance.InstanceGuid]
 	if !ok {
-		return errors.New(fmt.Sprintf("no reservation for instance %s", instanceGuid))
+		return errors.New(fmt.Sprintf("no reservation for instance %s", stopInstance.InstanceGuid))
 	}
 
-	delete(rep.instances, instanceGuid)
+	delete(rep.instances, stopInstance.InstanceGuid)
 
 	return nil
 }

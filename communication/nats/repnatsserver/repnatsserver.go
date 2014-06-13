@@ -58,7 +58,7 @@ func (s *RepNatsServer) start(subjects nats.Subjects) {
 		s.logger.Infod(map[string]interface{}{
 			"guid": s.guid,
 		}, "rep-nats-server.score.handling")
-		var inst auctiontypes.LRPAuctionInfo
+		var inst auctiontypes.LRPStartAuctionInfo
 
 		err := json.Unmarshal(msg.Payload, &inst)
 		if err != nil {
@@ -125,7 +125,7 @@ func (s *RepNatsServer) start(subjects nats.Subjects) {
 		s.logger.Infod(map[string]interface{}{
 			"guid": s.guid,
 		}, "rep-nats-server.score-then-tentatively-reserve.handling")
-		var inst auctiontypes.LRPAuctionInfo
+		var inst auctiontypes.LRPStartAuctionInfo
 
 		err := json.Unmarshal(msg.Payload, &inst)
 		if err != nil {
@@ -158,7 +158,7 @@ func (s *RepNatsServer) start(subjects nats.Subjects) {
 		s.logger.Infod(map[string]interface{}{
 			"guid": s.guid,
 		}, "rep-nats-server.release-reservation.handling")
-		var inst auctiontypes.LRPAuctionInfo
+		var inst auctiontypes.LRPStartAuctionInfo
 
 		responsePayload := errorResponse
 		defer func() {

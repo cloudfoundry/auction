@@ -14,14 +14,14 @@ type AuctionRep struct {
 	lock     *sync.Mutex
 }
 
-type RepInstanceScoreInfo struct {
+type StartInstanceScoreInfo struct {
 	RemainingResources     auctiontypes.Resources
 	TotalResources         auctiontypes.Resources
 	NumInstancesForAppGuid int
 }
 
-type RepStopIndexScoreInfo struct {
-	InstanceScoreInfo            RepInstanceScoreInfo
+type StopIndexScoreInfo struct {
+	InstanceScoreInfo            StartInstanceScoreInfo
 	InstanceGuidsForProcessIndex []string
 }
 
@@ -38,16 +38,16 @@ func (rep *AuctionRep) Guid() string {
 }
 
 // must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) Score(instance auctiontypes.LRPAuctionInfo) (float64, error) {
+func (rep *AuctionRep) Score(startAuctionInfo auctiontypes.LRPStartAuctionInfo) (float64, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	repInstanceScoreInfo, err := rep.repInstanceScoreInfo(instance.AppGuid)
+	repInstanceScoreInfo, err := rep.repInstanceScoreInfo(startAuctionInfo.AppGuid)
 	if err != nil {
 		return 0, err
 	}
 
-	err = rep.satisfiesConstraints(instance, repInstanceScoreInfo)
+	err = rep.satisfiesConstraints(startAuctionInfo, repInstanceScoreInfo)
 	if err != nil {
 		return 0, err
 	}
@@ -74,16 +74,16 @@ func (rep *AuctionRep) StopScore(stopAuctionInfo auctiontypes.LRPStopAuctionInfo
 }
 
 // must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) ScoreThenTentativelyReserve(instance auctiontypes.LRPAuctionInfo) (float64, error) {
+func (rep *AuctionRep) ScoreThenTentativelyReserve(startAuctionInfo auctiontypes.LRPStartAuctionInfo) (float64, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	repInstanceScoreInfo, err := rep.repInstanceScoreInfo(instance.AppGuid)
+	repInstanceScoreInfo, err := rep.repInstanceScoreInfo(startAuctionInfo.AppGuid)
 	if err != nil {
 		return 0, err
 	}
 
-	err = rep.satisfiesConstraints(instance, repInstanceScoreInfo)
+	err = rep.satisfiesConstraints(startAuctionInfo, repInstanceScoreInfo)
 	if err != nil {
 		return 0, err
 	}
@@ -91,7 +91,7 @@ func (rep *AuctionRep) ScoreThenTentativelyReserve(instance auctiontypes.LRPAuct
 	score := rep.score(repInstanceScoreInfo)
 
 	//then reserve
-	err = rep.delegate.Reserve(instance)
+	err = rep.delegate.Reserve(startAuctionInfo)
 	if err != nil {
 		return 0, err
 	}
@@ -100,19 +100,19 @@ func (rep *AuctionRep) ScoreThenTentativelyReserve(instance auctiontypes.LRPAuct
 }
 
 // must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) ReleaseReservation(instance auctiontypes.LRPAuctionInfo) error {
+func (rep *AuctionRep) ReleaseReservation(startAuctionInfo auctiontypes.LRPStartAuctionInfo) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	return rep.delegate.ReleaseReservation(instance)
+	return rep.delegate.ReleaseReservation(startAuctionInfo)
 }
 
 // must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) Run(instance models.LRPStartAuction) error {
+func (rep *AuctionRep) Run(startAuction models.LRPStartAuction) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	return rep.delegate.Run(instance)
+	return rep.delegate.Run(startAuction)
 }
 
 // must lock here; the publicly visible operations should be atomic
@@ -172,23 +172,23 @@ func (rep *AuctionRep) SimulatedInstances() []auctiontypes.SimulatedInstance {
 }
 
 // private internals -- no locks here
-func (rep *AuctionRep) repInstanceScoreInfo(processGuid string) (RepInstanceScoreInfo, error) {
+func (rep *AuctionRep) repInstanceScoreInfo(processGuid string) (StartInstanceScoreInfo, error) {
 	remaining, err := rep.delegate.RemainingResources()
 	if err != nil {
-		return RepInstanceScoreInfo{}, err
+		return StartInstanceScoreInfo{}, err
 	}
 
 	total, err := rep.delegate.TotalResources()
 	if err != nil {
-		return RepInstanceScoreInfo{}, err
+		return StartInstanceScoreInfo{}, err
 	}
 
 	nInstances, err := rep.delegate.NumInstancesForAppGuid(processGuid)
 	if err != nil {
-		return RepInstanceScoreInfo{}, err
+		return StartInstanceScoreInfo{}, err
 	}
 
-	return RepInstanceScoreInfo{
+	return StartInstanceScoreInfo{
 		RemainingResources:     remaining,
 		TotalResources:         total,
 		NumInstancesForAppGuid: nInstances,
@@ -196,28 +196,28 @@ func (rep *AuctionRep) repInstanceScoreInfo(processGuid string) (RepInstanceScor
 }
 
 // private internals -- no locks here
-func (rep *AuctionRep) repStopIndexScoreInfo(stopAuctionInfo auctiontypes.LRPStopAuctionInfo) (RepStopIndexScoreInfo, error) {
+func (rep *AuctionRep) repStopIndexScoreInfo(stopAuctionInfo auctiontypes.LRPStopAuctionInfo) (StopIndexScoreInfo, error) {
 	instanceScoreInfo, err := rep.repInstanceScoreInfo(stopAuctionInfo.ProcessGuid)
 	if err != nil {
-		return RepStopIndexScoreInfo{}, err
+		return StopIndexScoreInfo{}, err
 	}
 
 	instanceGuids, err := rep.delegate.InstanceGuidsForProcessGuidAndIndex(stopAuctionInfo.ProcessGuid, stopAuctionInfo.Index)
 	if err != nil {
-		return RepStopIndexScoreInfo{}, err
+		return StopIndexScoreInfo{}, err
 	}
 
-	return RepStopIndexScoreInfo{
+	return StopIndexScoreInfo{
 		InstanceScoreInfo:            instanceScoreInfo,
 		InstanceGuidsForProcessIndex: instanceGuids,
 	}, nil
 }
 
 // private internals -- no locks here
-func (rep *AuctionRep) satisfiesConstraints(instance auctiontypes.LRPAuctionInfo, repInstanceScoreInfo RepInstanceScoreInfo) error {
+func (rep *AuctionRep) satisfiesConstraints(startAuctionInfo auctiontypes.LRPStartAuctionInfo, repInstanceScoreInfo StartInstanceScoreInfo) error {
 	remaining := repInstanceScoreInfo.RemainingResources
-	hasEnoughMemory := remaining.MemoryMB >= instance.MemoryMB
-	hasEnoughDisk := remaining.DiskMB >= instance.DiskMB
+	hasEnoughMemory := remaining.MemoryMB >= startAuctionInfo.MemoryMB
+	hasEnoughDisk := remaining.DiskMB >= startAuctionInfo.DiskMB
 	hasEnoughContainers := remaining.Containers > 0
 
 	if hasEnoughMemory && hasEnoughDisk && hasEnoughContainers {
@@ -227,7 +227,7 @@ func (rep *AuctionRep) satisfiesConstraints(instance auctiontypes.LRPAuctionInfo
 	}
 }
 
-func (rep *AuctionRep) isRunningProcessIndex(repStopIndexScoreInfo RepStopIndexScoreInfo) error {
+func (rep *AuctionRep) isRunningProcessIndex(repStopIndexScoreInfo StopIndexScoreInfo) error {
 	if len(repStopIndexScoreInfo.InstanceGuidsForProcessIndex) == 0 {
 		return errors.New("not-running-instance")
 	}
@@ -235,7 +235,7 @@ func (rep *AuctionRep) isRunningProcessIndex(repStopIndexScoreInfo RepStopIndexS
 }
 
 // private internals -- no locks here
-func (rep *AuctionRep) score(repInstanceScoreInfo RepInstanceScoreInfo) float64 {
+func (rep *AuctionRep) score(repInstanceScoreInfo StartInstanceScoreInfo) float64 {
 	remaining := repInstanceScoreInfo.RemainingResources
 	total := repInstanceScoreInfo.TotalResources
 

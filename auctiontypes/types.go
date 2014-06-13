@@ -3,6 +3,7 @@ package auctiontypes
 import (
 	"errors"
 	"time"
+
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
@@ -15,11 +16,11 @@ type AuctionRunner interface {
 }
 
 type RepPoolClient interface {
-	Score(guids []string, instance LRPAuctionInfo) ScoreResults
+	Score(guids []string, startAuctionInfo LRPStartAuctionInfo) ScoreResults
 	StopScore(guids []string, stopAuctionInfo LRPStopAuctionInfo) StopScoreResults
-	ScoreThenTentativelyReserve(guids []string, instance LRPAuctionInfo) ScoreResults
-	ReleaseReservation(guids []string, instance LRPAuctionInfo)
-	Run(guid string, instance models.LRPStartAuction)
+	ScoreThenTentativelyReserve(guids []string, startAuctionInfo LRPStartAuctionInfo) ScoreResults
+	ReleaseReservation(guids []string, startAuctionInfo LRPStartAuctionInfo)
+	Run(guid string, startAuctionInfo models.LRPStartAuction)
 	Stop(guid string, instanceGuid string)
 }
 
@@ -29,9 +30,9 @@ type AuctionRepDelegate interface {
 	NumInstancesForAppGuid(guid string) (int, error)
 	InstanceGuidsForProcessGuidAndIndex(guid string, index int) ([]string, error)
 
-	Reserve(instance LRPAuctionInfo) error
-	ReleaseReservation(instance LRPAuctionInfo) error
-	Run(instance models.LRPStartAuction) error
+	Reserve(startAuctionInfo LRPStartAuctionInfo) error
+	ReleaseReservation(startAuctionInfo LRPStartAuctionInfo) error
+	Run(startAuction models.LRPStartAuction) error
 	Stop(instanceGuid string) error
 }
 
@@ -111,7 +112,7 @@ type Resources struct {
 	Containers int
 }
 
-type LRPAuctionInfo struct {
+type LRPStartAuctionInfo struct {
 	AppGuid      string
 	InstanceGuid string
 	DiskMB       int
@@ -131,8 +132,8 @@ type SimulatedInstance struct {
 	DiskMB       int
 }
 
-func NewLRPAuctionInfo(info models.LRPStartAuction) LRPAuctionInfo {
-	return LRPAuctionInfo{
+func NewLRPStartAuctionInfo(info models.LRPStartAuction) LRPStartAuctionInfo {
+	return LRPStartAuctionInfo{
 		AppGuid:      info.ProcessGuid,
 		InstanceGuid: info.InstanceGuid,
 		DiskMB:       info.DiskMB,

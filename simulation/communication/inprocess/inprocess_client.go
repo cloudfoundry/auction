@@ -62,7 +62,7 @@ func (client *InprocessClient) Reset(guid string) {
 	client.reps[guid].Reset()
 }
 
-func (client *InprocessClient) score(guid string, instance auctiontypes.LRPAuctionInfo, c chan auctiontypes.ScoreResult) {
+func (client *InprocessClient) score(guid string, startAuctionInfo auctiontypes.LRPStartAuctionInfo, c chan auctiontypes.ScoreResult) {
 	result := auctiontypes.ScoreResult{
 		Rep: guid,
 	}
@@ -75,7 +75,7 @@ func (client *InprocessClient) score(guid string, instance auctiontypes.LRPAucti
 		return
 	}
 
-	score, err := client.reps[guid].Score(instance)
+	score, err := client.reps[guid].Score(startAuctionInfo)
 	if err != nil {
 		result.Error = err.Error()
 		return
@@ -122,10 +122,10 @@ func (client *InprocessClient) StopScore(representatives []string, stopAuctionIn
 	return results
 }
 
-func (client *InprocessClient) Score(representatives []string, instance auctiontypes.LRPAuctionInfo) auctiontypes.ScoreResults {
+func (client *InprocessClient) Score(representatives []string, startAuctionInfo auctiontypes.LRPStartAuctionInfo) auctiontypes.ScoreResults {
 	c := make(chan auctiontypes.ScoreResult)
 	for _, guid := range representatives {
-		go client.score(guid, instance, c)
+		go client.score(guid, startAuctionInfo, c)
 	}
 
 	results := auctiontypes.ScoreResults{}
@@ -136,7 +136,7 @@ func (client *InprocessClient) Score(representatives []string, instance auctiont
 	return results
 }
 
-func (client *InprocessClient) reserveAndRecastScore(guid string, instance auctiontypes.LRPAuctionInfo, c chan auctiontypes.ScoreResult) {
+func (client *InprocessClient) reserveAndRecastScore(guid string, startAuctionInfo auctiontypes.LRPStartAuctionInfo, c chan auctiontypes.ScoreResult) {
 	result := auctiontypes.ScoreResult{
 		Rep: guid,
 	}
@@ -149,7 +149,7 @@ func (client *InprocessClient) reserveAndRecastScore(guid string, instance aucti
 		return
 	}
 
-	score, err := client.reps[guid].ScoreThenTentativelyReserve(instance)
+	score, err := client.reps[guid].ScoreThenTentativelyReserve(startAuctionInfo)
 	if err != nil {
 		result.Error = err.Error()
 		return
@@ -159,10 +159,10 @@ func (client *InprocessClient) reserveAndRecastScore(guid string, instance aucti
 	return
 }
 
-func (client *InprocessClient) ScoreThenTentativelyReserve(guids []string, instance auctiontypes.LRPAuctionInfo) auctiontypes.ScoreResults {
+func (client *InprocessClient) ScoreThenTentativelyReserve(guids []string, startAuctionInfo auctiontypes.LRPStartAuctionInfo) auctiontypes.ScoreResults {
 	c := make(chan auctiontypes.ScoreResult)
 	for _, guid := range guids {
-		go client.reserveAndRecastScore(guid, instance, c)
+		go client.reserveAndRecastScore(guid, startAuctionInfo, c)
 	}
 
 	results := auctiontypes.ScoreResults{}
@@ -173,12 +173,12 @@ func (client *InprocessClient) ScoreThenTentativelyReserve(guids []string, insta
 	return results
 }
 
-func (client *InprocessClient) ReleaseReservation(guids []string, instance auctiontypes.LRPAuctionInfo) {
+func (client *InprocessClient) ReleaseReservation(guids []string, startAuctionInfo auctiontypes.LRPStartAuctionInfo) {
 	c := make(chan bool)
 	for _, guid := range guids {
 		go func(guid string) {
 			client.beSlowAndPossiblyTimeout(guid)
-			client.reps[guid].ReleaseReservation(instance)
+			client.reps[guid].ReleaseReservation(startAuctionInfo)
 			c <- true
 		}(guid)
 	}
@@ -188,10 +188,10 @@ func (client *InprocessClient) ReleaseReservation(guids []string, instance aucti
 	}
 }
 
-func (client *InprocessClient) Run(guid string, instance models.LRPStartAuction) {
+func (client *InprocessClient) Run(guid string, startAuctionInfo models.LRPStartAuction) {
 	client.beSlowAndPossiblyTimeout(guid)
 
-	client.reps[guid].Run(instance)
+	client.reps[guid].Run(startAuctionInfo)
 }
 
 func (client *InprocessClient) Stop(guid string, instanceGuid string) {

@@ -97,7 +97,7 @@ var _ = Describe("Auction", func() {
 			n4apps := []int{50, 200}
 			for i := range nexec {
 				i := i
-				Context("with single-instance and multi-instance apps apps", func() {
+				Context("with single-instance and multi-instance apps", func() {
 					It("should distribute evenly", func() {
 						instances := []models.LRPStartAuction{}
 

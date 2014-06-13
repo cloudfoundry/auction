@@ -33,10 +33,10 @@ func New(client yagnats.NATSClient, timeout time.Duration, runTimeout time.Durat
 	}
 }
 
-func (rep *RepNatsClient) Score(guids []string, instance auctiontypes.LRPAuctionInfo) auctiontypes.ScoreResults {
+func (rep *RepNatsClient) Score(guids []string, startAuctionInfo auctiontypes.LRPStartAuctionInfo) auctiontypes.ScoreResults {
 	rep.logger.Infod(map[string]interface{}{
-		"auction-info":  instance,
-		"num-rep-guids": len(guids),
+		"start-auction-info": startAuctionInfo,
+		"num-rep-guids":      len(guids),
 	}, "rep-nats-client.score.fetching")
 
 	replyTo := util.RandomGuid()
@@ -71,7 +71,7 @@ func (rep *RepNatsClient) Score(guids []string, instance auctiontypes.LRPAuction
 
 	defer rep.client.Unsubscribe(subscriptionID)
 
-	payload, _ := json.Marshal(instance)
+	payload, _ := json.Marshal(startAuctionInfo)
 
 	for _, guid := range guids {
 		subjects := nats.NewSubjects(guid)
@@ -102,7 +102,7 @@ func (rep *RepNatsClient) Score(guids []string, instance auctiontypes.LRPAuction
 	}
 
 	rep.logger.Infod(map[string]interface{}{
-		"auction-info":        instance,
+		"start-auction-info":  startAuctionInfo,
 		"num-rep-guids":       len(guids),
 		"num-scores-received": len(results),
 	}, "rep-nats-client.score.fetched")
@@ -187,10 +187,10 @@ func (rep *RepNatsClient) StopScore(guids []string, stopAuctionInfo auctiontypes
 	return results
 }
 
-func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, instance auctiontypes.LRPAuctionInfo) auctiontypes.ScoreResults {
+func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, startAuctionInfo auctiontypes.LRPStartAuctionInfo) auctiontypes.ScoreResults {
 	rep.logger.Infod(map[string]interface{}{
-		"auction-info":  instance,
-		"num-rep-guids": len(guids),
+		"start-auction-info": startAuctionInfo,
+		"num-rep-guids":      len(guids),
 	}, "rep-nats-client.score-then-tentatively-reserve.starting")
 
 	resultChan := make(chan auctiontypes.ScoreResult, 0)
@@ -198,7 +198,7 @@ func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, instance a
 		go func(guid string) {
 			result := auctiontypes.ScoreResult{}
 			subjects := nats.NewSubjects(guid)
-			err := rep.publishWithTimeout(subjects.ScoreThenTentativelyReserve, instance, &result, rep.timeout)
+			err := rep.publishWithTimeout(subjects.ScoreThenTentativelyReserve, startAuctionInfo, &result, rep.timeout)
 			if err != nil {
 				rep.logger.Infod(map[string]interface{}{
 					"error":    err.Error(),
@@ -206,7 +206,7 @@ func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, instance a
 				}, "rep-nats-client.score-then-tentatively-reserve.failed")
 
 				result = auctiontypes.ScoreResult{Error: err.Error()}
-				rep.publishWithTimeout(subjects.ReleaseReservation, instance, nil, rep.timeout)
+				rep.publishWithTimeout(subjects.ReleaseReservation, startAuctionInfo, nil, rep.timeout)
 			}
 			resultChan <- result
 		}(guid)
@@ -218,7 +218,7 @@ func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, instance a
 	}
 
 	rep.logger.Infod(map[string]interface{}{
-		"auction-info":        instance,
+		"start-auction-info":  startAuctionInfo,
 		"num-rep-guids":       len(guids),
 		"num-scores-received": len(results),
 	}, "rep-nats-client.score-then-tentatively-reserve.done")
@@ -226,9 +226,9 @@ func (rep *RepNatsClient) ScoreThenTentativelyReserve(guids []string, instance a
 	return results
 }
 
-func (rep *RepNatsClient) ReleaseReservation(guids []string, instance auctiontypes.LRPAuctionInfo) {
+func (rep *RepNatsClient) ReleaseReservation(guids []string, startAuctionInfo auctiontypes.LRPStartAuctionInfo) {
 	rep.logger.Infod(map[string]interface{}{
-		"auction-info":         instance,
+		"start-auction-info":   startAuctionInfo,
 		"rep-guids-to-release": guids,
 	}, "rep-nats-client.release-reservation.starting")
 
@@ -238,7 +238,7 @@ func (rep *RepNatsClient) ReleaseReservation(guids []string, instance auctiontyp
 	for _, guid := range guids {
 		go func(guid string) {
 			subjects := nats.NewSubjects(guid)
-			err := rep.publishWithTimeout(subjects.ReleaseReservation, instance, nil, rep.timeout)
+			err := rep.publishWithTimeout(subjects.ReleaseReservation, startAuctionInfo, nil, rep.timeout)
 			if err != nil {
 				rep.logger.Infod(map[string]interface{}{
 					"error":    err.Error(),
@@ -252,31 +252,31 @@ func (rep *RepNatsClient) ReleaseReservation(guids []string, instance auctiontyp
 	allReceived.Wait()
 
 	rep.logger.Infod(map[string]interface{}{
-		"auction-info":         instance,
+		"start-auction-info":   startAuctionInfo,
 		"rep-guids-to-release": guids,
 	}, "rep-nats-client.release-reservation.done")
 }
 
-func (rep *RepNatsClient) Run(guid string, instance models.LRPStartAuction) {
+func (rep *RepNatsClient) Run(guid string, startAuction models.LRPStartAuction) {
 	rep.logger.Infod(map[string]interface{}{
-		"auction-info": instance,
-		"rep-guid":     guid,
+		"start-auction-info": startAuction,
+		"rep-guid":           guid,
 	}, "rep-nats-client.run.starting")
 
 	subjects := nats.NewSubjects(guid)
-	err := rep.publishWithTimeout(subjects.Run, instance, nil, rep.runTimeout)
+	err := rep.publishWithTimeout(subjects.Run, startAuction, nil, rep.runTimeout)
 
 	if err != nil {
 		rep.logger.Errord(map[string]interface{}{
-			"error":        err.Error(),
-			"auction-info": instance,
-			"rep-guid":     guid,
+			"error":              err.Error(),
+			"start-auction-info": startAuction,
+			"rep-guid":           guid,
 		}, "rep-nats-client.run.failed")
 	}
 
 	rep.logger.Infod(map[string]interface{}{
-		"auction-info": instance,
-		"rep-guid":     guid,
+		"start-auction-info": startAuction,
+		"rep-guid":           guid,
 	}, "rep-nats-client.run.done")
 }
 

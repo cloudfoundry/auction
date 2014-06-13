@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
@@ -64,51 +65,51 @@ func (rep *SimulationRepDelegate) InstanceGuidsForProcessGuidAndIndex(processGui
 	return instanceGuids, nil
 }
 
-func (rep *SimulationRepDelegate) Reserve(instance auctiontypes.LRPAuctionInfo) error {
+func (rep *SimulationRepDelegate) Reserve(startAuctionInfo auctiontypes.LRPStartAuctionInfo) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
 	remaining := rep.remainingResources()
 
-	hasEnoughMemory := remaining.MemoryMB >= instance.MemoryMB
-	hasEnoughDisk := remaining.DiskMB >= instance.DiskMB
+	hasEnoughMemory := remaining.MemoryMB >= startAuctionInfo.MemoryMB
+	hasEnoughDisk := remaining.DiskMB >= startAuctionInfo.DiskMB
 	hasEnoughContainers := remaining.Containers > 0
 
 	if !(hasEnoughMemory && hasEnoughDisk && hasEnoughContainers) {
 		return auctiontypes.InsufficientResources
 	}
 
-	rep.instances[instance.InstanceGuid] = auctiontypes.SimulatedInstance{
-		ProcessGuid:  instance.AppGuid,
-		InstanceGuid: instance.InstanceGuid,
-		MemoryMB:     instance.MemoryMB,
-		DiskMB:       instance.DiskMB,
+	rep.instances[startAuctionInfo.InstanceGuid] = auctiontypes.SimulatedInstance{
+		ProcessGuid:  startAuctionInfo.AppGuid,
+		InstanceGuid: startAuctionInfo.InstanceGuid,
+		MemoryMB:     startAuctionInfo.MemoryMB,
+		DiskMB:       startAuctionInfo.DiskMB,
 	}
 
 	return nil
 }
 
-func (rep *SimulationRepDelegate) ReleaseReservation(instance auctiontypes.LRPAuctionInfo) error {
+func (rep *SimulationRepDelegate) ReleaseReservation(startAuctionInfo auctiontypes.LRPStartAuctionInfo) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	reservedInstance, ok := rep.instances[instance.InstanceGuid]
+	_, ok := rep.instances[startAuctionInfo.InstanceGuid]
 	if !ok {
-		return errors.New(fmt.Sprintf("no reservation for instance %s", reservedInstance.InstanceGuid))
+		return errors.New(fmt.Sprintf("no reservation for instance %s", startAuctionInfo.InstanceGuid))
 	}
 
-	delete(rep.instances, instance.InstanceGuid)
+	delete(rep.instances, startAuctionInfo.InstanceGuid)
 
 	return nil
 }
 
-func (rep *SimulationRepDelegate) Run(instance models.LRPStartAuction) error {
+func (rep *SimulationRepDelegate) Run(startAuction models.LRPStartAuction) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	_, ok := rep.instances[instance.InstanceGuid]
+	_, ok := rep.instances[startAuction.InstanceGuid]
 	if !ok {
-		return errors.New(fmt.Sprintf("no reservation for instance %s", instance.InstanceGuid))
+		return errors.New(fmt.Sprintf("no reservation for instance %s", startAuction.InstanceGuid))
 	}
 
 	//start the app asynchronously!

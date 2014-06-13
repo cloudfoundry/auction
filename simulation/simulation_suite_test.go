@@ -96,7 +96,9 @@ var _ = BeforeSuite(func() {
 		}
 	case NATS:
 		natsAddrs := startNATS()
-		client = repnatsclient.New(natsRunner.MessageBus, timeout, runTimeout, gosteno.NewLogger("test"))
+		var err error
+		client, err = repnatsclient.New(natsRunner.MessageBus, timeout, runTimeout, gosteno.NewLogger("test"))
+		Ω(err).ShouldNot(HaveOccurred())
 		repGuids = launchExternalReps("-natsAddrs", natsAddrs)
 		if auctioneerMode == Remote {
 			hosts = launchExternalAuctioneers("-natsAddrs", natsAddrs)
@@ -265,7 +267,10 @@ func ketchupNATSClient() auctiontypes.SimulationRepPoolClient {
 	err := natsClient.Connect(clusterInfo)
 	Ω(err).ShouldNot(HaveOccurred())
 
-	return repnatsclient.New(natsClient, timeout, runTimeout, gosteno.NewLogger("test"))
+	client, err := repnatsclient.New(natsClient, timeout, runTimeout, gosteno.NewLogger("test"))
+	Ω(err).ShouldNot(HaveOccurred())
+
+	return client
 }
 
 func startReport() {

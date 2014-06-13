@@ -53,7 +53,10 @@ func main() {
 		log.Fatalln("no nats:", err)
 	}
 
-	repClient = repnatsclient.New(client, *timeout, *runTimeout, gosteno.NewLogger("auctioneer"))
+	repClient, err = repnatsclient.New(client, *timeout, *runTimeout, gosteno.NewLogger("auctioneer"))
+	if err != nil {
+		log.Fatalln("no rep client:", err)
+	}
 
 	semaphore := make(chan bool, *maxConcurrent)
 

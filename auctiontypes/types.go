@@ -97,6 +97,7 @@ func NewStartAuctionInfoFromLRPStartAuction(auction models.LRPStartAuction) Star
 		InstanceGuid: auction.InstanceGuid,
 		DiskMB:       auction.DiskMB,
 		MemoryMB:     auction.MemoryMB,
+		Index:        auction.Index,
 	}
 }
 
@@ -135,6 +136,7 @@ type StartAuctionInfo struct {
 	InstanceGuid string
 	DiskMB       int
 	MemoryMB     int
+	Index        int
 }
 
 type StopAuctionInfo struct {

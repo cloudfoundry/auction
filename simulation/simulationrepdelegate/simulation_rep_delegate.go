@@ -84,6 +84,7 @@ func (rep *SimulationRepDelegate) Reserve(startAuctionInfo auctiontypes.StartAuc
 		InstanceGuid: startAuctionInfo.InstanceGuid,
 		MemoryMB:     startAuctionInfo.MemoryMB,
 		DiskMB:       startAuctionInfo.DiskMB,
+		Index:        startAuctionInfo.Index,
 	}
 
 	return nil

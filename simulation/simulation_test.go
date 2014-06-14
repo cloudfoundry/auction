@@ -47,6 +47,7 @@ var _ = Describe("Auction", func() {
 			InstanceGuid: util.NewGuid("INS"),
 			MemoryMB:     memoryMB,
 			DiskMB:       1,
+			Index:        0,
 		}
 	}
 

@@ -1,4 +1,4 @@
-package natsmuxer
+package nats_muxer
 
 import (
 	"encoding/json"

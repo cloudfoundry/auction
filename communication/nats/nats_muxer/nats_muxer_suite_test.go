@@ -1,4 +1,4 @@
-package natsmuxer_test
+package nats_muxer_test
 
 import (
 	"github.com/cloudfoundry/gunk/natsrunner"

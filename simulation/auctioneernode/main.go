@@ -11,7 +11,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auction/communication/nats/repnatsclient"
+	"github.com/cloudfoundry-incubator/auction/communication/nats/auction_nats_client"
 	"github.com/cloudfoundry/gosteno"
 	"github.com/cloudfoundry/yagnats"
 )
@@ -53,7 +53,7 @@ func main() {
 		log.Fatalln("no nats:", err)
 	}
 
-	repClient, err = repnatsclient.New(client, *timeout, *runTimeout, gosteno.NewLogger("auctioneer"))
+	repClient, err = auction_nats_client.New(client, *timeout, *runTimeout, gosteno.NewLogger("auctioneer"))
 	if err != nil {
 		log.Fatalln("no rep client:", err)
 	}

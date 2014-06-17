@@ -8,7 +8,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	repnatsserver "github.com/cloudfoundry-incubator/auction/communication/nats/repnatsserver"
+	auction_nats_server "github.com/cloudfoundry-incubator/auction/communication/nats/auction_nats_server"
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
 	"github.com/cloudfoundry/gosteno"
 	"github.com/cloudfoundry/yagnats"
@@ -58,7 +58,7 @@ func main() {
 		}
 
 		log.Println("starting rep nats server")
-		natsRunner := repnatsserver.New(client, rep, gosteno.NewLogger(*repGuid))
+		natsRunner := auction_nats_server.New(client, rep, gosteno.NewLogger(*repGuid))
 		server := ifrit.Envoke(natsRunner)
 		monitor := ifrit.Envoke(sigmon.New(server))
 		fmt.Println("rep node listening")

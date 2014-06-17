@@ -1,4 +1,4 @@
-package repnatsclient
+package auction_nats_client
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/nats"
-	"github.com/cloudfoundry-incubator/auction/communication/nats/natsmuxer"
+	"github.com/cloudfoundry-incubator/auction/communication/nats/nats_muxer"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/cloudfoundry/gosteno"
 	"github.com/cloudfoundry/yagnats"
@@ -16,21 +16,21 @@ import (
 
 var RequestFailedError = errors.New("request failed")
 
-type RepNatsClient struct {
-	client     *natsmuxer.NATSMuxerClient
+type AuctionNATSClient struct {
+	client     *nats_muxer.NATSMuxerClient
 	timeout    time.Duration
 	runTimeout time.Duration
 	logger     *gosteno.Logger
 }
 
-func New(natsClient yagnats.NATSClient, timeout time.Duration, runTimeout time.Duration, logger *gosteno.Logger) (*RepNatsClient, error) {
-	client := natsmuxer.NewNATSMuxerClient(natsClient)
+func New(natsClient yagnats.NATSClient, timeout time.Duration, runTimeout time.Duration, logger *gosteno.Logger) (*AuctionNATSClient, error) {
+	client := nats_muxer.NewNATSMuxerClient(natsClient)
 	err := client.ListenForResponses()
 	if err != nil {
 		return nil, err
 	}
 
-	return &RepNatsClient{
+	return &AuctionNATSClient{
 		client:     client,
 		timeout:    timeout,
 		runTimeout: runTimeout,
@@ -38,7 +38,7 @@ func New(natsClient yagnats.NATSClient, timeout time.Duration, runTimeout time.D
 	}, nil
 }
 
-func (rep *RepNatsClient) BidForStartAuction(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
+func (rep *AuctionNATSClient) BidForStartAuction(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
 	rep.logger.Infod(map[string]interface{}{
 		"start-auction-info": startAuctionInfo,
 		"num-rep-guids":      len(repGuids),
@@ -75,7 +75,7 @@ func (rep *RepNatsClient) BidForStartAuction(repGuids []string, startAuctionInfo
 	return results
 }
 
-func (rep *RepNatsClient) BidForStopAuction(repGuids []string, stopAuctionInfo auctiontypes.StopAuctionInfo) auctiontypes.StopAuctionBids {
+func (rep *AuctionNATSClient) BidForStopAuction(repGuids []string, stopAuctionInfo auctiontypes.StopAuctionInfo) auctiontypes.StopAuctionBids {
 	rep.logger.Infod(map[string]interface{}{
 		"stop-auction-info": stopAuctionInfo,
 		"num-rep-guids":     len(repGuids),
@@ -112,7 +112,7 @@ func (rep *RepNatsClient) BidForStopAuction(repGuids []string, stopAuctionInfo a
 	return results
 }
 
-func (rep *RepNatsClient) RebidThenTentativelyReserve(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
+func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
 	rep.logger.Infod(map[string]interface{}{
 		"start-auction-info": startAuctionInfo,
 		"num-rep-guids":      len(repGuids),
@@ -161,7 +161,7 @@ func (rep *RepNatsClient) RebidThenTentativelyReserve(repGuids []string, startAu
 	return results
 }
 
-func (rep *RepNatsClient) ReleaseReservation(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) {
+func (rep *AuctionNATSClient) ReleaseReservation(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) {
 	rep.logger.Infod(map[string]interface{}{
 		"start-auction-info":   startAuctionInfo,
 		"rep-guids-to-release": repGuids,
@@ -181,7 +181,7 @@ func (rep *RepNatsClient) ReleaseReservation(repGuids []string, startAuctionInfo
 	}, "rep-nats-client.release-reservation.done")
 }
 
-func (rep *RepNatsClient) Run(repGuid string, startAuction models.LRPStartAuction) {
+func (rep *AuctionNATSClient) Run(repGuid string, startAuction models.LRPStartAuction) {
 	rep.logger.Infod(map[string]interface{}{
 		"start-auction-info": startAuction,
 		"rep-guid":           repGuid,
@@ -205,7 +205,7 @@ func (rep *RepNatsClient) Run(repGuid string, startAuction models.LRPStartAuctio
 	}, "rep-nats-client.run.done")
 }
 
-func (rep *RepNatsClient) Stop(repGuid string, stopInstance models.StopLRPInstance) {
+func (rep *AuctionNATSClient) Stop(repGuid string, stopInstance models.StopLRPInstance) {
 	rep.logger.Infod(map[string]interface{}{
 		"stop-instance": stopInstance,
 		"rep-guid":      repGuid,
@@ -230,7 +230,7 @@ func (rep *RepNatsClient) Stop(repGuid string, stopInstance models.StopLRPInstan
 	}, "rep-nats-client.stop.done")
 }
 
-func (rep *RepNatsClient) publishWithTimeout(subject string, payload []byte, timeout time.Duration) ([]byte, error) {
+func (rep *AuctionNATSClient) publishWithTimeout(subject string, payload []byte, timeout time.Duration) ([]byte, error) {
 	response, err := rep.client.Request(subject, payload, timeout)
 	if err != nil {
 		return nil, err
@@ -243,7 +243,7 @@ func (rep *RepNatsClient) publishWithTimeout(subject string, payload []byte, tim
 	return response, nil
 }
 
-func (rep *RepNatsClient) aggregateWithTimeout(subjects []string, payload []byte, timeout time.Duration) ([][]byte, []string) {
+func (rep *AuctionNATSClient) aggregateWithTimeout(subjects []string, payload []byte, timeout time.Duration) ([][]byte, []string) {
 	allReceived := new(sync.WaitGroup)
 	allReceived.Add(len(subjects))
 
@@ -281,7 +281,7 @@ func (rep *RepNatsClient) aggregateWithTimeout(subjects []string, payload []byte
 
 //SIMULATION ONLY METHODS:
 
-func (rep *RepNatsClient) TotalResources(repGuid string) auctiontypes.Resources {
+func (rep *AuctionNATSClient) TotalResources(repGuid string) auctiontypes.Resources {
 	var totalResources auctiontypes.Resources
 	subjects := nats.NewSubjects(repGuid)
 	response, err := rep.publishWithTimeout(subjects.TotalResources, nil, rep.timeout)
@@ -299,7 +299,7 @@ func (rep *RepNatsClient) TotalResources(repGuid string) auctiontypes.Resources 
 	return totalResources
 }
 
-func (rep *RepNatsClient) SimulatedInstances(repGuid string) []auctiontypes.SimulatedInstance {
+func (rep *AuctionNATSClient) SimulatedInstances(repGuid string) []auctiontypes.SimulatedInstance {
 	var instances []auctiontypes.SimulatedInstance
 	subjects := nats.NewSubjects(repGuid)
 	response, err := rep.publishWithTimeout(subjects.SimulatedInstances, nil, rep.timeout)
@@ -317,7 +317,7 @@ func (rep *RepNatsClient) SimulatedInstances(repGuid string) []auctiontypes.Simu
 	return instances
 }
 
-func (rep *RepNatsClient) Reset(repGuid string) {
+func (rep *AuctionNATSClient) Reset(repGuid string) {
 	subjects := nats.NewSubjects(repGuid)
 	_, err := rep.publishWithTimeout(subjects.Reset, nil, rep.timeout)
 	if err != nil {
@@ -326,7 +326,7 @@ func (rep *RepNatsClient) Reset(repGuid string) {
 	}
 }
 
-func (rep *RepNatsClient) SetSimulatedInstances(repGuid string, instances []auctiontypes.SimulatedInstance) {
+func (rep *AuctionNATSClient) SetSimulatedInstances(repGuid string, instances []auctiontypes.SimulatedInstance) {
 	subjects := nats.NewSubjects(repGuid)
 	payload, _ := json.Marshal(instances)
 	_, err := rep.publishWithTimeout(subjects.SetSimulatedInstances, payload, rep.timeout)

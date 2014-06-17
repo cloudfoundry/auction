@@ -10,9 +10,10 @@ import (
 var AllBiddersFull = errors.New("all the bidders were full")
 
 var DefaultStartAuctionRules = auctiontypes.StartAuctionRules{
-	Algorithm:      "reserve_n_best",
-	MaxRounds:      100,
-	MaxBiddingPool: 0.2,
+	Algorithm:              "reserve_n_best",
+	MaxRounds:              40,
+	MaxBiddingPoolFraction: 0.2,
+	MinBiddingPool:         10,
 }
 
 type auctionRunner struct {

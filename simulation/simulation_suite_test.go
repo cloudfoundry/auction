@@ -70,7 +70,7 @@ func init() {
 
 	flag.StringVar(&(auctionrunner.DefaultStartAuctionRules.Algorithm), "algorithm", auctionrunner.DefaultStartAuctionRules.Algorithm, "the auction algorithm to use")
 	flag.IntVar(&(auctionrunner.DefaultStartAuctionRules.MaxRounds), "maxRounds", auctionrunner.DefaultStartAuctionRules.MaxRounds, "the maximum number of rounds per auction")
-	flag.Float64Var(&(auctionrunner.DefaultStartAuctionRules.MaxBiddingPool), "maxBiddingPool", auctionrunner.DefaultStartAuctionRules.MaxBiddingPool, "the maximum number of participants in the pool")
+	flag.Float64Var(&(auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction), "maxBiddingPoolFraction", auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction, "the maximum number of participants in the pool")
 
 	flag.IntVar(&maxConcurrent, "maxConcurrent", 20, "the maximum number of concurrent auctions to run")
 }
@@ -274,16 +274,16 @@ func ketchupNATSClient() auctiontypes.SimulationRepPoolClient {
 }
 
 func startReport() {
-	reportName = fmt.Sprintf("./runs/%s_%s_pool%.1f_conc%d.svg", auctionrunner.DefaultStartAuctionRules.Algorithm, communicationMode, auctionrunner.DefaultStartAuctionRules.MaxBiddingPool, maxConcurrent)
+	reportName = fmt.Sprintf("./runs/%s_%s_pool%.1f_conc%d.svg", auctionrunner.DefaultStartAuctionRules.Algorithm, communicationMode, auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction, maxConcurrent)
 	svgReport = visualization.StartSVGReport(reportName, 2, 3)
 	svgReport.DrawHeader(communicationMode, auctionrunner.DefaultStartAuctionRules, maxConcurrent)
 }
 
 func finishReport() {
 	svgReport.Done()
-	// exec.Command("open", "-a", "safari", reportName).Run()
+	exec.Command("open", "-a", "safari", reportName).Run()
 
-	reportJSONName := fmt.Sprintf("./runs/%s_%s_pool%.1f_conc%d.json", auctionrunner.DefaultStartAuctionRules.Algorithm, communicationMode, auctionrunner.DefaultStartAuctionRules.MaxBiddingPool, maxConcurrent)
+	reportJSONName := fmt.Sprintf("./runs/%s_%s_pool%.1f_conc%d.json", auctionrunner.DefaultStartAuctionRules.Algorithm, communicationMode, auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction, maxConcurrent)
 	data, err := json.Marshal(reports)
 	Ω(err).ShouldNot(HaveOccurred())
 	ioutil.WriteFile(reportJSONName, data, 0777)

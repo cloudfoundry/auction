@@ -46,9 +46,10 @@ type StopAuctionResult struct {
 }
 
 type StartAuctionRules struct {
-	Algorithm      string
-	MaxRounds      int
-	MaxBiddingPool float64
+	Algorithm              string
+	MaxRounds              int
+	MaxBiddingPoolFraction float64
+	MinBiddingPool         int
 }
 
 type RepGuids []string

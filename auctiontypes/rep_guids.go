@@ -20,12 +20,15 @@ func (r RepGuids) RandomSubsetByCount(n int) RepGuids {
 	return subset
 }
 
-func (r RepGuids) RandomSubsetByFraction(f float64) RepGuids {
+func (r RepGuids) RandomSubsetByFraction(f float64, minNumber int) RepGuids {
 	if f >= 1 {
 		return r
 	}
 
 	n := int(math.Ceil(float64(len(r)) * f))
+	if n < minNumber {
+		n = minNumber
+	}
 
 	return r.RandomSubsetByCount(n)
 }

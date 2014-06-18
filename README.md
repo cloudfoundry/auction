@@ -1,5 +1,7 @@
 # Auction
 
+####Learn more about Diego and its components at [diego-design-notes](https://github.com/cloudfoundry-incubator/diego-design-notes)
+
 Auction implements the scheduling algorithm for Diego's long running processes.  It does this by codifying two players in the scheduling game:
 
 ## The Auctioneer

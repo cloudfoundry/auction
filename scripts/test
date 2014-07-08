@@ -11,6 +11,7 @@ mkdir -p $FIRST_GOPATH/bin
 export PATH=$FIRST_GOPATH/bin:$PATH
 
 go get -t -u -v ./...
+go get -u github.com/apcera/gnatsd
 go install github.com/onsi/ginkgo/ginkgo
 
 ginkgo -failOnPending -randomizeAllSpecs -race -trace communication/nats/nats_muxer/

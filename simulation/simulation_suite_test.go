@@ -62,6 +62,8 @@ var natsRunner *natsrunner.NATSRunner
 var client auctiontypes.SimulationRepPoolClient
 var repGuids []string
 
+var disableSVGReport bool
+
 func init() {
 	flag.StringVar(&communicationMode, "communicationMode", "inprocess", "one of inprocess, nats, ketchup")
 	flag.StringVar(&auctioneerMode, "auctioneerMode", "inprocess", "one of inprocess, remote")
@@ -73,6 +75,8 @@ func init() {
 	flag.Float64Var(&(auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction), "maxBiddingPoolFraction", auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction, "the maximum number of participants in the pool")
 
 	flag.IntVar(&maxConcurrent, "maxConcurrent", 20, "the maximum number of concurrent auctions to run")
+
+	flag.BoolVar(&disableSVGReport, "disableSVGReport", false, "disable displaying SVG reports of the simulation runs")
 }
 
 func TestAuction(t *testing.T) {
@@ -129,8 +133,9 @@ var _ = BeforeEach(func() {
 })
 
 var _ = AfterSuite(func() {
-	finishReport()
-
+	if !disableSVGReport {
+		finishReport()
+	}
 	for _, sess := range sessionsToTerminate {
 		sess.Kill().Wait()
 	}

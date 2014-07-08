@@ -10,6 +10,7 @@ FIRST_GOPATH=`echo $GOPATH | cut -d':' -f1`
 mkdir -p $FIRST_GOPATH/bin
 export PATH=$FIRST_GOPATH/bin:$PATH
 
+go get -t -u -v ./...
 go install github.com/onsi/ginkgo/ginkgo
 
 ginkgo -failOnPending -randomizeAllSpecs -race -trace communication/nats/nats_muxer/

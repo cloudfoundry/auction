@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/cloudfoundry-incubator/auction.svg)](https://travis-ci.org/cloudfoundry-incubator/auction)
+
 # Auction
 
 ####Learn more about Diego and its components at [diego-design-notes](https://github.com/cloudfoundry-incubator/diego-design-notes)

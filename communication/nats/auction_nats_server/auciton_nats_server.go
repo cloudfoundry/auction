@@ -9,8 +9,8 @@ import (
 	"github.com/cloudfoundry-incubator/auction/communication/nats"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/nats_muxer"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
-	"github.com/cloudfoundry/gosteno"
 	"github.com/cloudfoundry/yagnats"
+	"github.com/pivotal-golang/lager"
 )
 
 var errorResponse = []byte("error")
@@ -20,15 +20,15 @@ type AuctionNATSServer struct {
 	repGuid string
 	rep     *auctionrep.AuctionRep
 	client  yagnats.NATSClient
-	logger  *gosteno.Logger
+	logger  lager.Logger
 }
 
-func New(client yagnats.NATSClient, rep *auctionrep.AuctionRep, logger *gosteno.Logger) *AuctionNATSServer {
+func New(client yagnats.NATSClient, rep *auctionrep.AuctionRep, logger lager.Logger) *AuctionNATSServer {
 	return &AuctionNATSServer{
 		repGuid: rep.Guid(),
 		rep:     rep,
 		client:  client,
-		logger:  logger,
+		logger:  logger.Session("rep-nats-server"),
 	}
 }
 
@@ -36,38 +36,41 @@ func (s *AuctionNATSServer) Run(sigChan <-chan os.Signal, ready chan<- struct{})
 	subjects := nats.NewSubjects(s.repGuid)
 
 	s.start(subjects)
-	s.logger.Infod(map[string]interface{}{
+
+	s.logger.Info("listening", lager.Data{
 		"rep-guid": s.repGuid,
-	}, "rep-nats-server.listening")
+	})
+
 	close(ready)
 
 	<-sigChan
+
 	s.stop(subjects)
+
 	return nil
 }
 
 func (s *AuctionNATSServer) start(subjects nats.Subjects) {
-	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.TotalResources, func(payload []byte) []byte {
-		s.logger.Infod(map[string]interface{}{
-			"rep-guid": s.repGuid,
-		}, "rep-nats-server.total-resources.handling")
+	natsLog := s.logger.Session("nats-handler")
 
+	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.TotalResources, func(payload []byte) []byte {
+		totalResourcesLog := natsLog.Session("total-resources")
+
+		totalResourcesLog.Info("handling")
 		out, _ := json.Marshal(s.rep.TotalResources())
 		return out
 	})
 
 	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.BidForStartAuction, func(payload []byte) []byte {
-		s.logger.Infod(map[string]interface{}{
-			"rep-guid": s.repGuid,
-		}, "rep-nats-server.bid.handling")
+		bidLog := natsLog.Session("bid-for-start")
+
+		bidLog.Info("handling")
+
 		var inst auctiontypes.StartAuctionInfo
 
 		err := json.Unmarshal(payload, &inst)
 		if err != nil {
-			s.logger.Errord(map[string]interface{}{
-				"error":    err.Error(),
-				"rep-guid": s.repGuid,
-			}, "rep-nats-server.bid.failed-to-unmarshal-auction-info")
+			bidLog.Error("failed-to-unmarshal", err)
 			return errorResponse
 		}
 
@@ -87,17 +90,15 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 	})
 
 	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.BidForStopAuction, func(payload []byte) []byte {
-		s.logger.Infod(map[string]interface{}{
-			"rep-guid": s.repGuid,
-		}, "rep-nats-server.stop-bid.handling")
+		bidLog := natsLog.Session("bid-for-stop")
+
+		bidLog.Info("handling")
+
 		var stopAuctionInfo auctiontypes.StopAuctionInfo
 
 		err := json.Unmarshal(payload, &stopAuctionInfo)
 		if err != nil {
-			s.logger.Errord(map[string]interface{}{
-				"error":    err.Error(),
-				"rep-guid": s.repGuid,
-			}, "rep-nats-server.stop-bid.failed-to-unmarshal-auction-info")
+			bidLog.Error("failed-to-unmarshal", err)
 			return errorResponse
 		}
 
@@ -118,17 +119,15 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 	})
 
 	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.RebidThenTentativelyReserve, func(payload []byte) []byte {
-		s.logger.Infod(map[string]interface{}{
-			"rep-guid": s.repGuid,
-		}, "rep-nats-server.bid-then-tentatively-reserve.handling")
+		bidLog := natsLog.Session("re-bid-then-reserve")
+
+		bidLog.Info("handling")
+
 		var inst auctiontypes.StartAuctionInfo
 
 		err := json.Unmarshal(payload, &inst)
 		if err != nil {
-			s.logger.Errord(map[string]interface{}{
-				"error":    err.Error(),
-				"rep-guid": s.repGuid,
-			}, "rep-nats-server.bid-then-tentatively-reserve.failed-to-unmarshal-auction-info")
+			bidLog.Error("failed-to-unmarshal", err)
 			return errorResponse
 		}
 
@@ -148,17 +147,15 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 	})
 
 	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.ReleaseReservation, func(payload []byte) []byte {
-		s.logger.Infod(map[string]interface{}{
-			"rep-guid": s.repGuid,
-		}, "rep-nats-server.release-reservation.handling")
+		releaseLog := natsLog.Session("release-reservation")
+
+		releaseLog.Info("handling")
+
 		var inst auctiontypes.StartAuctionInfo
 
 		err := json.Unmarshal(payload, &inst)
 		if err != nil {
-			s.logger.Errord(map[string]interface{}{
-				"error":    err.Error(),
-				"rep-guid": s.repGuid,
-			}, "rep-nats-server.release-reservation.failed-to-unmarshal-auction-info")
+			releaseLog.Error("failed-to-unmarshal", err)
 			return errorResponse
 		}
 
@@ -168,17 +165,15 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 	})
 
 	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.Run, func(payload []byte) []byte {
-		s.logger.Infod(map[string]interface{}{
-			"rep-guid": s.repGuid,
-		}, "rep-nats-server.run.handling")
+		runLog := natsLog.Session("run")
+
+		runLog.Info("handling")
+
 		var inst models.LRPStartAuction
 
 		err := json.Unmarshal(payload, &inst)
 		if err != nil {
-			s.logger.Errord(map[string]interface{}{
-				"error":    err.Error(),
-				"rep-guid": s.repGuid,
-			}, "rep-nats-server.run.failed-to-unmarshal-auction-info")
+			runLog.Error("failed-to-unmarshal", err)
 			return errorResponse
 		}
 
@@ -188,17 +183,15 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 	})
 
 	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.Stop, func(payload []byte) []byte {
-		s.logger.Infod(map[string]interface{}{
-			"rep-guid": s.repGuid,
-		}, "rep-nats-server.stop.handling")
+		stopLog := natsLog.Session("stop")
+
+		stopLog.Info("handling")
+
 		var stopInstance models.StopLRPInstance
 
 		err := json.Unmarshal(payload, &stopInstance)
 		if err != nil {
-			s.logger.Errord(map[string]interface{}{
-				"error":    err.Error(),
-				"rep-guid": s.repGuid,
-			}, "rep-nats-server.stop.failed-to-unmarshal-auction-info")
+			stopLog.Error("failed-to-unmarshal", err)
 			return errorResponse
 		}
 

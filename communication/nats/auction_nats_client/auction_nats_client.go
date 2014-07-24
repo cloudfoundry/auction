@@ -10,8 +10,8 @@ import (
 	"github.com/cloudfoundry-incubator/auction/communication/nats"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/nats_muxer"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
-	"github.com/cloudfoundry/gosteno"
 	"github.com/cloudfoundry/yagnats"
+	"github.com/pivotal-golang/lager"
 )
 
 var RequestFailedError = errors.New("request failed")
@@ -20,10 +20,10 @@ type AuctionNATSClient struct {
 	client     *nats_muxer.NATSMuxerClient
 	timeout    time.Duration
 	runTimeout time.Duration
-	logger     *gosteno.Logger
+	logger     lager.Logger
 }
 
-func New(natsClient yagnats.NATSClient, timeout time.Duration, runTimeout time.Duration, logger *gosteno.Logger) (*AuctionNATSClient, error) {
+func New(natsClient yagnats.NATSClient, timeout time.Duration, runTimeout time.Duration, logger lager.Logger) (*AuctionNATSClient, error) {
 	client := nats_muxer.NewNATSMuxerClient(natsClient)
 	err := client.ListenForResponses()
 	if err != nil {
@@ -34,15 +34,17 @@ func New(natsClient yagnats.NATSClient, timeout time.Duration, runTimeout time.D
 		client:     client,
 		timeout:    timeout,
 		runTimeout: runTimeout,
-		logger:     logger,
+		logger:     logger.Session("auction-nats-client"),
 	}, nil
 }
 
 func (rep *AuctionNATSClient) BidForStartAuction(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
-	rep.logger.Infod(map[string]interface{}{
+	bidLog := rep.logger.Session("start-bid", lager.Data{
 		"start-auction-info": startAuctionInfo,
 		"num-rep-guids":      len(repGuids),
-	}, "rep-nats-client.start-bid.fetching")
+	})
+
+	bidLog.Info("fetching")
 
 	subjects := []string{}
 	for _, repGuid := range repGuids {
@@ -50,36 +52,35 @@ func (rep *AuctionNATSClient) BidForStartAuction(repGuids []string, startAuction
 	}
 	payload, _ := json.Marshal(startAuctionInfo)
 
-	responses, _ := rep.aggregateWithTimeout(subjects, payload, rep.timeout)
+	responses, _ := rep.aggregateWithTimeout(bidLog, subjects, payload, rep.timeout)
 
 	results := auctiontypes.StartAuctionBids{}
 	for _, response := range responses {
 		bid := auctiontypes.StartAuctionBid{}
 		err := json.Unmarshal(response, &bid)
 		if err != nil {
-			rep.logger.Infod(map[string]interface{}{
-				"malformed-payload": string(response),
-				"error":             err.Error(),
-			}, "rep-nats-client.start-bid.parse-failed")
+			bidLog.Error("failed-to-unmarshal", err, lager.Data{
+				"payload": string(response),
+			})
 			continue
 		}
 		results = append(results, bid)
 	}
 
-	rep.logger.Infod(map[string]interface{}{
-		"start-auction-info": startAuctionInfo,
-		"num-rep-guids":      len(repGuids),
-		"num-bids-received":  len(results),
-	}, "rep-nats-client.start-bid.fetched")
+	bidLog.Info("fetched", lager.Data{
+		"num-bids-received": len(results),
+	})
 
 	return results
 }
 
 func (rep *AuctionNATSClient) BidForStopAuction(repGuids []string, stopAuctionInfo auctiontypes.StopAuctionInfo) auctiontypes.StopAuctionBids {
-	rep.logger.Infod(map[string]interface{}{
+	bidLog := rep.logger.Session("stop-bid", lager.Data{
 		"stop-auction-info": stopAuctionInfo,
 		"num-rep-guids":     len(repGuids),
-	}, "rep-nats-client.stop-bid.fetching")
+	})
+
+	bidLog.Info("fetching")
 
 	subjects := []string{}
 	for _, repGuid := range repGuids {
@@ -87,36 +88,35 @@ func (rep *AuctionNATSClient) BidForStopAuction(repGuids []string, stopAuctionIn
 	}
 	payload, _ := json.Marshal(stopAuctionInfo)
 
-	responses, _ := rep.aggregateWithTimeout(subjects, payload, rep.timeout)
+	responses, _ := rep.aggregateWithTimeout(bidLog, subjects, payload, rep.timeout)
 
 	results := auctiontypes.StopAuctionBids{}
 	for _, response := range responses {
 		bid := auctiontypes.StopAuctionBid{}
 		err := json.Unmarshal(response, &bid)
 		if err != nil {
-			rep.logger.Infod(map[string]interface{}{
-				"malformed-payload": string(response),
-				"error":             err.Error(),
-			}, "rep-nats-client.stop-bid.parse-failed")
+			bidLog.Error("failed-to-unmarshal", err, lager.Data{
+				"payload": string(response),
+			})
 			continue
 		}
 		results = append(results, bid)
 	}
 
-	rep.logger.Infod(map[string]interface{}{
-		"stop-auction-info": stopAuctionInfo,
-		"num-rep-guids":     len(repGuids),
+	bidLog.Info("fetched", lager.Data{
 		"num-bids-received": len(results),
-	}, "rep-nats-client.stop-bid.fetched")
+	})
 
 	return results
 }
 
 func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
-	rep.logger.Infod(map[string]interface{}{
+	bidLog := rep.logger.Session("rebid-then-reserve", lager.Data{
 		"start-auction-info": startAuctionInfo,
 		"num-rep-guids":      len(repGuids),
-	}, "rep-nats-client.bid-then-tentatively-reserve.starting")
+	})
+
+	bidLog.Info("fetching")
 
 	subjects := []string{}
 	subjectToRepGuid := map[string]string{}
@@ -127,17 +127,16 @@ func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, sta
 	}
 	payload, _ := json.Marshal(startAuctionInfo)
 
-	responses, failedSubjects := rep.aggregateWithTimeout(subjects, payload, rep.timeout)
+	responses, failedSubjects := rep.aggregateWithTimeout(bidLog, subjects, payload, rep.timeout)
 
 	results := auctiontypes.StartAuctionBids{}
 	for _, response := range responses {
 		bid := auctiontypes.StartAuctionBid{}
 		err := json.Unmarshal(response, &bid)
 		if err != nil {
-			rep.logger.Infod(map[string]interface{}{
-				"malformed-payload": string(response),
-				"error":             err.Error(),
-			}, "rep-nats-client.bid-then-tentatively-reserve.parse-failed")
+			bidLog.Error("failed-to-unmarshal", err, lager.Data{
+				"payload": string(response),
+			})
 			continue
 		}
 		results = append(results, bid)
@@ -152,64 +151,60 @@ func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, sta
 		rep.ReleaseReservation(releaseGuids, startAuctionInfo)
 	}
 
-	rep.logger.Infod(map[string]interface{}{
-		"start-auction-info": startAuctionInfo,
-		"num-rep-guids":      len(repGuids),
-		"num-bids-received":  len(results),
-	}, "rep-nats-client.bid-then-tentatively-reserve.fetched")
+	bidLog.Info("fetched", lager.Data{
+		"num-bids-received": len(results),
+	})
 
 	return results
 }
 
 func (rep *AuctionNATSClient) ReleaseReservation(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) {
-	rep.logger.Infod(map[string]interface{}{
+	releaseLog := rep.logger.Session("release-reservation", lager.Data{
 		"start-auction-info":   startAuctionInfo,
 		"rep-guids-to-release": repGuids,
-	}, "rep-nats-client.release-reservation.starting")
+	})
+
+	releaseLog.Info("starting")
 
 	subjects := []string{}
 	for _, repGuid := range repGuids {
 		subjects = append(subjects, nats.NewSubjects(repGuid).ReleaseReservation)
 	}
+
 	payload, _ := json.Marshal(startAuctionInfo)
 
-	rep.aggregateWithTimeout(subjects, payload, rep.timeout)
+	rep.aggregateWithTimeout(releaseLog, subjects, payload, rep.timeout)
 
-	rep.logger.Infod(map[string]interface{}{
-		"start-auction-info":   startAuctionInfo,
-		"rep-guids-to-release": repGuids,
-	}, "rep-nats-client.release-reservation.done")
+	releaseLog.Info("done")
 }
 
 func (rep *AuctionNATSClient) Run(repGuid string, startAuction models.LRPStartAuction) {
-	rep.logger.Infod(map[string]interface{}{
+	runLog := rep.logger.Session("run", lager.Data{
 		"start-auction-info": startAuction,
 		"rep-guid":           repGuid,
-	}, "rep-nats-client.run.starting")
+	})
+
+	runLog.Info("starting")
 
 	subjects := nats.NewSubjects(repGuid)
 	payload, _ := json.Marshal(startAuction)
 	_, err := rep.publishWithTimeout(subjects.Run, payload, rep.runTimeout)
 
 	if err != nil {
-		rep.logger.Errord(map[string]interface{}{
-			"error":              err.Error(),
-			"start-auction-info": startAuction,
-			"rep-guid":           repGuid,
-		}, "rep-nats-client.run.failed")
+		runLog.Error("failed-to-publish", err)
+		return
 	}
 
-	rep.logger.Infod(map[string]interface{}{
-		"start-auction-info": startAuction,
-		"rep-guid":           repGuid,
-	}, "rep-nats-client.run.done")
+	runLog.Info("done")
 }
 
 func (rep *AuctionNATSClient) Stop(repGuid string, stopInstance models.StopLRPInstance) {
-	rep.logger.Infod(map[string]interface{}{
+	stopLog := rep.logger.Session("stop", lager.Data{
 		"stop-instance": stopInstance,
 		"rep-guid":      repGuid,
-	}, "rep-nats-client.stop.starting")
+	})
+
+	stopLog.Info("stopping")
 
 	subjects := nats.NewSubjects(repGuid)
 	payload, _ := json.Marshal(stopInstance)
@@ -217,17 +212,11 @@ func (rep *AuctionNATSClient) Stop(repGuid string, stopInstance models.StopLRPIn
 	_, err := rep.publishWithTimeout(subjects.Stop, payload, rep.timeout)
 
 	if err != nil {
-		rep.logger.Errord(map[string]interface{}{
-			"error":         err.Error(),
-			"stop-instance": stopInstance,
-			"rep-guid":      repGuid,
-		}, "rep-nats-client.stop.failed")
+		stopLog.Error("failed-to-publish", err)
+		return
 	}
 
-	rep.logger.Infod(map[string]interface{}{
-		"stop-instance": stopInstance,
-		"rep-guid":      repGuid,
-	}, "rep-nats-client.stop.done")
+	stopLog.Info("done")
 }
 
 func (rep *AuctionNATSClient) publishWithTimeout(subject string, payload []byte, timeout time.Duration) ([]byte, error) {
@@ -243,7 +232,7 @@ func (rep *AuctionNATSClient) publishWithTimeout(subject string, payload []byte,
 	return response, nil
 }
 
-func (rep *AuctionNATSClient) aggregateWithTimeout(subjects []string, payload []byte, timeout time.Duration) ([][]byte, []string) {
+func (rep *AuctionNATSClient) aggregateWithTimeout(logger lager.Logger, subjects []string, payload []byte, timeout time.Duration) ([][]byte, []string) {
 	allReceived := new(sync.WaitGroup)
 	allReceived.Add(len(subjects))
 
@@ -257,9 +246,7 @@ func (rep *AuctionNATSClient) aggregateWithTimeout(subjects []string, payload []
 
 			result, err := rep.publishWithTimeout(subject, payload, timeout)
 			if err != nil {
-				rep.logger.Infod(map[string]interface{}{
-					"error": err.Error(),
-				}, "rep-nats-client.request-failed")
+				logger.Error("aggregate-request-publish-failed", err)
 
 				lock.Lock()
 				failed = append(failed, subject)

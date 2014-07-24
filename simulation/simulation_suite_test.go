@@ -17,13 +17,13 @@ import (
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
 	"github.com/cloudfoundry-incubator/auction/util"
-	"github.com/cloudfoundry/gosteno"
 	"github.com/cloudfoundry/gunk/natsrunner"
 	"github.com/cloudfoundry/yagnats"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	"github.com/pivotal-golang/lager"
 
 	"testing"
 	"time"
@@ -101,7 +101,11 @@ var _ = BeforeSuite(func() {
 	case NATS:
 		natsAddrs := startNATS()
 		var err error
-		client, err = auction_nats_client.New(natsRunner.MessageBus, timeout, runTimeout, gosteno.NewLogger("test"))
+
+		natsLogger := lager.NewLogger("test")
+		natsLogger.RegisterSink(lager.NewWriterSink(GinkgoWriter, lager.DEBUG))
+
+		client, err = auction_nats_client.New(natsRunner.MessageBus, timeout, runTimeout, natsLogger)
 		Ω(err).ShouldNot(HaveOccurred())
 		repGuids = launchExternalReps("-natsAddrs", natsAddrs)
 		if auctioneerMode == Remote {
@@ -272,7 +276,10 @@ func ketchupNATSClient() auctiontypes.SimulationRepPoolClient {
 	err := natsClient.Connect(clusterInfo)
 	Ω(err).ShouldNot(HaveOccurred())
 
-	client, err := auction_nats_client.New(natsClient, timeout, runTimeout, gosteno.NewLogger("test"))
+	natsLogger := lager.NewLogger("test")
+	natsLogger.RegisterSink(lager.NewWriterSink(GinkgoWriter, lager.DEBUG))
+
+	client, err := auction_nats_client.New(natsClient, timeout, runTimeout, natsLogger)
 	Ω(err).ShouldNot(HaveOccurred())
 
 	return client

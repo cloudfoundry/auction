@@ -98,7 +98,7 @@ var _ = Describe("Auction", func() {
 			n4apps := []int{50, 200}
 			for i := range nexec {
 				i := i
-				Context("with single-instance and multi-instance apps", func() {
+				Context("with variable memory requirements between apps", func() {
 					It("should distribute evenly", func() {
 						instances := []models.LRPStartAuction{}
 
@@ -114,7 +114,7 @@ var _ = Describe("Auction", func() {
 							permutedInstances[i] = instances[index]
 						}
 						report := auctionDistributor.HoldAuctionsFor(
-							"Cold start with single-instance and multi-instance apps",
+							"Cold start with variable memory requirements between apps",
 							nexec[i],
 							permutedInstances,
 							repGuids[:nexec[i]],
@@ -134,7 +134,6 @@ var _ = Describe("Auction", func() {
 					})
 				})
 			}
-
 		})
 
 		Context("Imbalanced scenario (e.g. a deploy)", func() {

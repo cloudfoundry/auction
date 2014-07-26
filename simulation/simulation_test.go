@@ -109,10 +109,14 @@ var _ = Describe("Auction", func() {
 						instances = append(instances, generateUniqueLRPStartAuctions(n4apps[i]/2, 4)...)
 						instances = append(instances, generateLRPStartAuctionsWithRandomSVGColors(n4apps[i]/2, 4)...)
 
+						permutedInstances := make([]models.LRPStartAuction, len(instances))
+						for i, index := range util.R.Perm(len(instances)) {
+							permutedInstances[i] = instances[index]
+						}
 						report := auctionDistributor.HoldAuctionsFor(
 							"Cold start with single-instance and multi-instance apps",
 							nexec[i],
-							instances,
+							permutedInstances,
 							repGuids[:nexec[i]],
 							auctionrunner.DefaultStartAuctionRules,
 						)

@@ -23,7 +23,6 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	roundsDistribution := map[int]int{}
 	auctionedInstances := map[string]bool{}
 
-	///
 	fmt.Println("Rounds Distributions")
 	for _, result := range results {
 		roundsDistribution[result.NumRounds] += 1
@@ -35,8 +34,6 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 			fmt.Printf("  %2d: %s\n", i, strings.Repeat("■", roundsDistribution[i]))
 		}
 	}
-
-	///
 
 	fmt.Println("Distribution")
 	maxGuidLength := 0
@@ -87,10 +84,8 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	}
 	fmt.Printf("  %#v\n", rules)
 	if _, ok := client.(*inprocess.InprocessClient); ok {
-		fmt.Printf("  Latency Range: %s < %s, Timeout: %s, Flakiness: %.2f\n", inprocess.LatencyMin, inprocess.LatencyMax, inprocess.Timeout)
+		fmt.Printf("  Latency Range: %s < %s, Timeout: %s\n", inprocess.LatencyMin, inprocess.LatencyMax, inprocess.Timeout)
 	}
-
-	///
 
 	fmt.Println("Bidding Times")
 	minBiddingTime, maxBiddingTime, totalBiddingTime, meanBiddingTime := time.Hour, time.Duration(0), time.Duration(0), time.Duration(0)
@@ -123,8 +118,6 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	meanTime = meanTime / time.Duration(len(results))
 	fmt.Printf("  Min: %s | Max: %s | Mean: %s\n", minTime, maxTime, meanTime)
 
-	///
-
 	fmt.Println("Rounds")
 	minRounds, maxRounds, totalRounds, meanRounds := 100000000, 0, 0, float64(0)
 	for _, result := range results {
@@ -141,8 +134,6 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	meanRounds = meanRounds / float64(len(results))
 	fmt.Printf("  Min: %d | Max: %d | Total: %d | Mean: %.2f\n", minRounds, maxRounds, totalRounds, meanRounds)
 
-	///
-
 	fmt.Println("Scores")
 	minScores, maxScores, totalScores, meanScores := 100000000, 0, 0, float64(0)
 	for _, result := range results {
@@ -158,5 +149,4 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 
 	meanScores = meanScores / float64(len(results))
 	fmt.Printf("  Min: %d | Max: %d | Total: %d | Mean: %.2f\n", minScores, maxScores, totalScores, meanScores)
-
 }

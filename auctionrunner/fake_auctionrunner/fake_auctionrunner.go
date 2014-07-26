@@ -2,8 +2,8 @@
 package fake_auctionrunner
 
 import (
-	"sync"
 	. "github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"sync"
 )
 
 type FakeAuctionRunner struct {

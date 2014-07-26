@@ -109,11 +109,6 @@ var _ = Describe("Auction", func() {
 						instances = append(instances, generateUniqueLRPStartAuctions(n4apps[i]/2, 4)...)
 						instances = append(instances, generateLRPStartAuctionsWithRandomSVGColors(n4apps[i]/2, 4)...)
 
-						permutedInstances := make([]models.LRPStartAuction, len(instances))
-						for i, index := range util.R.Perm(len(instances)) {
-							permutedInstances[i] = instances[index]
-						}
-
 						report := auctionDistributor.HoldAuctionsFor(instances, repGuids[:nexec[i]], auctionrunner.DefaultStartAuctionRules)
 
 						visualization.PrintReport(client, report.AuctionResults, repGuids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)

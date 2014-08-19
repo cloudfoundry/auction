@@ -1,7 +1,6 @@
 package auctionrep
 
 import (
-	"errors"
 	"sync"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
@@ -107,68 +106,14 @@ func (rep *AuctionRep) ReleaseReservation(startAuctionInfo auctiontypes.StartAuc
 	return rep.delegate.ReleaseReservation(startAuctionInfo)
 }
 
-// must lock here; the publicly visible operations should be atomic
+// no locks here -- the resource allocations have already been determined
 func (rep *AuctionRep) Run(startAuction models.LRPStartAuction) error {
-	rep.lock.Lock()
-	defer rep.lock.Unlock()
-
 	return rep.delegate.Run(startAuction)
 }
 
-// must lock here; the publicly visible operations should be atomic
+// no locks here -- the resource allocations have already been determined
 func (rep *AuctionRep) Stop(stopInstance models.StopLRPInstance) error {
-	rep.lock.Lock()
-	defer rep.lock.Unlock()
-
 	return rep.delegate.Stop(stopInstance)
-}
-
-// simulation-only
-func (rep *AuctionRep) TotalResources() auctiontypes.Resources {
-	totalResources, _ := rep.delegate.TotalResources()
-	return totalResources
-}
-
-// simulation-only
-// must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) Reset() {
-	rep.lock.Lock()
-	defer rep.lock.Unlock()
-
-	simDelegate, ok := rep.delegate.(auctiontypes.SimulationAuctionRepDelegate)
-	if !ok {
-		println("not reseting")
-		return
-	}
-	simDelegate.SetSimulatedInstances([]auctiontypes.SimulatedInstance{})
-}
-
-// simulation-only
-// must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) SetSimulatedInstances(instances []auctiontypes.SimulatedInstance) {
-	rep.lock.Lock()
-	defer rep.lock.Unlock()
-
-	simDelegate, ok := rep.delegate.(auctiontypes.SimulationAuctionRepDelegate)
-	if !ok {
-		println("not setting instances")
-		return
-	}
-	simDelegate.SetSimulatedInstances(instances)
-}
-
-// simulation-only
-// must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) SimulatedInstances() []auctiontypes.SimulatedInstance {
-	rep.lock.Lock()
-	defer rep.lock.Unlock()
-
-	simDelegate, ok := rep.delegate.(auctiontypes.SimulationAuctionRepDelegate)
-	if !ok {
-		println("not fetching instances")
-		return []auctiontypes.SimulatedInstance{}
-	}
-	return simDelegate.SimulatedInstances()
 }
 
 // private internals -- no locks here
@@ -229,7 +174,7 @@ func (rep *AuctionRep) satisfiesConstraints(startAuctionInfo auctiontypes.StartA
 
 func (rep *AuctionRep) isRunningProcessIndex(repStopIndexScoreInfo StopIndexScoreInfo) error {
 	if len(repStopIndexScoreInfo.InstanceGuidsForProcessIndex) == 0 {
-		return errors.New("not-running-instance")
+		return auctiontypes.NothingToStop
 	}
 	return nil
 }

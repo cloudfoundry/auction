@@ -1,17 +1,16 @@
 package inprocess
 
 import (
+	"math/rand"
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auction/util"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
 var LatencyMin time.Duration
 var LatencyMax time.Duration
-var Timeout time.Duration
 
 type InprocessClient struct {
 	reps map[string]*auctionrep.AuctionRep
@@ -23,27 +22,9 @@ func New(reps map[string]*auctionrep.AuctionRep) *InprocessClient {
 	}
 }
 
-func randomSleep(min time.Duration, max time.Duration, timeout time.Duration) bool {
-	sleepDuration := time.Duration(util.R.Float64()*float64(max-min) + float64(min))
-	if sleepDuration <= timeout {
-		time.Sleep(sleepDuration)
-		return true
-	} else {
-		time.Sleep(timeout)
-		return false
-	}
-}
-
-func (client *InprocessClient) beSlowAndPossiblyTimeout(repGuid string) bool {
-	sleepDuration := time.Duration(util.R.Float64()*float64(LatencyMax-LatencyMin) + float64(LatencyMin))
-
-	if sleepDuration <= Timeout {
-		time.Sleep(sleepDuration)
-		return false
-	} else {
-		time.Sleep(Timeout)
-		return true
-	}
+func (client *InprocessClient) beSlow(repGuid string) {
+	sleepDuration := time.Duration(rand.Float64()*float64(LatencyMax-LatencyMin) + float64(LatencyMin))
+	time.Sleep(sleepDuration)
 }
 
 func (client *InprocessClient) TotalResources(repGuid string) auctiontypes.Resources {
@@ -70,10 +51,7 @@ func (client *InprocessClient) startAuctionBid(repGuid string, startAuctionInfo 
 		c <- result
 	}()
 
-	if client.beSlowAndPossiblyTimeout(repGuid) {
-		result.Error = "timeout"
-		return
-	}
+	client.beSlow(repGuid)
 
 	bid, err := client.reps[repGuid].BidForStartAuction(startAuctionInfo)
 	if err != nil {
@@ -93,10 +71,7 @@ func (client *InprocessClient) stopScore(repGuid string, auctionInfo auctiontype
 		c <- result
 	}()
 
-	if client.beSlowAndPossiblyTimeout(repGuid) {
-		result.Error = "timeout"
-		return
-	}
+	client.beSlow(repGuid)
 
 	bid, instanceGuids, err := client.reps[repGuid].BidForStopAuction(auctionInfo)
 	if err != nil {
@@ -144,10 +119,7 @@ func (client *InprocessClient) reserveAndRecastScore(repGuid string, startAuctio
 		c <- result
 	}()
 
-	if client.beSlowAndPossiblyTimeout(repGuid) {
-		result.Error = "timedout"
-		return
-	}
+	client.beSlow(repGuid)
 
 	bid, err := client.reps[repGuid].RebidThenTentativelyReserve(startAuctionInfo)
 	if err != nil {
@@ -177,7 +149,7 @@ func (client *InprocessClient) ReleaseReservation(repGuids []string, startAuctio
 	c := make(chan bool)
 	for _, repGuid := range repGuids {
 		go func(repGuid string) {
-			client.beSlowAndPossiblyTimeout(repGuid)
+			client.beSlow(repGuid)
 			client.reps[repGuid].ReleaseReservation(startAuctionInfo)
 			c <- true
 		}(repGuid)
@@ -189,13 +161,13 @@ func (client *InprocessClient) ReleaseReservation(repGuids []string, startAuctio
 }
 
 func (client *InprocessClient) Run(repGuid string, startAuctionInfo models.LRPStartAuction) {
-	client.beSlowAndPossiblyTimeout(repGuid)
+	client.beSlow(repGuid)
 
 	client.reps[repGuid].Run(startAuctionInfo)
 }
 
 func (client *InprocessClient) Stop(repGuid string, stopInstance models.StopLRPInstance) {
-	client.beSlowAndPossiblyTimeout(repGuid)
+	client.beSlow(repGuid)
 
 	client.reps[repGuid].Stop(stopInstance)
 }

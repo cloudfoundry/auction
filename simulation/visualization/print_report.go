@@ -87,7 +87,7 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	}
 	fmt.Printf("  %#v\n", rules)
 	if _, ok := client.(*inprocess.InprocessClient); ok {
-		fmt.Printf("  Latency Range: %s < %s, Timeout: %s, Flakiness: %.2f\n", inprocess.LatencyMin, inprocess.LatencyMax, inprocess.Timeout)
+		fmt.Printf("  Latency Range: %s < %s", inprocess.LatencyMin, inprocess.LatencyMax)
 	}
 
 	///

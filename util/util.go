@@ -8,14 +8,14 @@ import (
 	"time"
 )
 
-var R *rand.Rand
 var guidTracker map[string]int
 var lock *sync.Mutex
+var R *rand.Rand
 
 func init() {
-	R = rand.New(rand.NewSource(time.Now().UnixNano()))
 	ResetGuids()
 	lock = &sync.Mutex{}
+	R = rand.New(&lockedSource{src: rand.NewSource(time.Now().UnixNano())})
 }
 
 func ResetGuids() {
@@ -41,6 +41,11 @@ func RandomIntIn(min, max int) int {
 	return R.Intn(max-min+1) + min
 }
 
+func RandomSleep(minMilliseconds, maxMilliseconds int) {
+	milliseconds := RandomIntIn(minMilliseconds, maxMilliseconds)
+	time.Sleep(time.Duration(milliseconds) * time.Millisecond)
+}
+
 func RandomGuid() string {
 	b := make([]byte, 8)
 	lock.Lock()
@@ -50,4 +55,22 @@ func RandomGuid() string {
 		return ""
 	}
 	return fmt.Sprintf("%x-%x-%x-%x", b[0:2], b[2:4], b[4:6], b[6:8])
+}
+
+type lockedSource struct {
+	lock sync.Mutex
+	src  rand.Source
+}
+
+func (r *lockedSource) Int63() (n int64) {
+	r.lock.Lock()
+	n = r.src.Int63()
+	r.lock.Unlock()
+	return
+}
+
+func (r *lockedSource) Seed(seed int64) {
+	r.lock.Lock()
+	r.src.Seed(seed)
+	r.lock.Unlock()
 }

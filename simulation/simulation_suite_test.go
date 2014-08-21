@@ -70,7 +70,7 @@ func init() {
 	flag.IntVar(&(auctionrunner.DefaultStartAuctionRules.MaxRounds), "maxRounds", auctionrunner.DefaultStartAuctionRules.MaxRounds, "the maximum number of rounds per auction")
 	flag.Float64Var(&(auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction), "maxBiddingPoolFraction", auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction, "the maximum number of participants in the pool")
 
-	flag.IntVar(&maxConcurrent, "maxConcurrent", 20, "the maximum number of concurrent auctions to run")
+	flag.IntVar(&maxConcurrent, "maxConcurrent", 10000, "the maximum number of concurrent auctions to run")
 
 	flag.BoolVar(&disableSVGReport, "disableSVGReport", false, "disable displaying SVG reports of the simulation runs")
 }
@@ -142,7 +142,6 @@ var _ = AfterSuite(func() {
 func buildInProcessReps() (auctiontypes.SimulationRepPoolClient, []string) {
 	inprocess.LatencyMin = 1 * time.Millisecond
 	inprocess.LatencyMax = 2 * time.Millisecond
-	inprocess.Timeout = 50 * time.Millisecond
 
 	repGuids := []string{}
 	repMap := map[string]*auctionrep.AuctionRep{}

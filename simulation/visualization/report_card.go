@@ -19,7 +19,7 @@ const instanceSize = 4
 const instanceSpacing = 1
 const instanceBoxSize = instanceSize*100 + instanceSpacing*99
 
-const headerHeight = 100
+const headerHeight = 80
 
 const graphWidth = 300
 const graphTextX = 50
@@ -62,12 +62,12 @@ func (r *SVGReport) Done() {
 
 func (r *SVGReport) DrawHeader(communicationMode string, rules auctiontypes.StartAuctionRules, maxConcurrent int) {
 	rulesString := fmt.Sprintf("%#v", rules)
-	header := fmt.Sprintf("%s - MaxConcurrent:%d - %s ", communicationMode, maxConcurrent, rulesString[19:len(rulesString)-1])
-	r.SVG.Text(border, 40, header, `text-anchor:start;font-size:32px;font-family:Helvetica Neue`)
+	header := fmt.Sprintf("%s - MaxConcurrent:%d - %s ", communicationMode, maxConcurrent, rulesString[18:len(rulesString)-1])
+	r.SVG.Text(border, 30, header, `text-anchor:start;font-size:20px;font-family:Helvetica Neue`)
 }
 
 func (r *SVGReport) drawResults() {
-	r.SVG.Text(border, 90, fmt.Sprintf("Bid: %.2f | Wait Time: %.2fs | Communications: %.0f", stats.StatsSum(r.bids), stats.StatsSum(r.waitTimes), stats.StatsSum(r.communications)), `text-anchor:start;font-size:32px;font-family:Helvetica Neue`)
+	r.SVG.Text(border, 70, fmt.Sprintf("Bid: %.2f | Wait Time: %.2fs | Communications: %.0f", stats.StatsSum(r.bids), stats.StatsSum(r.waitTimes), stats.StatsSum(r.communications)), `text-anchor:start;font-size:20px;font-family:Helvetica Neue`)
 }
 
 func (r *SVGReport) DrawReportCard(x, y int, report *Report) {

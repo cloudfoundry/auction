@@ -94,7 +94,40 @@ var _ = Describe("Auction", func() {
 	})
 
 	Describe("Experiments", func() {
-		Context("Cold start scenario", func() {
+		Context("Small Cold Starts", func() {
+			for repeat := 0; repeat < 4; repeat++ {
+				repeat := repeat
+				It("should distribute evenly for a very small distribution", func() {
+					napps := 8
+					nexecutors := 4
+
+					instances := generateUniqueLRPStartAuctions(napps, 1)
+
+					report := auctionDistributor.HoldAuctionsFor(instances, repGuids[:nexecutors], auctionrunner.DefaultStartAuctionRules)
+					visualization.PrintReport(client, report.AuctionResults, repGuids[:nexecutors], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
+					svgReport.DrawReportCard(repeat, 0, report)
+					reports = append(reports, report)
+
+					//ADD AN ASSERTION
+				})
+
+				It("should distribute evenly for a small distribution", func() {
+					napps := 40
+					nexecutors := 10
+
+					instances := generateUniqueLRPStartAuctions(napps, 1)
+
+					report := auctionDistributor.HoldAuctionsFor(instances, repGuids[:nexecutors], auctionrunner.DefaultStartAuctionRules)
+					visualization.PrintReport(client, report.AuctionResults, repGuids[:nexecutors], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
+					svgReport.DrawReportCard(repeat, 1, report)
+					reports = append(reports, report)
+
+					//ADD AN ASSERTION
+				})
+			}
+		})
+
+		Context("Large Cold Starts", func() {
 			nexec := []int{25, 100}
 			n1apps := []int{1800, 7000}
 			n2apps := []int{200, 1000}
@@ -121,12 +154,13 @@ var _ = Describe("Auction", func() {
 
 						visualization.PrintReport(client, report.AuctionResults, repGuids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
 
-						svgReport.DrawReportCard(i, 0, report)
+						svgReport.DrawReportCard(i, 2, report)
 						reports = append(reports, report)
+
+						//ADD AN ASSERTION
 					})
 				})
 			}
-
 		})
 
 		Context("Imbalanced scenario (e.g. a deploy)", func() {
@@ -150,7 +184,7 @@ var _ = Describe("Auction", func() {
 
 						visualization.PrintReport(client, report.AuctionResults, repGuids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
 
-						svgReport.DrawReportCard(i, 1, report)
+						svgReport.DrawReportCard(i+2, 2, report)
 						reports = append(reports, report)
 					})
 				})
@@ -158,8 +192,8 @@ var _ = Describe("Auction", func() {
 		})
 
 		Context("The Watters demo", func() {
-			nexec := []int{30, 100}
-			napps := []int{200, 400}
+			nexec := []int{4, 10, 30, 100}
+			napps := []int{20, 80, 200, 400}
 
 			for i := range nexec {
 				i := i
@@ -178,7 +212,7 @@ var _ = Describe("Auction", func() {
 
 						visualization.PrintReport(client, report.AuctionResults, repGuids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
 
-						svgReport.DrawReportCard(i, 2, report)
+						svgReport.DrawReportCard(i, 3, report)
 						reports = append(reports, report)
 					})
 				})

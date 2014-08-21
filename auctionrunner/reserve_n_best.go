@@ -45,10 +45,10 @@ func reserveNBestAuction(client auctiontypes.RepPoolClient, auctionRequest aucti
 		orderedReps := winners.FilterErrors().Shuffle().Sort().Reps()
 
 		numCommunications += len(winners)
-		client.Run(orderedReps[0], auctionRequest.LRPStartAuction)
 		if len(orderedReps) > 1 {
 			client.ReleaseReservation(orderedReps[1:], auctionInfo)
 		}
+		client.Run(orderedReps[0], auctionRequest.LRPStartAuction)
 
 		return orderedReps[0], rounds, numCommunications
 	}

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/util"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
@@ -106,14 +107,14 @@ func (rep *SimulationRepDelegate) ReleaseReservation(startAuctionInfo auctiontyp
 
 func (rep *SimulationRepDelegate) Run(startAuction models.LRPStartAuction) error {
 	rep.lock.Lock()
-	defer rep.lock.Unlock()
-
 	_, ok := rep.instances[startAuction.InstanceGuid]
+	rep.lock.Unlock()
+
 	if !ok {
 		return errors.New(fmt.Sprintf("no reservation for instance %s", startAuction.InstanceGuid))
 	}
 
-	//start the app asynchronously!
+	util.RandomSleep(800, 1000)
 
 	return nil
 }

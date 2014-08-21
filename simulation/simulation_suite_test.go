@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
@@ -81,6 +82,7 @@ func TestAuction(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	fmt.Printf("Running in %s communicationMode\n", communicationMode)
 	fmt.Printf("Running in %s auctioneerMode\n", auctioneerMode)
 

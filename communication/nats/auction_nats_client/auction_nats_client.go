@@ -17,13 +17,12 @@ import (
 var RequestFailedError = errors.New("request failed")
 
 type AuctionNATSClient struct {
-	client     *nats_muxer.NATSMuxerClient
-	timeout    time.Duration
-	runTimeout time.Duration
-	logger     lager.Logger
+	client  *nats_muxer.NATSMuxerClient
+	timeout time.Duration
+	logger  lager.Logger
 }
 
-func New(natsClient yagnats.NATSClient, timeout time.Duration, runTimeout time.Duration, logger lager.Logger) (*AuctionNATSClient, error) {
+func New(natsClient yagnats.NATSClient, timeout time.Duration, logger lager.Logger) (*AuctionNATSClient, error) {
 	client := nats_muxer.NewNATSMuxerClient(natsClient)
 	err := client.ListenForResponses()
 	if err != nil {
@@ -31,10 +30,9 @@ func New(natsClient yagnats.NATSClient, timeout time.Duration, runTimeout time.D
 	}
 
 	return &AuctionNATSClient{
-		client:     client,
-		timeout:    timeout,
-		runTimeout: runTimeout,
-		logger:     logger.Session("auction-nats-client"),
+		client:  client,
+		timeout: timeout,
+		logger:  logger.Session("auction-nats-client"),
 	}, nil
 }
 
@@ -52,7 +50,7 @@ func (rep *AuctionNATSClient) BidForStartAuction(repGuids []string, startAuction
 	}
 	payload, _ := json.Marshal(startAuctionInfo)
 
-	responses, _ := rep.aggregateWithTimeout(bidLog, subjects, payload, rep.timeout)
+	responses, _ := rep.aggregateWithTimeout(bidLog, subjects, payload)
 
 	results := auctiontypes.StartAuctionBids{}
 	for _, response := range responses {
@@ -88,7 +86,7 @@ func (rep *AuctionNATSClient) BidForStopAuction(repGuids []string, stopAuctionIn
 	}
 	payload, _ := json.Marshal(stopAuctionInfo)
 
-	responses, _ := rep.aggregateWithTimeout(bidLog, subjects, payload, rep.timeout)
+	responses, _ := rep.aggregateWithTimeout(bidLog, subjects, payload)
 
 	results := auctiontypes.StopAuctionBids{}
 	for _, response := range responses {
@@ -127,7 +125,7 @@ func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, sta
 	}
 	payload, _ := json.Marshal(startAuctionInfo)
 
-	responses, failedSubjects := rep.aggregateWithTimeout(bidLog, subjects, payload, rep.timeout)
+	responses, failedSubjects := rep.aggregateWithTimeout(bidLog, subjects, payload)
 
 	results := auctiontypes.StartAuctionBids{}
 	for _, response := range responses {
@@ -173,7 +171,7 @@ func (rep *AuctionNATSClient) ReleaseReservation(repGuids []string, startAuction
 
 	payload, _ := json.Marshal(startAuctionInfo)
 
-	rep.aggregateWithTimeout(releaseLog, subjects, payload, rep.timeout)
+	rep.aggregateWithTimeout(releaseLog, subjects, payload)
 
 	releaseLog.Info("done")
 }
@@ -188,7 +186,7 @@ func (rep *AuctionNATSClient) Run(repGuid string, startAuction models.LRPStartAu
 
 	subjects := nats.NewSubjects(repGuid)
 	payload, _ := json.Marshal(startAuction)
-	_, err := rep.publishWithTimeout(subjects.Run, payload, rep.runTimeout)
+	_, err := rep.publishWithTimeout(subjects.Run, payload)
 
 	if err != nil {
 		runLog.Error("failed-to-publish", err)
@@ -209,7 +207,7 @@ func (rep *AuctionNATSClient) Stop(repGuid string, stopInstance models.StopLRPIn
 	subjects := nats.NewSubjects(repGuid)
 	payload, _ := json.Marshal(stopInstance)
 
-	_, err := rep.publishWithTimeout(subjects.Stop, payload, rep.timeout)
+	_, err := rep.publishWithTimeout(subjects.Stop, payload)
 
 	if err != nil {
 		stopLog.Error("failed-to-publish", err)
@@ -219,8 +217,8 @@ func (rep *AuctionNATSClient) Stop(repGuid string, stopInstance models.StopLRPIn
 	stopLog.Info("done")
 }
 
-func (rep *AuctionNATSClient) publishWithTimeout(subject string, payload []byte, timeout time.Duration) ([]byte, error) {
-	response, err := rep.client.Request(subject, payload, timeout)
+func (rep *AuctionNATSClient) publishWithTimeout(subject string, payload []byte) ([]byte, error) {
+	response, err := rep.client.Request(subject, payload, rep.timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +230,7 @@ func (rep *AuctionNATSClient) publishWithTimeout(subject string, payload []byte,
 	return response, nil
 }
 
-func (rep *AuctionNATSClient) aggregateWithTimeout(logger lager.Logger, subjects []string, payload []byte, timeout time.Duration) ([][]byte, []string) {
+func (rep *AuctionNATSClient) aggregateWithTimeout(logger lager.Logger, subjects []string, payload []byte) ([][]byte, []string) {
 	allReceived := new(sync.WaitGroup)
 	allReceived.Add(len(subjects))
 
@@ -244,7 +242,7 @@ func (rep *AuctionNATSClient) aggregateWithTimeout(logger lager.Logger, subjects
 		go func(subject string) {
 			defer allReceived.Done()
 
-			result, err := rep.publishWithTimeout(subject, payload, timeout)
+			result, err := rep.publishWithTimeout(subject, payload)
 			if err != nil {
 				logger.Error("aggregate-request-publish-failed", err)
 
@@ -271,7 +269,7 @@ func (rep *AuctionNATSClient) aggregateWithTimeout(logger lager.Logger, subjects
 func (rep *AuctionNATSClient) TotalResources(repGuid string) auctiontypes.Resources {
 	var totalResources auctiontypes.Resources
 	subjects := nats.NewSubjects(repGuid)
-	response, err := rep.publishWithTimeout(subjects.TotalResources, nil, rep.timeout)
+	response, err := rep.publishWithTimeout(subjects.TotalResources, nil)
 	if err != nil {
 		//test only, so panic is OK
 		panic(err)
@@ -289,7 +287,7 @@ func (rep *AuctionNATSClient) TotalResources(repGuid string) auctiontypes.Resour
 func (rep *AuctionNATSClient) SimulatedInstances(repGuid string) []auctiontypes.SimulatedInstance {
 	var instances []auctiontypes.SimulatedInstance
 	subjects := nats.NewSubjects(repGuid)
-	response, err := rep.publishWithTimeout(subjects.SimulatedInstances, nil, rep.timeout)
+	response, err := rep.publishWithTimeout(subjects.SimulatedInstances, nil)
 	if err != nil {
 		//test only, so panic is OK
 		panic(err)
@@ -306,7 +304,7 @@ func (rep *AuctionNATSClient) SimulatedInstances(repGuid string) []auctiontypes.
 
 func (rep *AuctionNATSClient) Reset(repGuid string) {
 	subjects := nats.NewSubjects(repGuid)
-	_, err := rep.publishWithTimeout(subjects.Reset, nil, rep.timeout)
+	_, err := rep.publishWithTimeout(subjects.Reset, nil)
 	if err != nil {
 		//test only, so panic is OK
 		panic(err)
@@ -316,7 +314,7 @@ func (rep *AuctionNATSClient) Reset(repGuid string) {
 func (rep *AuctionNATSClient) SetSimulatedInstances(repGuid string, instances []auctiontypes.SimulatedInstance) {
 	subjects := nats.NewSubjects(repGuid)
 	payload, _ := json.Marshal(instances)
-	_, err := rep.publishWithTimeout(subjects.SetSimulatedInstances, payload, rep.timeout)
+	_, err := rep.publishWithTimeout(subjects.SetSimulatedInstances, payload)
 	if err != nil {
 		//test only, so panic is OK
 		panic(err)

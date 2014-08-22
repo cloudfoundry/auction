@@ -50,7 +50,6 @@ var repResources = auctiontypes.Resources{
 var maxConcurrentPerExecutor int
 
 var timeout time.Duration
-var runTimeout time.Duration
 var auctionDistributor *auctiondistributor.AuctionDistributor
 
 var svgReport *visualization.SVGReport
@@ -66,8 +65,7 @@ var disableSVGReport bool
 func init() {
 	flag.StringVar(&communicationMode, "communicationMode", "inprocess", "one of inprocess or nats")
 	flag.StringVar(&auctioneerMode, "auctioneerMode", "inprocess", "one of inprocess or remote")
-	flag.DurationVar(&timeout, "timeout", 500*time.Millisecond, "timeout when waiting for responses from remote calls")
-	flag.DurationVar(&runTimeout, "runTimeout", 10*time.Second, "timeout when waiting for the run command to respond")
+	flag.DurationVar(&timeout, "timeout", time.Second, "timeout when waiting for responses from remote calls")
 
 	flag.StringVar(&(auctionrunner.DefaultStartAuctionRules.Algorithm), "algorithm", auctionrunner.DefaultStartAuctionRules.Algorithm, "the auction algorithm to use")
 	flag.IntVar(&(auctionrunner.DefaultStartAuctionRules.MaxRounds), "maxRounds", auctionrunner.DefaultStartAuctionRules.MaxRounds, "the maximum number of rounds per auction")
@@ -105,7 +103,7 @@ var _ = BeforeSuite(func() {
 		natsLogger := lager.NewLogger("test")
 		natsLogger.RegisterSink(lager.NewWriterSink(GinkgoWriter, lager.DEBUG))
 
-		client, err = auction_nats_client.New(natsRunner.MessageBus, timeout, runTimeout, natsLogger)
+		client, err = auction_nats_client.New(natsRunner.MessageBus, timeout, natsLogger)
 		Ω(err).ShouldNot(HaveOccurred())
 		repGuids = launchExternalReps("-natsAddrs", natsAddrs)
 		if auctioneerMode == RemoteAuctioneerMode {

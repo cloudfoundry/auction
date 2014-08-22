@@ -17,8 +17,7 @@ import (
 )
 
 var natsAddrs = flag.String("natsAddrs", "", "nats server addresses")
-var timeout = flag.Duration("timeout", 500*time.Millisecond, "timeout for nats responses")
-var runTimeout = flag.Duration("runTimeout", 10*time.Second, "timeout for run to respond")
+var timeout = flag.Duration("timeout", time.Second, "timeout for nats responses")
 var maxConcurrent = flag.Int("maxConcurrent", 1000, "number of concurrent auctions to hold")
 var httpAddr = flag.String("httpAddr", "0.0.0.0:48710", "http address to listen on")
 
@@ -53,7 +52,7 @@ func main() {
 		log.Fatalln("no nats:", err)
 	}
 
-	repClient, err = auction_nats_client.New(client, *timeout, *runTimeout, cf_lager.New("simulation"))
+	repClient, err = auction_nats_client.New(client, *timeout, cf_lager.New("simulation"))
 	if err != nil {
 		log.Fatalln("no rep client:", err)
 	}

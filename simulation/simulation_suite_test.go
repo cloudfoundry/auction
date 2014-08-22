@@ -38,6 +38,8 @@ const RemoteAuctioneerMode = "remote"
 
 const numAuctioneers = 10
 const numReps = 100
+const LatencyMin = 50 * time.Millisecond
+const LatencyMax = 100 * time.Millisecond
 
 var repResources = auctiontypes.Resources{
 	MemoryMB:   100.0,
@@ -142,8 +144,8 @@ var _ = AfterSuite(func() {
 })
 
 func buildInProcessReps() (auctiontypes.SimulationRepPoolClient, []string) {
-	inprocess.LatencyMin = 50 * time.Millisecond
-	inprocess.LatencyMax = 100 * time.Millisecond
+	inprocess.LatencyMin = LatencyMin
+	inprocess.LatencyMax = LatencyMax
 
 	repGuids := []string{}
 	repMap := map[string]*auctionrep.AuctionRep{}

@@ -59,7 +59,7 @@ func main() {
 
 		log.Println("starting rep nats server")
 		natsRunner := auction_nats_server.New(client, rep, cf_lager.New("repnode").Session(*repGuid))
-		monitor := ifrit.Envoke(sigmon.New(natsRunner))
+		monitor := ifrit.Envoke(sigmon.New(ifrit.Envoke(natsRunner)))
 		fmt.Println("rep node listening")
 		err = <-monitor.Wait()
 		if err != nil {

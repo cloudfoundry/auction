@@ -18,14 +18,12 @@ type AuctionDistributor struct {
 	client            auctiontypes.SimulationRepPoolClient
 	startCommunicator StartAuctionCommunicator
 	stopCommunicator  StopAuctionCommunicator
-	maxConcurrent     int
 }
 
-func NewInProcessAuctionDistributor(client auctiontypes.SimulationRepPoolClient, maxConcurrent int) *AuctionDistributor {
+func NewInProcessAuctionDistributor(client auctiontypes.SimulationRepPoolClient) *AuctionDistributor {
 	auctionRunner := auctionrunner.New(client)
 	return &AuctionDistributor{
-		client:        client,
-		maxConcurrent: maxConcurrent,
+		client: client,
 		startCommunicator: func(auctionRequest auctiontypes.StartAuctionRequest) (auctiontypes.StartAuctionResult, error) {
 			return auctionRunner.RunLRPStartAuction(auctionRequest)
 		},
@@ -35,21 +33,20 @@ func NewInProcessAuctionDistributor(client auctiontypes.SimulationRepPoolClient,
 	}
 }
 
-func NewRemoteAuctionDistributor(hosts []string, client auctiontypes.SimulationRepPoolClient, maxConcurrent int) *AuctionDistributor {
+func NewRemoteAuctionDistributor(hosts []string, client auctiontypes.SimulationRepPoolClient) *AuctionDistributor {
 	return &AuctionDistributor{
 		client:            client,
-		maxConcurrent:     maxConcurrent,
 		startCommunicator: newHttpRemoteAuctions(hosts).RemoteStartAuction,
 		stopCommunicator:  newHttpRemoteAuctions(hosts).RemoteStopAuction,
 	}
 }
 
-func (ad *AuctionDistributor) HoldAuctionsFor(instances []models.LRPStartAuction, representatives []string, rules auctiontypes.StartAuctionRules) *visualization.Report {
+func (ad *AuctionDistributor) HoldAuctionsFor(instances []models.LRPStartAuction, representatives []string, rules auctiontypes.StartAuctionRules, maxConcurrent int) *visualization.Report {
 	fmt.Printf("\nStarting Auctions\n\n")
 	bar := pb.StartNew(len(instances))
 
 	t := time.Now()
-	semaphore := make(chan bool, ad.maxConcurrent)
+	semaphore := make(chan bool, maxConcurrent)
 	c := make(chan auctiontypes.StartAuctionResult)
 	for _, inst := range instances {
 		go func(inst models.LRPStartAuction) {

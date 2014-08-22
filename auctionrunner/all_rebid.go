@@ -17,44 +17,46 @@ func allRebidAuction(client auctiontypes.RepPoolClient, auctionRequest auctionty
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		//pick a subset
-		firstRoundReps := auctionRequest.RepGuids.RandomSubsetByFraction(auctionRequest.Rules.MaxBiddingPoolFraction, auctionRequest.Rules.MinBiddingPool)
+		repSubset := auctionRequest.RepGuids.RandomSubsetByFraction(auctionRequest.Rules.MaxBiddingPoolFraction, auctionRequest.Rules.MinBiddingPool)
 
 		//get everyone's bid, if they're all full: bail
-		numCommunications += len(firstRoundReps)
-		firstRoundScores := client.BidForStartAuction(firstRoundReps, auctionInfo)
-		if firstRoundScores.AllFailed() {
+		numCommunications += len(repSubset)
+		scores := client.BidForStartAuction(repSubset, auctionInfo)
+		if scores.AllFailed() {
 			continue
 		}
 
-		winner := firstRoundScores.FilterErrors().Shuffle().Sort()[0]
+		sortedScores := scores.FilterErrors().Shuffle().Sort()
+		winner := sortedScores[0].Rep
 
 		// tell the winner to reserve
 		numCommunications += 1
-		winnerRecast := client.RebidThenTentativelyReserve([]string{winner.Rep}, auctionInfo)[0]
-
-		//get everyone's bid again
-		secondRoundReps := firstRoundReps.Without(winner.Rep)
-		numCommunications += len(secondRoundReps)
-		secondRoundScores := client.BidForStartAuction(secondRoundReps, auctionInfo)
-
+		winnerRecast := client.RebidThenTentativelyReserve([]string{winner}, auctionInfo)[0]
 		//if the winner ran out of space: bail
 		if winnerRecast.Error != "" {
 			continue
 		}
 
-		// if the second place winner has a better bid than the original winner: bail
-		if !secondRoundScores.AllFailed() {
-			secondPlace := secondRoundScores.FilterErrors().Shuffle().Sort()[0]
-			if secondPlace.Bid < winnerRecast.Bid {
-				client.ReleaseReservation([]string{winner.Rep}, auctionInfo)
-				numCommunications += 1
-				continue
+		if len(sortedScores) > 1 {
+			//rescore the top N runner ups
+			repsToRescore := sortedScores[1:len(sortedScores)].Reps()
+			numCommunications += len(repsToRescore)
+			secondRoundScores := client.BidForStartAuction(repsToRescore, auctionInfo)
+
+			// if the second place winner has a better bid than the original winner: bail
+			if !secondRoundScores.AllFailed() {
+				secondPlace := secondRoundScores.FilterErrors().Sort()[0]
+				if secondPlace.Bid < winnerRecast.Bid && rounds < auctionRequest.Rules.MaxRounds {
+					client.ReleaseReservation([]string{winner}, auctionInfo)
+					numCommunications += 1
+					continue
+				}
 			}
 		}
 
-		client.Run(winner.Rep, auctionRequest.LRPStartAuction)
+		client.Run(winner, auctionRequest.LRPStartAuction)
 		numCommunications += 1
-		return winner.Rep, rounds, numCommunications
+		return winner, rounds, numCommunications
 	}
 
 	return "", rounds, numCommunications

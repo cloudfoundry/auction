@@ -60,9 +60,9 @@ func (r *SVGReport) Done() {
 	r.f.Close()
 }
 
-func (r *SVGReport) DrawHeader(communicationMode string, rules auctiontypes.StartAuctionRules, maxConcurrent int) {
+func (r *SVGReport) DrawHeader(communicationMode string, rules auctiontypes.StartAuctionRules, maxConcurrentPerExecutor int) {
 	rulesString := fmt.Sprintf("%#v", rules)
-	header := fmt.Sprintf("%s - MaxConcurrent:%d - %s ", communicationMode, maxConcurrent, rulesString[18:len(rulesString)-1])
+	header := fmt.Sprintf("%s - MaxConcurrent/Executor:%d - %s ", communicationMode, maxConcurrentPerExecutor, rulesString[18:len(rulesString)-1])
 	r.SVG.Text(border, 30, header, `text-anchor:start;font-size:20px;font-family:Helvetica Neue`)
 }
 

@@ -10,8 +10,8 @@ import (
 var AllBiddersFull = errors.New("all the bidders were full")
 
 var DefaultStartAuctionRules = auctiontypes.StartAuctionRules{
-	Algorithm:              "reserve_n_best",
-	MaxRounds:              40,
+	Algorithm:              "all_rebid",
+	MaxRounds:              100,
 	MaxBiddingPoolFraction: 0.2,
 	MinBiddingPool:         10,
 }

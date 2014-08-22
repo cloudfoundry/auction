@@ -45,7 +45,7 @@ var repResources = auctiontypes.Resources{
 	Containers: 100,
 }
 
-var maxConcurrent int
+var maxConcurrentPerExecutor int
 
 var timeout time.Duration
 var runTimeout time.Duration
@@ -71,7 +71,7 @@ func init() {
 	flag.IntVar(&(auctionrunner.DefaultStartAuctionRules.MaxRounds), "maxRounds", auctionrunner.DefaultStartAuctionRules.MaxRounds, "the maximum number of rounds per auction")
 	flag.Float64Var(&(auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction), "maxBiddingPoolFraction", auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction, "the maximum number of participants in the pool")
 
-	flag.IntVar(&maxConcurrent, "maxConcurrent", 10000, "the maximum number of concurrent auctions to run")
+	flag.IntVar(&maxConcurrentPerExecutor, "maxConcurrentPerExecutor", 20, "the maximum number of concurrent auctions to run, per executor")
 
 	flag.BoolVar(&disableSVGReport, "disableSVGReport", false, "disable displaying SVG reports of the simulation runs")
 }
@@ -114,9 +114,9 @@ var _ = BeforeSuite(func() {
 	}
 
 	if auctioneerMode == InProcess {
-		auctionDistributor = auctiondistributor.NewInProcessAuctionDistributor(client, maxConcurrent)
+		auctionDistributor = auctiondistributor.NewInProcessAuctionDistributor(client)
 	} else if auctioneerMode == RemoteAuctioneerMode {
-		auctionDistributor = auctiondistributor.NewRemoteAuctionDistributor(hosts, client, maxConcurrent)
+		auctionDistributor = auctiondistributor.NewRemoteAuctionDistributor(hosts, client)
 	}
 })
 
@@ -223,7 +223,7 @@ func launchExternalAuctioneers(communicationFlag string, communicationValue stri
 
 func startReport() {
 	svgReport = visualization.StartSVGReport("./report.svg", 4, 4)
-	svgReport.DrawHeader(communicationMode, auctionrunner.DefaultStartAuctionRules, maxConcurrent)
+	svgReport.DrawHeader(communicationMode, auctionrunner.DefaultStartAuctionRules, maxConcurrentPerExecutor)
 }
 
 func finishReport() {

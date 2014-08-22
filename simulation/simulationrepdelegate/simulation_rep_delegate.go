@@ -114,7 +114,7 @@ func (rep *SimulationRepDelegate) Run(startAuction models.LRPStartAuction) error
 		return errors.New(fmt.Sprintf("no reservation for instance %s", startAuction.InstanceGuid))
 	}
 
-	util.RandomSleep(800, 1000)
+	util.RandomSleep(800, 900)
 
 	return nil
 }

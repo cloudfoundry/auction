@@ -62,14 +62,11 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	randomSVGColor := func() string {
-		return []string{"purple", "red", "cyan", "teal", "gray", "blue", "pink", "green", "lime", "orange", "lightseagreen", "brown"}[util.R.Intn(12)]
-	}
-
-	generateLRPStartAuctionsWithRandomSVGColors := func(numInstances int, memoryMB int) []models.LRPStartAuction {
+	generateLRPStartAuctionsWithRandomColor := func(numInstances int, memoryMB int, colors []string) []models.LRPStartAuction {
 		instances := []models.LRPStartAuction{}
 		for i := 0; i < numInstances; i++ {
-			instances = append(instances, newLRPStartAuction(randomSVGColor(), memoryMB))
+			color := colors[util.R.Intn(len(colors))]
+			instances = append(instances, newLRPStartAuction(color, memoryMB))
 		}
 		return instances
 	}
@@ -137,13 +134,14 @@ var _ = Describe("Auction", func() {
 				Context("with single-instance and multi-instance apps", func() {
 					It("should distribute evenly", func() {
 						instances := []models.LRPStartAuction{}
+						colors := []string{"purple", "red", "orange", "teal", "gray", "blue", "pink", "green", "lime", "cyan", "lightseagreen", "brown"}
 
 						instances = append(instances, generateUniqueLRPStartAuctions(n1apps[i]/2, 1)...)
-						instances = append(instances, generateLRPStartAuctionsWithRandomSVGColors(n1apps[i]/2, 1)...)
+						instances = append(instances, generateLRPStartAuctionsWithRandomColor(n1apps[i]/2, 1, colors[:4])...)
 						instances = append(instances, generateUniqueLRPStartAuctions(n2apps[i]/2, 2)...)
-						instances = append(instances, generateLRPStartAuctionsWithRandomSVGColors(n2apps[i]/2, 2)...)
+						instances = append(instances, generateLRPStartAuctionsWithRandomColor(n2apps[i]/2, 2, colors[4:8])...)
 						instances = append(instances, generateUniqueLRPStartAuctions(n4apps[i]/2, 4)...)
-						instances = append(instances, generateLRPStartAuctionsWithRandomSVGColors(n4apps[i]/2, 4)...)
+						instances = append(instances, generateLRPStartAuctionsWithRandomColor(n4apps[i]/2, 4, colors[8:12])...)
 
 						permutedInstances := make([]models.LRPStartAuction, len(instances))
 						for i, index := range util.R.Perm(len(instances)) {

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auction/simulation/communication/inprocess"
 )
 
 const defaultStyle = "\x1b[0m"
@@ -23,6 +22,8 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	roundsDistribution := map[int]int{}
 	auctionedInstances := map[string]bool{}
 
+	fmt.Printf("Finished %d Auctions among %d Representatives in %s\n", len(results), len(representatives), duration)
+	fmt.Println()
 	///
 	fmt.Println("Rounds Distributions")
 	for _, result := range results {
@@ -32,7 +33,7 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 
 	for i := 1; i <= rules.MaxRounds; i++ {
 		if roundsDistribution[i] > 0 {
-			fmt.Printf("  %2d: %s\n", i, strings.Repeat("■", roundsDistribution[i]))
+			fmt.Printf("  %2d: %d (%.1f%%)\n", i, roundsDistribution[i], float64(roundsDistribution[i])/float64(len(results))*100.0)
 		}
 	}
 
@@ -59,56 +60,34 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 
 		originalCounts := map[string]int{}
 		newCounts := map[string]int{}
+		totalUsage := 0
 		for _, instance := range instances {
 			key := "green"
 			if _, ok := colorLookup[instance.ProcessGuid]; ok {
 				key = instance.ProcessGuid
 			}
 			if auctionedInstances[instance.InstanceGuid] {
-				newCounts[key] += 1
+				newCounts[key] += instance.MemoryMB
 				numNew += 1
 			} else {
-				originalCounts[key] += 1
+				originalCounts[key] += instance.MemoryMB
 			}
+			totalUsage += instance.MemoryMB
 		}
 		for _, col := range availableColors {
-			instanceString += strings.Repeat(colorLookup[col]+"○"+defaultStyle, originalCounts[col])
-			instanceString += strings.Repeat(colorLookup[col]+"●"+defaultStyle, newCounts[col])
+			instanceString += strings.Repeat(colorLookup[col]+"-"+defaultStyle, originalCounts[col])
+			instanceString += strings.Repeat(colorLookup[col]+"+"+defaultStyle, newCounts[col])
 		}
-		instanceString += strings.Repeat(grayColor+"○"+defaultStyle, client.TotalResources(repGuid).Containers-len(instances))
+		instanceString += strings.Repeat(grayColor+"."+defaultStyle, client.TotalResources(repGuid).MemoryMB-totalUsage)
 
 		fmt.Printf("  %s: %s\n", repString, instanceString)
 	}
 
-	fmt.Printf("Finished %d Auctions among %d Representatives in %s\n", len(results), len(representatives), duration)
 	if numNew < len(auctionedInstances) {
 		expected := len(auctionedInstances)
-		fmt.Printf("  %s!!!!MISSING INSTANCES!!!!  Expected %d, got %d (%.3f %% failure rate)%s", redColor, expected, numNew, float64(expected-numNew)/float64(expected), defaultStyle)
-	}
-	fmt.Printf("  %#v\n", rules)
-	if _, ok := client.(*inprocess.InprocessClient); ok {
-		fmt.Printf("  Latency Range: %s < %s", inprocess.LatencyMin, inprocess.LatencyMax)
+		fmt.Printf("%s!!!!MISSING INSTANCES!!!!  Expected %d, got %d (%.3f %% failure rate)%s", redColor, expected, numNew, float64(expected-numNew)/float64(expected), defaultStyle)
 	}
 
-	///
-
-	fmt.Println("Bidding Times")
-	minBiddingTime, maxBiddingTime, totalBiddingTime, meanBiddingTime := time.Hour, time.Duration(0), time.Duration(0), time.Duration(0)
-	for _, result := range results {
-		if result.BiddingDuration < minBiddingTime {
-			minBiddingTime = result.BiddingDuration
-		}
-		if result.BiddingDuration > maxBiddingTime {
-			maxBiddingTime = result.BiddingDuration
-		}
-		totalBiddingTime += result.BiddingDuration
-		meanBiddingTime += result.BiddingDuration
-	}
-
-	meanBiddingTime = meanBiddingTime / time.Duration(len(results))
-	fmt.Printf("  Min: %s | Max: %s | Total: %s | Mean: %s\n", minBiddingTime, maxBiddingTime, totalBiddingTime, meanBiddingTime)
-
-	fmt.Println("Wait Times")
 	minTime, maxTime, meanTime := time.Hour, time.Duration(0), time.Duration(0)
 	for _, result := range results {
 		if result.Duration < minTime {
@@ -121,11 +100,10 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	}
 
 	meanTime = meanTime / time.Duration(len(results))
-	fmt.Printf("  Min: %s | Max: %s | Mean: %s\n", minTime, maxTime, meanTime)
+	fmt.Printf("%14s  Min: %16s | Max: %16s | Mean: %16s\n", "Wait Times:", minTime, maxTime, meanTime)
 
 	///
 
-	fmt.Println("Rounds")
 	minRounds, maxRounds, totalRounds, meanRounds := 100000000, 0, 0, float64(0)
 	for _, result := range results {
 		if result.NumRounds < minRounds {
@@ -139,23 +117,22 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	}
 
 	meanRounds = meanRounds / float64(len(results))
-	fmt.Printf("  Min: %d | Max: %d | Total: %d | Mean: %.2f\n", minRounds, maxRounds, totalRounds, meanRounds)
+	fmt.Printf("%14s  Min: %16d | Max: %16d | Mean: %16.2f | Total: %16d\n", "Rounds:", minRounds, maxRounds, meanRounds, totalRounds)
 
 	///
 
-	fmt.Println("Scores")
-	minScores, maxScores, totalScores, meanScores := 100000000, 0, 0, float64(0)
+	minCommunications, maxCommunications, totalCommunications, meanCommunications := 100000000, 0, 0, float64(0)
 	for _, result := range results {
-		if result.NumCommunications < minScores {
-			minScores = result.NumCommunications
+		if result.NumCommunications < minCommunications {
+			minCommunications = result.NumCommunications
 		}
-		if result.NumCommunications > maxScores {
-			maxScores = result.NumCommunications
+		if result.NumCommunications > maxCommunications {
+			maxCommunications = result.NumCommunications
 		}
-		totalScores += result.NumCommunications
-		meanScores += float64(result.NumCommunications)
+		totalCommunications += result.NumCommunications
+		meanCommunications += float64(result.NumCommunications)
 	}
 
-	meanScores = meanScores / float64(len(results))
-	fmt.Printf("  Min: %d | Max: %d | Total: %d | Mean: %.2f\n", minScores, maxScores, totalScores, meanScores)
+	meanCommunications = meanCommunications / float64(len(results))
+	fmt.Printf("%14s  Min: %16d | Max: %16d | Mean: %16.2f | Total: %16d\n", "Communication:", minCommunications, maxCommunications, meanCommunications, totalCommunications)
 }

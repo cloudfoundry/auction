@@ -158,5 +158,4 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 
 	meanScores = meanScores / float64(len(results))
 	fmt.Printf("  Min: %d | Max: %d | Total: %d | Mean: %.2f\n", minScores, maxScores, totalScores, meanScores)
-
 }

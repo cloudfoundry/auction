@@ -28,8 +28,19 @@ type StartAuctionResult struct {
 	Winner            string
 	NumRounds         int
 	NumCommunications int
-	BiddingDuration   time.Duration
-	Duration          time.Duration
+
+	AuctionStartTime time.Time
+	BiddingDuration  time.Duration
+	Duration         time.Duration
+	Events           []AuctionEvent
+}
+
+type AuctionEvent struct {
+	Event         string
+	Duration      time.Duration
+	Round         int
+	Communication int
+	Info          string
 }
 
 type StopAuctionRequest struct {

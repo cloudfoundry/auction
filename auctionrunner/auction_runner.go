@@ -29,19 +29,20 @@ func New(client auctiontypes.RepPoolClient) *auctionRunner {
 
 func (a *auctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.StartAuctionRequest) (auctiontypes.StartAuctionResult, error) {
 	result := auctiontypes.StartAuctionResult{
-		LRPStartAuction: auctionRequest.LRPStartAuction,
+		LRPStartAuction:  auctionRequest.LRPStartAuction,
+		AuctionStartTime: time.Now(),
 	}
 
 	t := time.Now()
 	switch auctionRequest.Rules.Algorithm {
 	case "all_rebid":
-		result.Winner, result.NumRounds, result.NumCommunications = algorithms.AllRebidAuction(a.client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications, result.Events = algorithms.AllRebidAuction(a.client, auctionRequest)
 	case "compare_to_percentile":
-		result.Winner, result.NumRounds, result.NumCommunications = algorithms.CompareToPercentileAuction(a.client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications, result.Events = algorithms.CompareToPercentileAuction(a.client, auctionRequest)
 	case "pick_best":
-		result.Winner, result.NumRounds, result.NumCommunications = algorithms.PickBestAuction(a.client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications, result.Events = algorithms.PickBestAuction(a.client, auctionRequest)
 	case "random":
-		result.Winner, result.NumRounds, result.NumCommunications = algorithms.RandomAuction(a.client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications, result.Events = algorithms.RandomAuction(a.client, auctionRequest)
 	default:
 		panic("unkown algorithm " + auctionRequest.Rules.Algorithm)
 	}

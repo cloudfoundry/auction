@@ -20,6 +20,7 @@ const purpleColor = "\x1b[35m"
 
 func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiontypes.StartAuctionResult, representatives []string, duration time.Duration, rules auctiontypes.StartAuctionRules) {
 	roundsDistribution := map[int]int{}
+	roundsTimeDistributions := map[int][]time.Duration{}
 	auctionedInstances := map[string]bool{}
 
 	fmt.Printf("Finished %d Auctions among %d Representatives in %s\n", len(results), len(representatives), duration)
@@ -28,12 +29,15 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	fmt.Println("Rounds Distributions")
 	for _, result := range results {
 		roundsDistribution[result.NumRounds] += 1
+		roundsTimeDistributions[result.NumRounds] = append(roundsTimeDistributions[result.NumRounds], result.Duration)
 		auctionedInstances[result.LRPStartAuction.InstanceGuid] = true
 	}
 
 	for i := 1; i <= rules.MaxRounds; i++ {
 		if roundsDistribution[i] > 0 {
-			fmt.Printf("  %2d: %d (%.1f%%)\n", i, roundsDistribution[i], float64(roundsDistribution[i])/float64(len(results))*100.0)
+			minTime, maxTime, meanTime := StatsForDurations(roundsTimeDistributions[i])
+			percentage := fmt.Sprintf("(%.1f%%)", float64(roundsDistribution[i])/float64(len(results))*100.0)
+			fmt.Printf("  %3d: %4d %7s Time: min:%16s max:%16s mean:%16s\n", i, roundsDistribution[i], percentage, minTime, maxTime, meanTime)
 		}
 	}
 
@@ -88,18 +92,11 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 		fmt.Printf("%s!!!!MISSING INSTANCES!!!!  Expected %d, got %d (%.3f %% failure rate)%s", redColor, expected, numNew, float64(expected-numNew)/float64(expected), defaultStyle)
 	}
 
-	minTime, maxTime, meanTime := time.Hour, time.Duration(0), time.Duration(0)
+	durations := []time.Duration{}
 	for _, result := range results {
-		if result.Duration < minTime {
-			minTime = result.Duration
-		}
-		if result.Duration > maxTime {
-			maxTime = result.Duration
-		}
-		meanTime += result.Duration
+		durations = append(durations, result.Duration)
 	}
-
-	meanTime = meanTime / time.Duration(len(results))
+	minTime, maxTime, meanTime := StatsForDurations(durations)
 	fmt.Printf("%14s  Min: %16s | Max: %16s | Mean: %16s\n", "Wait Times:", minTime, maxTime, meanTime)
 
 	///
@@ -135,4 +132,22 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 
 	meanCommunications = meanCommunications / float64(len(results))
 	fmt.Printf("%14s  Min: %16d | Max: %16d | Mean: %16.2f | Total: %16d\n", "Communication:", minCommunications, maxCommunications, meanCommunications, totalCommunications)
+}
+
+func StatsForDurations(durations []time.Duration) (time.Duration, time.Duration, time.Duration) {
+	minTime, maxTime, meanTime := time.Hour, time.Duration(0), time.Duration(0)
+	for _, duration := range durations {
+		if duration < minTime {
+			minTime = duration
+		}
+		if duration > maxTime {
+			maxTime = duration
+		}
+		meanTime += duration
+	}
+	if len(durations) > 0 {
+		meanTime = meanTime / time.Duration(len(durations))
+	}
+
+	return minTime, maxTime, meanTime
 }

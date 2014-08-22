@@ -101,7 +101,7 @@ var _ = Describe("Auction", func() {
 			n4apps := []int{50, 200}
 			for i := range nexec {
 				i := i
-				Context("with single-instance and multi-instance apps", func() {
+				Context("with variable memory requirements between apps", func() {
 					It("should distribute evenly", func() {
 						instances := []models.LRPStartAuction{}
 
@@ -116,17 +116,27 @@ var _ = Describe("Auction", func() {
 						for i, index := range util.R.Perm(len(instances)) {
 							permutedInstances[i] = instances[index]
 						}
+						report := auctionDistributor.HoldAuctionsFor(
+							"Cold start with variable memory requirements between apps",
+							nexec[i],
+							permutedInstances,
+							repGuids[:nexec[i]],
+							auctionrunner.DefaultStartAuctionRules,
+						)
 
-						report := auctionDistributor.HoldAuctionsFor(instances, repGuids[:nexec[i]], auctionrunner.DefaultStartAuctionRules)
-
-						visualization.PrintReport(client, report.AuctionResults, repGuids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
+						visualization.PrintReport(
+							client,
+							report.AuctionResults,
+							repGuids[:nexec[i]],
+							report.AuctionDuration,
+							auctionrunner.DefaultStartAuctionRules,
+						)
 
 						svgReport.DrawReportCard(i, 0, report)
 						reports = append(reports, report)
 					})
 				})
 			}
-
 		})
 
 		Context("Imbalanced scenario (e.g. a deploy)", func() {
@@ -146,9 +156,21 @@ var _ = Describe("Auction", func() {
 					It("should distribute evenly", func() {
 						instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
-						report := auctionDistributor.HoldAuctionsFor(instances, repGuids[:nexec[i]], auctionrunner.DefaultStartAuctionRules)
+						report := auctionDistributor.HoldAuctionsFor(
+							"Imbalanced scenario (e.g. a deploy)",
+							nexec[i],
+							instances,
+							repGuids[:nexec[i]],
+							auctionrunner.DefaultStartAuctionRules,
+						)
 
-						visualization.PrintReport(client, report.AuctionResults, repGuids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
+						visualization.PrintReport(
+							client,
+							report.AuctionResults,
+							repGuids[:nexec[i]],
+							report.AuctionDuration,
+							auctionrunner.DefaultStartAuctionRules,
+						)
 
 						svgReport.DrawReportCard(i, 1, report)
 						reports = append(reports, report)
@@ -174,9 +196,21 @@ var _ = Describe("Auction", func() {
 					It("should distribute evenly", func() {
 						instances := generateLRPStartAuctionsForProcessGuid(napps[i], "red", 1)
 
-						report := auctionDistributor.HoldAuctionsFor(instances, repGuids[:nexec[i]], auctionrunner.DefaultStartAuctionRules)
+						report := auctionDistributor.HoldAuctionsFor(
+							"The Watters demo",
+							nexec[i],
+							instances,
+							repGuids[:nexec[i]],
+							auctionrunner.DefaultStartAuctionRules,
+						)
 
-						visualization.PrintReport(client, report.AuctionResults, repGuids[:nexec[i]], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
+						visualization.PrintReport(
+							client,
+							report.AuctionResults,
+							repGuids[:nexec[i]],
+							report.AuctionDuration,
+							auctionrunner.DefaultStartAuctionRules,
+						)
 
 						svgReport.DrawReportCard(i, 2, report)
 						reports = append(reports, report)

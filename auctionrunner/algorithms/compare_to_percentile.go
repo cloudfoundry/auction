@@ -21,6 +21,7 @@ func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionReques
 	rounds, numCommunications := 1, 0
 	auctionInfo := auctiontypes.NewStartAuctionInfoFromLRPStartAuction(auctionRequest.LRPStartAuction)
 	events := []auctiontypes.AuctionEvent{}
+
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		t := time.Now()
 		//pick a subset
@@ -61,7 +62,7 @@ func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionReques
 			index := int(math.Floor(float64(len(sortedScores)-2)*percentile)) + 1
 			if sortedScores[index].Bid < winnerRecast.Bid {
 				client.ReleaseReservation([]string{winner}, auctionInfo)
-				events = append(events, auctiontypes.AuctionEvent{"release-reservation", 0, rounds, 0, ""})
+				events = append(events, auctiontypes.AuctionEvent{"release", time.Since(t), rounds, 0, ""})
 				numCommunications += 1
 				continue
 			}
@@ -72,6 +73,7 @@ func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionReques
 		client.Run(winner, auctionRequest.LRPStartAuction)
 		events = append(events, auctiontypes.AuctionEvent{"run", time.Since(t), rounds, 1, ""})
 
+		events = append(events, auctiontypes.AuctionEvent{"end", 0, rounds, 0, time.Now().String()})
 		return winner, rounds, numCommunications, events
 	}
 

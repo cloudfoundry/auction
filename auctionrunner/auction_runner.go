@@ -12,7 +12,7 @@ var AllBiddersFull = errors.New("all the bidders were full")
 
 var DefaultStartAuctionRules = auctiontypes.StartAuctionRules{
 	Algorithm:              "compare_to_percentile",
-	MaxRounds:              100,
+	MaxRounds:              40,
 	MaxBiddingPoolFraction: 0.2,
 	MinBiddingPool:         10,
 }

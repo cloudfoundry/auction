@@ -142,8 +142,8 @@ var _ = AfterSuite(func() {
 })
 
 func buildInProcessReps() (auctiontypes.SimulationRepPoolClient, []string) {
-	inprocess.LatencyMin = 1 * time.Millisecond
-	inprocess.LatencyMax = 2 * time.Millisecond
+	inprocess.LatencyMin = 50 * time.Millisecond
+	inprocess.LatencyMax = 100 * time.Millisecond
 
 	repGuids := []string{}
 	repMap := map[string]*auctionrep.AuctionRep{}

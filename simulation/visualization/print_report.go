@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/onsi/gomega/format"
 )
 
 const defaultStyle = "\x1b[0m"
@@ -18,9 +19,13 @@ const grayColor = "\x1b[90m"
 const lightGrayColor = "\x1b[37m"
 const purpleColor = "\x1b[35m"
 
+func init() {
+	format.UseStringerRepresentation = true
+}
+
 func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiontypes.StartAuctionResult, representatives []string, duration time.Duration, rules auctiontypes.StartAuctionRules) {
 	roundsDistribution := map[int]int{}
-	roundsTimeDistributions := map[int][]time.Duration{}
+	roundsBiddingTimeDistributions := map[int][]time.Duration{}
 	auctionedInstances := map[string]bool{}
 
 	fmt.Printf("Finished %d Auctions among %d Representatives in %s\n", len(results), len(representatives), duration)
@@ -29,13 +34,13 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	fmt.Println("Rounds Distributions")
 	for _, result := range results {
 		roundsDistribution[result.NumRounds] += 1
-		roundsTimeDistributions[result.NumRounds] = append(roundsTimeDistributions[result.NumRounds], result.Duration)
+		roundsBiddingTimeDistributions[result.NumRounds] = append(roundsBiddingTimeDistributions[result.NumRounds], result.BiddingDuration)
 		auctionedInstances[result.LRPStartAuction.InstanceGuid] = true
 	}
 
 	for i := 1; i <= rules.MaxRounds; i++ {
 		if roundsDistribution[i] > 0 {
-			minTime, maxTime, meanTime := StatsForDurations(roundsTimeDistributions[i])
+			minTime, maxTime, meanTime := StatsForDurations(roundsBiddingTimeDistributions[i])
 			percentage := fmt.Sprintf("(%.1f%%)", float64(roundsDistribution[i])/float64(len(results))*100.0)
 			fmt.Printf("  %3d: %4d %7s Time: min:%16s max:%16s mean:%16s\n", i, roundsDistribution[i], percentage, minTime, maxTime, meanTime)
 		}
@@ -132,6 +137,19 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 
 	meanCommunications = meanCommunications / float64(len(results))
 	fmt.Printf("%14s  Min: %16d | Max: %16d | Mean: %16.2f | Total: %16d\n", "Communication:", minCommunications, maxCommunications, meanCommunications, totalCommunications)
+
+	firstAuctionTime := results[0].AuctionStartTime
+	for _, result := range results {
+		if firstAuctionTime.After(result.AuctionStartTime) {
+			firstAuctionTime = result.AuctionStartTime
+		}
+	}
+
+	for _, result := range results {
+		if result.BiddingDuration > 20*time.Second {
+			fmt.Printf("Starting at %s, %s took %s:\n%s\n", result.AuctionStartTime.Sub(firstAuctionTime), result.LRPStartAuction.InstanceGuid, result.Duration, format.Object(result.Events, 1))
+		}
+	}
 }
 
 func StatsForDurations(durations []time.Duration) (time.Duration, time.Duration, time.Duration) {

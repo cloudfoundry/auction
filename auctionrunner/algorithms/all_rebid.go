@@ -1,6 +1,7 @@
 package algorithms
 
 import (
+	"math"
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
@@ -13,6 +14,8 @@ Get the bids from the subset of reps
         Tell the winner to reserve and the others to rebid
         	If the winner still has the lowest bid we are done, otherwise, repeat
 */
+
+const allRebidPercentile = 0.2
 
 func AllRebidAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int, []auctiontypes.AuctionEvent) {
 	rounds, numCommunications := 1, 0
@@ -63,10 +66,11 @@ func AllRebidAuction(client auctiontypes.RepPoolClient, auctionRequest auctionty
 
 			// if the second place winner has a better bid than the original winner: bail
 			if !secondRoundScores.AllFailed() {
-				secondPlace := secondRoundScores.FilterErrors().Sort()[0]
-				if secondPlace.Bid < winnerRecast.Bid && rounds < auctionRequest.Rules.MaxRounds {
+				sortedSecondRoundScores := secondRoundScores.FilterErrors().Sort()
+				index := int(math.Floor(float64(len(sortedSecondRoundScores)-1) * allRebidPercentile))
+				if sortedSecondRoundScores[index].Bid < winnerRecast.Bid && rounds < auctionRequest.Rules.MaxRounds {
 					client.ReleaseReservation([]string{winner}, auctionInfo)
-					events = append(events, auctiontypes.AuctionEvent{"release-reservation", 0, rounds, 0, ""})
+					events = append(events, auctiontypes.AuctionEvent{"release", time.Since(t), rounds, 0, ""})
 					numCommunications += 1
 					continue
 				}

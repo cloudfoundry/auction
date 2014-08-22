@@ -1,4 +1,4 @@
-package auctionrunner
+package algorithms
 
 import (
 	"sync"
@@ -7,7 +7,7 @@ import (
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
-func stopAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StopAuctionRequest) (string, int, error) {
+func StopAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StopAuctionRequest) (string, int, error) {
 	numCommunication := 0
 
 	stopAuctionInfo := auctiontypes.StopAuctionInfo{

@@ -1,4 +1,4 @@
-package auctionrunner
+package algorithms
 
 import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
@@ -9,7 +9,7 @@ Get the bids from the subset of reps
 
 */
 
-func pickBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int) {
+func PickBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
 	auctionInfo := auctiontypes.NewStartAuctionInfoFromLRPStartAuction(auctionRequest.LRPStartAuction)
 

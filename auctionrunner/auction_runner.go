@@ -4,13 +4,14 @@ import (
 	"errors"
 	"time"
 
+	"github.com/cloudfoundry-incubator/auction/auctionrunner/algorithms"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 )
 
 var AllBiddersFull = errors.New("all the bidders were full")
 
 var DefaultStartAuctionRules = auctiontypes.StartAuctionRules{
-	Algorithm:              "all_rebid",
+	Algorithm:              "compare_to_percentile",
 	MaxRounds:              100,
 	MaxBiddingPoolFraction: 0.2,
 	MinBiddingPool:         10,
@@ -34,17 +35,13 @@ func (a *auctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.StartAuct
 	t := time.Now()
 	switch auctionRequest.Rules.Algorithm {
 	case "all_rebid":
-		result.Winner, result.NumRounds, result.NumCommunications = allRebidAuction(a.client, auctionRequest)
-	case "all_reserve":
-		result.Winner, result.NumRounds, result.NumCommunications = allReserveAuction(a.client, auctionRequest)
-	case "pick_among_best":
-		result.Winner, result.NumRounds, result.NumCommunications = pickAmongBestAuction(a.client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications = algorithms.AllRebidAuction(a.client, auctionRequest)
+	case "compare_to_percentile":
+		result.Winner, result.NumRounds, result.NumCommunications = algorithms.CompareToPercentileAuction(a.client, auctionRequest)
 	case "pick_best":
-		result.Winner, result.NumRounds, result.NumCommunications = pickBestAuction(a.client, auctionRequest)
-	case "reserve_n_best":
-		result.Winner, result.NumRounds, result.NumCommunications = reserveNBestAuction(a.client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications = algorithms.PickBestAuction(a.client, auctionRequest)
 	case "random":
-		result.Winner, result.NumRounds, result.NumCommunications = randomAuction(a.client, auctionRequest)
+		result.Winner, result.NumRounds, result.NumCommunications = algorithms.RandomAuction(a.client, auctionRequest)
 	default:
 		panic("unkown algorithm " + auctionRequest.Rules.Algorithm)
 	}
@@ -64,7 +61,7 @@ func (a *auctionRunner) RunLRPStopAuction(auctionRequest auctiontypes.StopAuctio
 
 	var err error
 	t := time.Now()
-	result.Winner, result.NumCommunications, err = stopAuction(a.client, auctionRequest)
+	result.Winner, result.NumCommunications, err = algorithms.StopAuction(a.client, auctionRequest)
 	result.BiddingDuration = time.Since(t)
 
 	return result, err

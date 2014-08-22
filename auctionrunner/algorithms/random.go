@@ -1,4 +1,4 @@
-package auctionrunner
+package algorithms
 
 import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
@@ -10,7 +10,7 @@ Pick an arbitrary rep
 
 */
 
-func randomAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int) {
+func RandomAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int) {
 	rounds, numCommunications := 1, 0
 	auctionInfo := auctiontypes.NewStartAuctionInfoFromLRPStartAuction(auctionRequest.LRPStartAuction)
 

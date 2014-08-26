@@ -228,8 +228,11 @@ func startReport() {
 
 func finishReport() {
 	svgReport.Done()
-	exec.Command("rsvg-convert", "-h", "2000", "--background-color=#fff", "./report.svg", "-o", "./report.png").Run()
-	exec.Command("open", "./report.png").Run()
+	_, err := exec.LookPath("rsvg-convert")
+	if err == nil {
+		exec.Command("rsvg-convert", "-h", "2000", "--background-color=#fff", "./report.svg", "-o", "./report.png").Run()
+		exec.Command("open", "./report.png").Run()
+	}
 
 	data, err := json.Marshal(reports)
 	Ω(err).ShouldNot(HaveOccurred())

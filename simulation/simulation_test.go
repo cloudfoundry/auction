@@ -104,8 +104,6 @@ var _ = Describe("Auction", func() {
 					visualization.PrintReport(client, report.AuctionResults, repGuids[:nexecutors], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
 					svgReport.DrawReportCard(repeat, 0, report)
 					reports = append(reports, report)
-
-					//ADD AN ASSERTION
 				})
 
 				It("should distribute evenly for a small distribution", func() {
@@ -118,8 +116,6 @@ var _ = Describe("Auction", func() {
 					visualization.PrintReport(client, report.AuctionResults, repGuids[:nexecutors], report.AuctionDuration, auctionrunner.DefaultStartAuctionRules)
 					svgReport.DrawReportCard(repeat, 1, report)
 					reports = append(reports, report)
-
-					//ADD AN ASSERTION
 				})
 			}
 		})
@@ -154,8 +150,6 @@ var _ = Describe("Auction", func() {
 
 						svgReport.DrawReportCard(i, 2, report)
 						reports = append(reports, report)
-
-						//ADD AN ASSERTION
 					})
 				})
 			}

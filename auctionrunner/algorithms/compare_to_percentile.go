@@ -15,12 +15,10 @@ Get the bids from the subset of reps
         	Compare the winner's new score to the previously received bids, if it exceeds a percentil threshold: repeat
 */
 
-const percentile = 0.2
-
-func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int, []auctiontypes.AuctionEvent) {
+func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int, auctiontypes.AuctionEvents) {
 	rounds, numCommunications := 1, 0
 	auctionInfo := auctiontypes.NewStartAuctionInfoFromLRPStartAuction(auctionRequest.LRPStartAuction)
-	events := []auctiontypes.AuctionEvent{}
+	events := auctiontypes.AuctionEvents{}
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		t := time.Now()
@@ -59,7 +57,7 @@ func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionReques
 
 		if len(sortedScores) > 1 {
 			t = time.Now()
-			index := int(math.Floor(float64(len(sortedScores)-2)*percentile)) + 1
+			index := int(math.Floor(float64(len(sortedScores)-2)*auctionRequest.Rules.ComparisonPercentile)) + 1
 			if sortedScores[index].Bid < winnerRecast.Bid {
 				client.ReleaseReservation([]string{winner}, auctionInfo)
 				events = append(events, auctiontypes.AuctionEvent{"release", time.Since(t), rounds, 0, ""})

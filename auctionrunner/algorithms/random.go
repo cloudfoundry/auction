@@ -14,10 +14,10 @@ Pick an arbitrary rep
 
 */
 
-func RandomAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int, []auctiontypes.AuctionEvent) {
+func RandomAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int, auctiontypes.AuctionEvents) {
 	rounds, numCommunications := 1, 0
 	auctionInfo := auctiontypes.NewStartAuctionInfoFromLRPStartAuction(auctionRequest.LRPStartAuction)
-	events := []auctiontypes.AuctionEvent{}
+	events := auctiontypes.AuctionEvents{}
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		t := time.Now()

@@ -2,6 +2,8 @@ package auctiontypes
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
@@ -32,7 +34,34 @@ type StartAuctionResult struct {
 	AuctionStartTime time.Time
 	BiddingDuration  time.Duration
 	Duration         time.Duration
-	Events           []AuctionEvent
+	Events           AuctionEvents
+}
+
+type AuctionEvents []AuctionEvent
+
+func (a AuctionEvents) String() string {
+	s := ""
+	round := 0
+	for _, event := range a {
+		if round != event.Round {
+			s += fmt.Sprintf("%d:\n", event.Round)
+			round = event.Round
+		}
+		components := []string{event.Event}
+		if event.Duration > 0 {
+			components = append(components, event.Duration.String())
+		}
+		if event.Communication > 0 {
+			components = append(components, fmt.Sprintf("+%d", event.Communication))
+		}
+		if event.Info != "" {
+			components = append(components, event.Info)
+		}
+
+		s += "  " + strings.Join(components, " ") + "\n"
+	}
+
+	return s
 }
 
 type AuctionEvent struct {
@@ -61,6 +90,7 @@ type StartAuctionRules struct {
 	MaxRounds              int
 	MaxBiddingPoolFraction float64
 	MinBiddingPool         int
+	ComparisonPercentile   float64
 }
 
 type RepGuids []string

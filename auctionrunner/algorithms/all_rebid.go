@@ -15,12 +15,10 @@ Get the bids from the subset of reps
         	If the winner still has the lowest bid we are done, otherwise, repeat
 */
 
-const allRebidPercentile = 0.2
-
-func AllRebidAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int, []auctiontypes.AuctionEvent) {
+func AllRebidAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.StartAuctionRequest) (string, int, int, auctiontypes.AuctionEvents) {
 	rounds, numCommunications := 1, 0
 	auctionInfo := auctiontypes.NewStartAuctionInfoFromLRPStartAuction(auctionRequest.LRPStartAuction)
-	events := []auctiontypes.AuctionEvent{}
+	events := auctiontypes.AuctionEvents{}
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		t := time.Now()
 		//pick a subset
@@ -67,7 +65,7 @@ func AllRebidAuction(client auctiontypes.RepPoolClient, auctionRequest auctionty
 			// if the second place winner has a better bid than the original winner: bail
 			if !secondRoundScores.AllFailed() {
 				sortedSecondRoundScores := secondRoundScores.FilterErrors().Sort()
-				index := int(math.Floor(float64(len(sortedSecondRoundScores)-1) * allRebidPercentile))
+				index := int(math.Floor(float64(len(sortedSecondRoundScores)-1) * auctionRequest.Rules.ComparisonPercentile))
 				if sortedSecondRoundScores[index].Bid < winnerRecast.Bid && rounds < auctionRequest.Rules.MaxRounds {
 					client.ReleaseReservation([]string{winner}, auctionInfo)
 					events = append(events, auctiontypes.AuctionEvent{"release", time.Since(t), rounds, 0, ""})
@@ -81,6 +79,7 @@ func AllRebidAuction(client auctiontypes.RepPoolClient, auctionRequest auctionty
 		numCommunications += 1
 		client.Run(winner, auctionRequest.LRPStartAuction)
 		events = append(events, auctiontypes.AuctionEvent{"run", time.Since(t), rounds, 1, ""})
+
 		return winner, rounds, numCommunications, events
 	}
 

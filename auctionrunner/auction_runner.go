@@ -15,6 +15,7 @@ var DefaultStartAuctionRules = auctiontypes.StartAuctionRules{
 	MaxRounds:              100,
 	MaxBiddingPoolFraction: 0.2,
 	MinBiddingPool:         10,
+	ComparisonPercentile:   0.2,
 }
 
 type auctionRunner struct {

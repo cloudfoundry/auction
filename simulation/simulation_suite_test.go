@@ -59,6 +59,7 @@ var sessionsToTerminate []*gexec.Session
 var natsRunner *natsrunner.NATSRunner
 var client auctiontypes.SimulationRepPoolClient
 var repGuids []string
+var reportName string
 
 var disableSVGReport bool
 
@@ -74,6 +75,7 @@ func init() {
 	flag.IntVar(&maxConcurrentPerExecutor, "maxConcurrentPerExecutor", 20, "the maximum number of concurrent auctions to run, per executor")
 
 	flag.BoolVar(&disableSVGReport, "disableSVGReport", false, "disable displaying SVG reports of the simulation runs")
+	flag.StringVar(&reportName, "reportName", "report", "report name")
 }
 
 func TestAuction(t *testing.T) {
@@ -222,7 +224,7 @@ func launchExternalAuctioneers(communicationFlag string, communicationValue stri
 }
 
 func startReport() {
-	svgReport = visualization.StartSVGReport("./report.svg", 4, 4)
+	svgReport = visualization.StartSVGReport("./"+reportName+".svg", 4, 4)
 	svgReport.DrawHeader(communicationMode, auctionrunner.DefaultStartAuctionRules, maxConcurrentPerExecutor)
 }
 
@@ -230,11 +232,11 @@ func finishReport() {
 	svgReport.Done()
 	_, err := exec.LookPath("rsvg-convert")
 	if err == nil {
-		exec.Command("rsvg-convert", "-h", "2000", "--background-color=#fff", "./report.svg", "-o", "./report.png").Run()
-		exec.Command("open", "./report.png").Run()
+		exec.Command("rsvg-convert", "-h", "2000", "--background-color=#fff", "./"+reportName+".svg", "-o", "./"+reportName+".png").Run()
+		exec.Command("open", "./"+reportName+".png").Run()
 	}
 
 	data, err := json.Marshal(reports)
 	Ω(err).ShouldNot(HaveOccurred())
-	ioutil.WriteFile("./report.json", data, 0777)
+	ioutil.WriteFile("./"+reportName+".json", data, 0777)
 }

@@ -2,7 +2,10 @@ package auctiondistributor
 
 import (
 	"fmt"
+	"runtime"
 	"time"
+
+	"github.com/onsi/ginkgo"
 
 	"github.com/cheggaaa/pb"
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
@@ -46,25 +49,37 @@ func (ad *AuctionDistributor) HoldAuctionsFor(instances []models.LRPStartAuction
 	bar := pb.StartNew(len(instances))
 
 	t := time.Now()
-	semaphore := make(chan bool, maxConcurrent)
-	c := make(chan auctiontypes.StartAuctionResult)
-	for _, inst := range instances {
-		go func(inst models.LRPStartAuction) {
-			semaphore <- true
-			result, _ := ad.startCommunicator(auctiontypes.StartAuctionRequest{
-				LRPStartAuction: inst,
-				RepGuids:        representatives,
-				Rules:           rules,
-			})
-			result.Duration = time.Since(t)
-			c <- result
-			<-semaphore
-		}(inst)
+	workChan := make(chan models.LRPStartAuction)
+	resultsChan := make(chan auctiontypes.StartAuctionResult, len(instances))
+
+	for i := 0; i < maxConcurrent; i++ {
+		go func(i int) {
+			n := 0
+			for inst := range workChan {
+				n++
+				startTime := time.Now()
+				result, _ := ad.startCommunicator(auctiontypes.StartAuctionRequest{
+					LRPStartAuction: inst,
+					RepGuids:        representatives,
+					Rules:           rules,
+				})
+				result.Duration = time.Since(t)
+				resultsChan <- result
+				fmt.Fprintln(ginkgo.GinkgoWriter, "Finished", inst.InstanceGuid, "on", i, "processed", n, "took:", time.Since(startTime), "communications:", result.NumCommunications, "numrounds:", result.NumRounds, "goroutines:", runtime.NumGoroutine(), "length:", len(resultsChan), "have-run:", n)
+			}
+			fmt.Fprintln(ginkgo.GinkgoWriter, i, "is gone - processed:", n)
+		}(i)
 	}
+
+	for _, instance := range instances {
+		workChan <- instance
+	}
+
+	close(workChan)
 
 	results := []auctiontypes.StartAuctionResult{}
 	for _ = range instances {
-		results = append(results, <-c)
+		results = append(results, <-resultsChan)
 		bar.Increment()
 	}
 

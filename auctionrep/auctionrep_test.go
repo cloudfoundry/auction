@@ -252,10 +252,12 @@ var _ = Describe("Auction Rep", func() {
 			spy := make(chan struct{}, 2)
 			release := make(chan struct{})
 
+			diskMB := startAuctionInfo.DiskMB
+			memoryMB := startAuctionInfo.MemoryMB
 			delegate.TotalResourcesStub = func() (auctiontypes.Resources, error) {
 				spy <- struct{}{}
 				<-release
-				return Resources(startAuctionInfo.DiskMB, startAuctionInfo.MemoryMB, 1), nil
+				return Resources(diskMB, memoryMB, 1), nil
 			}
 
 			go rep.BidForStartAuction(startAuctionInfo)
@@ -290,10 +292,12 @@ var _ = Describe("Auction Rep", func() {
 			spy := make(chan struct{}, 2)
 			release := make(chan struct{})
 
+			diskMB := startAuctionInfo.DiskMB
+			memoryMB := startAuctionInfo.MemoryMB
 			delegate.TotalResourcesStub = func() (auctiontypes.Resources, error) {
 				spy <- struct{}{}
 				<-release
-				return Resources(startAuctionInfo.DiskMB, startAuctionInfo.MemoryMB, 1), nil
+				return Resources(diskMB, memoryMB, 1), nil
 			}
 
 			go rep.RebidThenTentativelyReserve(startAuctionInfo)

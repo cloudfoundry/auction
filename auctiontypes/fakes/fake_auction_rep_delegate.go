@@ -12,14 +12,14 @@ type FakeAuctionRepDelegate struct {
 	RemainingResourcesStub        func() (auctiontypes.Resources, error)
 	remainingResourcesMutex       sync.RWMutex
 	remainingResourcesArgsForCall []struct{}
-	remainingResourcesReturns struct {
+	remainingResourcesReturns     struct {
 		result1 auctiontypes.Resources
 		result2 error
 	}
 	TotalResourcesStub        func() (auctiontypes.Resources, error)
 	totalResourcesMutex       sync.RWMutex
 	totalResourcesArgsForCall []struct{}
-	totalResourcesReturns struct {
+	totalResourcesReturns     struct {
 		result1 auctiontypes.Resources
 		result2 error
 	}

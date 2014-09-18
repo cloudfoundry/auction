@@ -2,10 +2,10 @@ package nats_muxer_test
 
 import (
 	"fmt"
+	. "github.com/cloudfoundry-incubator/auction/communication/nats/nats_muxer"
 	"strconv"
 	"sync"
 	"time"
-	. "github.com/cloudfoundry-incubator/auction/communication/nats/nats_muxer"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

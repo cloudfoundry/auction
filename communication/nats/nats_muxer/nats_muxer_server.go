@@ -3,8 +3,8 @@ package nats_muxer
 import (
 	"encoding/json"
 
-	"github.com/cloudfoundry/yagnats"
 	"github.com/apcera/nats"
+	"github.com/cloudfoundry/yagnats"
 )
 
 type MuxedHandler func([]byte) []byte

@@ -7,20 +7,20 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/apcera/nats"
 	"github.com/cloudfoundry-incubator/auction/util"
 	"github.com/cloudfoundry/yagnats"
-	"github.com/apcera/nats"
 )
 
 var TimeoutError = errors.New("timeout")
 
 type NATSMuxerClient struct {
-	client         yagnats.ApceraWrapperNATSClient
-	replyGuid      string
-	subscription *nats.Subscription
-	correlationID  int64
-	requests       map[int64]chan []byte
-	lock           *sync.Mutex
+	client        yagnats.ApceraWrapperNATSClient
+	replyGuid     string
+	subscription  *nats.Subscription
+	correlationID int64
+	requests      map[int64]chan []byte
+	lock          *sync.Mutex
 }
 
 type message struct {

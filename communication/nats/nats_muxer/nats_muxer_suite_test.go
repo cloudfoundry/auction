@@ -10,7 +10,7 @@ import (
 )
 
 var natsRunner *natsrunner.NATSRunner
-var natsClient yagnats.NATSClient
+var natsClient yagnats.ApceraWrapperNATSClient
 
 func TestNatsmuxer(t *testing.T) {
 	RegisterFailHandler(Fail)

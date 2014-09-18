@@ -9,14 +9,15 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/util"
 	"github.com/cloudfoundry/yagnats"
+	"github.com/apcera/nats"
 )
 
 var TimeoutError = errors.New("timeout")
 
 type NATSMuxerClient struct {
-	client         yagnats.NATSClient
+	client         yagnats.ApceraWrapperNATSClient
 	replyGuid      string
-	subscriptionID int64
+	subscription *nats.Subscription
 	correlationID  int64
 	requests       map[int64]chan []byte
 	lock           *sync.Mutex
@@ -27,7 +28,7 @@ type message struct {
 	Payload       []byte
 }
 
-func NewNATSMuxerClient(client yagnats.NATSClient) *NATSMuxerClient {
+func NewNATSMuxerClient(client yagnats.ApceraWrapperNATSClient) *NATSMuxerClient {
 	replyGuid := util.RandomGuid()
 	return &NATSMuxerClient{
 		client:        client,
@@ -39,7 +40,7 @@ func NewNATSMuxerClient(client yagnats.NATSClient) *NATSMuxerClient {
 }
 
 func (c *NATSMuxerClient) ListenForResponses() error {
-	subscriptionID, err := c.client.Subscribe(c.replyGuid, func(msg *yagnats.Message) {
+	subscription, err := c.client.Subscribe(c.replyGuid, func(msg *nats.Msg) {
 		go c.handleResponse(msg)
 	})
 
@@ -47,12 +48,12 @@ func (c *NATSMuxerClient) ListenForResponses() error {
 		return err
 	}
 
-	c.subscriptionID = subscriptionID
+	c.subscription = subscription
 	return nil
 }
 
 func (c *NATSMuxerClient) Shutdown() error {
-	return c.client.Unsubscribe(c.subscriptionID)
+	return c.client.Unsubscribe(c.subscription)
 }
 
 func (c *NATSMuxerClient) Request(subject string, payload []byte, timeout time.Duration) ([]byte, error) {
@@ -94,9 +95,9 @@ func (c *NATSMuxerClient) Request(subject string, payload []byte, timeout time.D
 	panic("can't get here")
 }
 
-func (c *NATSMuxerClient) handleResponse(msg *yagnats.Message) {
+func (c *NATSMuxerClient) handleResponse(msg *nats.Msg) {
 	response := message{}
-	err := json.Unmarshal(msg.Payload, &response)
+	err := json.Unmarshal(msg.Data, &response)
 	if err != nil {
 		return
 	}

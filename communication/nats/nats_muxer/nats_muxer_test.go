@@ -9,10 +9,12 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/apcera/nats"
 )
 
 var _ = Describe("Nats Muxer", func() {
-	var subscriptionID1, subscriptionID2 int64
+	var subscription1, subscription2 *nats.Subscription
 	var client *NATSMuxerClient
 
 	BeforeEach(func() {
@@ -22,12 +24,12 @@ var _ = Describe("Nats Muxer", func() {
 		err = client.ListenForResponses()
 		Ω(err).ShouldNot(HaveOccurred())
 
-		subscriptionID1, err = HandleMuxedNATSRequest(natsClient, "echo", func(payload []byte) []byte {
+		subscription1, err = HandleMuxedNATSRequest(natsClient, "echo", func(payload []byte) []byte {
 			return payload
 		})
 		Ω(err).ShouldNot(HaveOccurred())
 
-		subscriptionID2, err = HandleMuxedNATSRequest(natsClient, "square", func(payload []byte) []byte {
+		subscription2, err = HandleMuxedNATSRequest(natsClient, "square", func(payload []byte) []byte {
 			i, err := strconv.Atoi(string(payload))
 			Ω(err).ShouldNot(HaveOccurred())
 
@@ -38,10 +40,10 @@ var _ = Describe("Nats Muxer", func() {
 	})
 
 	AfterEach(func() {
-		err := natsClient.Unsubscribe(subscriptionID1)
+		err := natsClient.Unsubscribe(subscription1)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		err = natsClient.Unsubscribe(subscriptionID2)
+		err = natsClient.Unsubscribe(subscription2)
 		Ω(err).ShouldNot(HaveOccurred())
 
 		err = client.Shutdown()

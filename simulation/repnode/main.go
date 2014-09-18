@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
@@ -41,18 +42,17 @@ func main() {
 	rep := auctionrep.New(*repGuid, repDelegate)
 
 	if *natsAddrs != "" {
-		client := yagnats.NewClient()
-
-		clusterInfo := &yagnats.ConnectionCluster{}
-
+		natsMembers := []string{}
 		for _, addr := range strings.Split(*natsAddrs, ",") {
-			clusterInfo.Members = append(clusterInfo.Members, &yagnats.ConnectionInfo{
-				Addr: addr,
-			})
+			uri := url.URL{
+				Scheme: "nats",
+				Host:   addr,
+			}
+			natsMembers = append(natsMembers, uri.String())
 		}
+		client := yagnats.NewApceraClientWrapper(natsMembers)
 
-		err := client.Connect(clusterInfo)
-
+		err := client.Connect()
 		if err != nil {
 			log.Fatalln("no nats:", err)
 		}

@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 
 	"github.com/cloudfoundry/yagnats"
+	"github.com/apcera/nats"
 )
 
 type MuxedHandler func([]byte) []byte
 
-func HandleMuxedNATSRequest(client yagnats.NATSClient, subject string, callback MuxedHandler) (int64, error) {
-	return client.Subscribe(subject, func(msg *yagnats.Message) {
+func HandleMuxedNATSRequest(client yagnats.ApceraWrapperNATSClient, subject string, callback MuxedHandler) (*nats.Subscription, error) {
+	return client.Subscribe(subject, func(msg *nats.Msg) {
 		request := message{}
-		err := json.Unmarshal(msg.Payload, &request)
+		err := json.Unmarshal(msg.Data, &request)
 		if err != nil {
 			return
 		}
@@ -28,6 +29,6 @@ func HandleMuxedNATSRequest(client yagnats.NATSClient, subject string, callback 
 			return
 		}
 
-		client.Publish(msg.ReplyTo, responsePayload)
+		client.Publish(msg.Reply, responsePayload)
 	})
 }

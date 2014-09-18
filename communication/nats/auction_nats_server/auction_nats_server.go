@@ -7,6 +7,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/nats"
+	apceraNats "github.com/apcera/nats"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/nats_muxer"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/cloudfoundry/yagnats"
@@ -19,11 +20,11 @@ var successResponse = []byte("ok")
 type AuctionNATSServer struct {
 	repGuid string
 	rep     *auctionrep.AuctionRep
-	client  yagnats.NATSClient
+	client  yagnats.ApceraWrapperNATSClient
 	logger  lager.Logger
 }
 
-func New(client yagnats.NATSClient, rep *auctionrep.AuctionRep, logger lager.Logger) *AuctionNATSServer {
+func New(client yagnats.ApceraWrapperNATSClient, rep *auctionrep.AuctionRep, logger lager.Logger) *AuctionNATSServer {
 	return &AuctionNATSServer{
 		repGuid: rep.Guid(),
 		rep:     rep,
@@ -35,7 +36,13 @@ func New(client yagnats.NATSClient, rep *auctionrep.AuctionRep, logger lager.Log
 func (s *AuctionNATSServer) Run(sigChan <-chan os.Signal, ready chan<- struct{}) error {
 	subjects := nats.NewSubjects(s.repGuid)
 
-	s.start(subjects)
+	subscriptions, err := s.start(subjects)
+	defer func() {
+		s.stop(subscriptions)
+	}()
+	if err != nil {
+		return err
+	}
 
 	s.logger.Info("listening", lager.Data{
 		"rep-guid": s.repGuid,
@@ -45,23 +52,27 @@ func (s *AuctionNATSServer) Run(sigChan <-chan os.Signal, ready chan<- struct{})
 
 	<-sigChan
 
-	s.stop(subjects)
-
 	return nil
 }
 
-func (s *AuctionNATSServer) start(subjects nats.Subjects) {
+func (s *AuctionNATSServer) start(subjects nats.Subjects) ([]*apceraNats.Subscription, error) {
 	natsLog := s.logger.Session("nats-handler")
 
-	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.TotalResources, func(payload []byte) []byte {
+	subscriptions := []*apceraNats.Subscription{}
+
+	subscription, err := nats_muxer.HandleMuxedNATSRequest(s.client, subjects.TotalResources, func(payload []byte) []byte {
 		totalResourcesLog := natsLog.Session("total-resources")
 
 		totalResourcesLog.Info("handling")
 		out, _ := json.Marshal(s.rep.TotalResources())
 		return out
 	})
+	if err != nil {
+		return subscriptions, err
+	}
+	subscriptions = append(subscriptions, subscription)
 
-	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.BidForStartAuction, func(payload []byte) []byte {
+	subscription, err = nats_muxer.HandleMuxedNATSRequest(s.client, subjects.BidForStartAuction, func(payload []byte) []byte {
 		bidLog := natsLog.Session("bid-for-start")
 
 		bidLog.Info("handling")
@@ -88,8 +99,12 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 		out, _ := json.Marshal(response)
 		return out
 	})
+	if err != nil {
+		return subscriptions, err
+	}
+	subscriptions = append(subscriptions, subscription)
 
-	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.BidForStopAuction, func(payload []byte) []byte {
+	subscription, err = nats_muxer.HandleMuxedNATSRequest(s.client, subjects.BidForStopAuction, func(payload []byte) []byte {
 		bidLog := natsLog.Session("bid-for-stop")
 
 		bidLog.Info("handling")
@@ -117,8 +132,12 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 		out, _ := json.Marshal(response)
 		return out
 	})
+	if err != nil {
+		return subscriptions, err
+	}
+	subscriptions = append(subscriptions, subscription)
 
-	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.RebidThenTentativelyReserve, func(payload []byte) []byte {
+	subscription, err = nats_muxer.HandleMuxedNATSRequest(s.client, subjects.RebidThenTentativelyReserve, func(payload []byte) []byte {
 		bidLog := natsLog.Session("re-bid-then-reserve")
 
 		bidLog.Info("handling")
@@ -145,8 +164,12 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 		out, _ := json.Marshal(response)
 		return out
 	})
+	if err != nil {
+		return subscriptions, err
+	}
+	subscriptions = append(subscriptions, subscription)
 
-	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.ReleaseReservation, func(payload []byte) []byte {
+	subscription, err = nats_muxer.HandleMuxedNATSRequest(s.client, subjects.ReleaseReservation, func(payload []byte) []byte {
 		releaseLog := natsLog.Session("release-reservation")
 
 		releaseLog.Info("handling")
@@ -163,8 +186,12 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 
 		return successResponse
 	})
+	if err != nil {
+		return subscriptions, err
+	}
+	subscriptions = append(subscriptions, subscription)
 
-	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.Run, func(payload []byte) []byte {
+	subscription, err = nats_muxer.HandleMuxedNATSRequest(s.client, subjects.Run, func(payload []byte) []byte {
 		runLog := natsLog.Session("run")
 
 		runLog.Info("handling")
@@ -181,8 +208,12 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 
 		return successResponse
 	})
+	if err != nil {
+		return subscriptions, err
+	}
+	subscriptions = append(subscriptions, subscription)
 
-	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.Stop, func(payload []byte) []byte {
+	subscription, err = nats_muxer.HandleMuxedNATSRequest(s.client, subjects.Stop, func(payload []byte) []byte {
 		stopLog := natsLog.Session("stop")
 
 		stopLog.Info("handling")
@@ -199,15 +230,23 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 
 		return successResponse
 	})
+	if err != nil {
+		return subscriptions, err
+	}
+	subscriptions = append(subscriptions, subscription)
 
 	//simulation only
 
-	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.Reset, func(payload []byte) []byte {
+	subscription, err = nats_muxer.HandleMuxedNATSRequest(s.client, subjects.Reset, func(payload []byte) []byte {
 		s.rep.Reset()
 		return successResponse
 	})
+	if err != nil {
+		return subscriptions, err
+	}
+	subscriptions = append(subscriptions, subscription)
 
-	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.SetSimulatedInstances, func(payload []byte) []byte {
+	subscription, err = nats_muxer.HandleMuxedNATSRequest(s.client, subjects.SetSimulatedInstances, func(payload []byte) []byte {
 		var instances []auctiontypes.SimulatedInstance
 
 		err := json.Unmarshal(payload, &instances)
@@ -218,15 +257,25 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) {
 		s.rep.SetSimulatedInstances(instances)
 		return successResponse
 	})
+	if err != nil {
+		return subscriptions, err
+	}
+	subscriptions = append(subscriptions, subscription)
 
-	nats_muxer.HandleMuxedNATSRequest(s.client, subjects.SimulatedInstances, func(payload []byte) []byte {
+	subscription, err = nats_muxer.HandleMuxedNATSRequest(s.client, subjects.SimulatedInstances, func(payload []byte) []byte {
 		jinstances, _ := json.Marshal(s.rep.SimulatedInstances())
 		return jinstances
 	})
+	if err != nil {
+		return subscriptions, err
+	}
+	subscriptions = append(subscriptions, subscription)
+
+	return subscriptions, nil
 }
 
-func (s *AuctionNATSServer) stop(subjects nats.Subjects) {
-	for _, topic := range subjects.Slice() {
-		s.client.UnsubscribeAll(topic)
+func (s *AuctionNATSServer) stop(subscriptions []*apceraNats.Subscription) {
+	for _, subscription := range subscriptions {
+		subscription.Unsubscribe()
 	}
 }

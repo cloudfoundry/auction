@@ -3,15 +3,13 @@
 
 set -e -x
 
-export GOPATH=$PWD/Godeps/_workspace:$GOPATH
-
 FIRST_GOPATH=`echo $GOPATH | cut -d':' -f1`
 
 mkdir -p $FIRST_GOPATH/bin
 export PATH=$FIRST_GOPATH/bin:$PATH
 
-go get -t -u -v ./...
-go get -u github.com/apcera/gnatsd
+go get -t -v ./...
+go get github.com/apcera/gnatsd
 go install github.com/onsi/ginkgo/ginkgo
 
 ginkgo -failOnPending -randomizeAllSpecs -race -trace communication/nats/nats_muxer/

@@ -20,11 +20,11 @@ var successResponse = []byte("ok")
 type AuctionNATSServer struct {
 	repGuid string
 	rep     *auctionrep.AuctionRep
-	client  yagnats.ApceraWrapperNATSClient
+	client  yagnats.NATSConn
 	logger  lager.Logger
 }
 
-func New(client yagnats.ApceraWrapperNATSClient, rep *auctionrep.AuctionRep, logger lager.Logger) *AuctionNATSServer {
+func New(client yagnats.NATSConn, rep *auctionrep.AuctionRep, logger lager.Logger) *AuctionNATSServer {
 	return &AuctionNATSServer{
 		repGuid: rep.Guid(),
 		rep:     rep,

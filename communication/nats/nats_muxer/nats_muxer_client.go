@@ -15,7 +15,7 @@ import (
 var TimeoutError = errors.New("timeout")
 
 type NATSMuxerClient struct {
-	client        yagnats.ApceraWrapperNATSClient
+	client        yagnats.NATSConn
 	replyGuid     string
 	subscription  *nats.Subscription
 	correlationID int64
@@ -28,7 +28,7 @@ type message struct {
 	Payload       []byte
 }
 
-func NewNATSMuxerClient(client yagnats.ApceraWrapperNATSClient) *NATSMuxerClient {
+func NewNATSMuxerClient(client yagnats.NATSConn) *NATSMuxerClient {
 	replyGuid := util.RandomGuid()
 	return &NATSMuxerClient{
 		client:        client,
@@ -80,7 +80,7 @@ func (c *NATSMuxerClient) Request(subject string, payload []byte, timeout time.D
 		return nil, err
 	}
 
-	err = c.client.PublishWithReplyTo(subject, c.replyGuid, payload)
+	err = c.client.PublishRequest(subject, c.replyGuid, payload)
 	if err != nil {
 		return nil, err
 	}

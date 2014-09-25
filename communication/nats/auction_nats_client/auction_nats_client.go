@@ -22,7 +22,7 @@ type AuctionNATSClient struct {
 	logger  lager.Logger
 }
 
-func New(natsClient yagnats.ApceraWrapperNATSClient, timeout time.Duration, logger lager.Logger) (*AuctionNATSClient, error) {
+func New(natsClient yagnats.NATSConn, timeout time.Duration, logger lager.Logger) (*AuctionNATSClient, error) {
 	client := nats_muxer.NewNATSMuxerClient(natsClient)
 	err := client.ListenForResponses()
 	if err != nil {

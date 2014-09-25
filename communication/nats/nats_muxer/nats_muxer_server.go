@@ -9,7 +9,7 @@ import (
 
 type MuxedHandler func([]byte) []byte
 
-func HandleMuxedNATSRequest(client yagnats.ApceraWrapperNATSClient, subject string, callback MuxedHandler) (*nats.Subscription, error) {
+func HandleMuxedNATSRequest(client yagnats.NATSConn, subject string, callback MuxedHandler) (*nats.Subscription, error) {
 	return client.Subscribe(subject, func(msg *nats.Msg) {
 		request := message{}
 		err := json.Unmarshal(msg.Data, &request)

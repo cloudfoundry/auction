@@ -15,8 +15,8 @@ func StopAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.
 		Index:       auctionRequest.LRPStopAuction.Index,
 	}
 
-	numCommunication += len(auctionRequest.RepGuids)
-	stopAuctionBids := client.BidForStopAuction(auctionRequest.RepGuids, stopAuctionInfo)
+	numCommunication += len(auctionRequest.RepAddresses)
+	stopAuctionBids := client.BidForStopAuction(auctionRequest.RepAddresses, stopAuctionInfo)
 	stopAuctionBids = stopAuctionBids.FilterErrors()
 
 	instanceGuids := stopAuctionBids.InstanceGuids()
@@ -47,7 +47,7 @@ func StopAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontypes.
 			numCommunication += 1
 			wg.Add(1)
 			go func(repGuid string, instanceGuid string) {
-				client.Stop(repGuid, models.StopLRPInstance{
+				client.Stop(auctionRequest.RepAddresses.AddressFor(repGuid), models.StopLRPInstance{
 					ProcessGuid:  stopAuctionInfo.ProcessGuid,
 					InstanceGuid: instanceGuid,
 					Index:        stopAuctionInfo.Index,

@@ -21,7 +21,7 @@ type AuctionRunner interface {
 
 type StartAuctionRequest struct {
 	LRPStartAuction models.LRPStartAuction
-	RepGuids        RepGuids
+	RepAddresses    RepAddresses
 	Rules           StartAuctionRules
 }
 
@@ -74,7 +74,7 @@ type AuctionEvent struct {
 
 type StopAuctionRequest struct {
 	LRPStopAuction models.LRPStopAuction
-	RepGuids       RepGuids
+	RepAddresses   RepAddresses
 }
 
 type StopAuctionResult struct {
@@ -93,15 +93,31 @@ type StartAuctionRules struct {
 	ComparisonPercentile   float64
 }
 
-type RepGuids []string
+type RepAddress struct {
+	RepGuid string
+	Address string
+}
+
+type RepAddresses []RepAddress
 
 type RepPoolClient interface {
-	BidForStartAuction(repGuids []string, startAuctionInfo StartAuctionInfo) StartAuctionBids
-	BidForStopAuction(repGuids []string, stopAuctionInfo StopAuctionInfo) StopAuctionBids
-	RebidThenTentativelyReserve(repGuids []string, startAuction models.LRPStartAuction) StartAuctionBids
-	ReleaseReservation(repGuids []string, startAuction models.LRPStartAuction)
-	Run(repGuid string, startAuction models.LRPStartAuction)
-	Stop(repGuid string, stopInstance models.StopLRPInstance)
+	BidForStartAuction(repAddresses []RepAddress, startAuctionInfo StartAuctionInfo) StartAuctionBids
+	BidForStopAuction(repAddresses []RepAddress, stopAuctionInfo StopAuctionInfo) StopAuctionBids
+	RebidThenTentativelyReserve(repAddresses []RepAddress, startAuctionInfo models.LRPStartAuction) StartAuctionBids
+	ReleaseReservation(repAddresses []RepAddress, startAuctionInfo models.LRPStartAuction)
+	Run(repAddress RepAddress, startAuctionInfo models.LRPStartAuction)
+	Stop(repAddress RepAddress, stopInstance models.StopLRPInstance)
+}
+
+type AuctionRep interface {
+	Guid() string
+	BidForStartAuction(startAuctionInfo StartAuctionInfo) (float64, error)
+	BidForStopAuction(stopAuctionInfo StopAuctionInfo) (float64, []string, error)
+	RebidThenTentativelyReserve(startAuctionInfo models.LRPStartAuction) (float64, error)
+	ReleaseReservation(startAuctionInfo models.LRPStartAuction) error
+
+	Run(startAuction models.LRPStartAuction) error
+	Stop(stopInstance models.StopLRPInstance) error
 }
 
 type AuctionRepDelegate interface {
@@ -120,10 +136,20 @@ type AuctionRepDelegate interface {
 type SimulationRepPoolClient interface {
 	RepPoolClient
 
-	TotalResources(repGuid string) Resources
-	SimulatedInstances(repGuid string) []SimulatedInstance
-	SetSimulatedInstances(repGuid string, instances []SimulatedInstance)
-	Reset(repGuid string)
+	TotalResources(repAddress RepAddress) Resources
+	SimulatedInstances(repAddress RepAddress) []SimulatedInstance
+	SetSimulatedInstances(repAddress RepAddress, instances []SimulatedInstance)
+	Reset(repAddress RepAddress)
+}
+
+//simulation-only interface
+type SimulationAuctionRep interface {
+	AuctionRep
+
+	Reset()
+	SetSimulatedInstances(instances []SimulatedInstance)
+	SimulatedInstances() []SimulatedInstance
+	TotalResources() Resources
 }
 
 //simulation-only interface

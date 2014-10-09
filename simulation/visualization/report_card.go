@@ -14,22 +14,23 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 )
 
-const border = 5
-const instanceSize = 4
-const instanceSpacing = 1
-const instanceBoxSize = instanceSize*100 + instanceSpacing*99
+var border = 5
+var instanceSize = 4
+var instanceSpacing = 1
+var instanceBoxHeight = instanceSize*100 + instanceSpacing*99
+var instanceBoxWidth = instanceSize*100 + instanceSpacing*99
 
-const headerHeight = 80
+var headerHeight = 80
 
-const graphWidth = 300
-const graphTextX = 50
-const graphBinX = 55
-const binHeight = 14
-const binSpacing = 2
-const maxBinLength = graphWidth - graphBinX
+var graphWidth = 300
+var graphTextX = 50
+var graphBinX = 55
+var binHeight = 14
+var binSpacing = 2
+var maxBinLength = graphWidth - graphBinX
 
-const ReportCardWidth = border*3 + instanceBoxSize + graphWidth
-const ReportCardHeight = border*3 + instanceBoxSize
+var ReportCardWidth = border*3 + instanceBoxWidth + graphWidth
+var ReportCardHeight = border*3 + instanceBoxHeight
 
 type SVGReport struct {
 	SVG            *svg.SVG
@@ -41,7 +42,10 @@ type SVGReport struct {
 	height         int
 }
 
-func StartSVGReport(path string, width, height int) *SVGReport {
+func StartSVGReport(path string, width, height int, numCells int) *SVGReport {
+	instanceBoxHeight = instanceSize*numCells + instanceSpacing*(numCells-1)
+	ReportCardHeight = border*3 + instanceBoxHeight
+
 	f, err := os.Create(path)
 	Ω(err).ShouldNot(HaveOccurred())
 	s := svg.New(f)
@@ -87,10 +91,10 @@ func (r *SVGReport) DrawReportCard(x, y int, report *Report) {
 
 func (r *SVGReport) drawInstances(report *Report) {
 	y := border
-	for _, repGuid := range report.RepGuids {
+	for _, repAddress := range report.RepAddresses {
 		x := border
-		r.SVG.Rect(x, y, instanceBoxSize, instanceSize, "fill:#f7f7f7")
-		instances := report.InstancesByRep[repGuid]
+		r.SVG.Rect(x, y, instanceBoxWidth, instanceSize, "fill:#f7f7f7")
+		instances := report.InstancesByRep[repAddress.RepGuid]
 		for _, instance := range instances {
 			instanceWidth := instanceSize*instance.MemoryMB + instanceSpacing*(instance.MemoryMB-1)
 			style := instanceStyle(instance.ProcessGuid)
@@ -115,7 +119,7 @@ func (r *SVGReport) drawDurationsHistogram(report *Report) int {
 	bins := binUp([]float64{0, 0.25, 0.5, 1, 2, 5, 10, 20, 40, 1e9}, waitTimes)
 	labels := []string{"<0.25s", "0.25-0.5s", "0.5-1s", "1-2s", "2-5s", "5-10s", "10-20s", "20-40s", ">40s"}
 
-	r.SVG.Translate(border*2+instanceBoxSize, border)
+	r.SVG.Translate(border*2+instanceBoxWidth, border)
 
 	yBottom := r.drawHistogram(bins, labels)
 
@@ -134,7 +138,7 @@ func (r *SVGReport) drawRoundsHistogram(report *Report, y int) int {
 	bins := binUp([]float64{0, 1, 2, 3, 4, 5, 10, 20, 40, 1e9}, rounds)
 	labels := []string{"1 round", "2 rounds", "3 rounds", "4 rounds", "5 rounds", "5-10", "10-20", "20-40", ">40"}
 
-	r.SVG.Translate(border*2+instanceBoxSize, y)
+	r.SVG.Translate(border*2+instanceBoxWidth, y)
 
 	yBottom := r.drawHistogram(bins, labels)
 
@@ -169,7 +173,7 @@ func (r *SVGReport) drawText(report *Report, y int) {
 		fmt.Sprintf("...%.3f - %.2f", bidStats.Min, bidStats.Max),
 	}
 
-	r.SVG.Translate(border*2+instanceBoxSize, y)
+	r.SVG.Translate(border*2+instanceBoxWidth, y)
 	r.SVG.Gstyle("font-family:Helvetica Neue")
 	r.SVG.Textlines(8, 8, lines, 16, 18, "#333", "start")
 	r.SVG.Textlines(8, 80, statLines, 13, 16, "#333", "start")

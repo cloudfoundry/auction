@@ -14,8 +14,8 @@ func (v StartAuctionBids) AllFailed() bool {
 	return len(v.FilterErrors()) == 0
 }
 
-func (v StartAuctionBids) Reps() RepGuids {
-	out := RepGuids{}
+func (v StartAuctionBids) Reps() []string {
+	out := []string{}
 	for _, r := range v {
 		out = append(out, r.Rep)
 	}

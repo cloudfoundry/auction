@@ -3,9 +3,11 @@ package visualization
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/onsi/gomega/format"
 )
 
@@ -23,7 +25,16 @@ func init() {
 	format.UseStringerRepresentation = true
 }
 
-func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiontypes.StartAuctionResult, representatives []string, duration time.Duration, rules auctiontypes.StartAuctionRules) {
+type ReportData struct {
+	Instances      []auctiontypes.SimulatedInstance
+	TotalResources auctiontypes.Resources
+}
+
+func PrintReport(client auctiontypes.SimulationRepPoolClient, expectedAuctionCount int, results []auctiontypes.StartAuctionResult, representatives []auctiontypes.RepAddress, duration time.Duration, rules auctiontypes.StartAuctionRules) {
+	if len(results) == 0 {
+		fmt.Println("Got no results!")
+		return
+	}
 	roundsDistribution := map[int]int{}
 	roundsBiddingTimeDistributions := map[int][]time.Duration{}
 	auctionedInstances := map[string]bool{}
@@ -47,22 +58,24 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	}
 
 	///
+	fmt.Println("Fetching Data...")
+	reportData := prefetchReportData(client, representatives)
 
 	fmt.Println("Distribution")
 	maxGuidLength := 0
-	for _, repGuid := range representatives {
-		if len(repGuid) > maxGuidLength {
-			maxGuidLength = len(repGuid)
+	for _, repAddress := range representatives {
+		if len(repAddress.RepGuid) > maxGuidLength {
+			maxGuidLength = len(repAddress.RepGuid)
 		}
 	}
 	guidFormat := fmt.Sprintf("%%%ds", maxGuidLength)
 
 	numNew := 0
-	for _, repGuid := range representatives {
-		repString := fmt.Sprintf(guidFormat, repGuid)
+	for _, repAddress := range representatives {
+		repString := fmt.Sprintf(guidFormat, repAddress.RepGuid)
 
 		instanceString := ""
-		instances := client.SimulatedInstances(repGuid)
+		instances := reportData[repAddress.RepGuid].Instances
 
 		availableColors := []string{"red", "cyan", "yellow", "gray", "purple", "green"}
 		colorLookup := map[string]string{"red": redColor, "green": greenColor, "cyan": cyanColor, "yellow": yellowColor, "gray": lightGrayColor, "purple": purpleColor}
@@ -87,14 +100,13 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 			instanceString += strings.Repeat(colorLookup[col]+"-"+defaultStyle, originalCounts[col])
 			instanceString += strings.Repeat(colorLookup[col]+"+"+defaultStyle, newCounts[col])
 		}
-		instanceString += strings.Repeat(grayColor+"."+defaultStyle, client.TotalResources(repGuid).MemoryMB-totalUsage)
+		instanceString += strings.Repeat(grayColor+"."+defaultStyle, reportData[repAddress.RepGuid].TotalResources.MemoryMB-totalUsage)
 
 		fmt.Printf("  %s: %s\n", repString, instanceString)
 	}
 
 	if numNew < len(auctionedInstances) {
-		expected := len(auctionedInstances)
-		fmt.Printf("%s!!!!MISSING INSTANCES!!!!  Expected %d, got %d (%.3f %% failure rate)%s", redColor, expected, numNew, float64(expected-numNew)/float64(expected), defaultStyle)
+		fmt.Printf("%s!!!!MISSING INSTANCES!!!!  Expected %d, got %d (%.3f %% failure rate)%s", redColor, expectedAuctionCount, numNew, float64(expectedAuctionCount-numNew)/float64(expectedAuctionCount), defaultStyle)
 	}
 
 	durations := []time.Duration{}
@@ -146,10 +158,35 @@ func PrintReport(client auctiontypes.SimulationRepPoolClient, results []auctiont
 	}
 
 	for _, result := range results {
-		if result.BiddingDuration > 20*time.Second {
+		if result.BiddingDuration > time.Hour { //turn this on to get detailed logs about auctions that took a long time.
 			fmt.Printf("Starting at %s, %s took %s:\n%s\n", result.AuctionStartTime.Sub(firstAuctionTime), result.LRPStartAuction.InstanceGuid, result.Duration, format.Object(result.Events, 1))
 		}
 	}
+}
+
+func prefetchReportData(client auctiontypes.SimulationRepPoolClient, representatives []auctiontypes.RepAddress) map[string]ReportData {
+	workPool := workpool.NewWorkPool(50)
+	wg := &sync.WaitGroup{}
+	wg.Add(len(representatives))
+	reportDataLock := &sync.Mutex{}
+	reportData := map[string]ReportData{}
+	for _, repAddress := range representatives {
+		repAddress := repAddress
+		workPool.Submit(func() {
+			instances := client.SimulatedInstances(repAddress)
+			resources := client.TotalResources(repAddress)
+			reportDataLock.Lock()
+			reportData[repAddress.RepGuid] = ReportData{
+				Instances:      instances,
+				TotalResources: resources,
+			}
+			reportDataLock.Unlock()
+			wg.Done()
+		})
+	}
+	wg.Wait()
+	workPool.Stop()
+	return reportData
 }
 
 func StatsForDurations(durations []time.Duration) (time.Duration, time.Duration, time.Duration) {

@@ -5,10 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
+
+	"github.com/cloudfoundry-incubator/auction/communication/http/auction_http_client"
 
 	"github.com/cloudfoundry-incubator/auction/auctionrep"
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
@@ -32,14 +36,12 @@ import (
 )
 
 var communicationMode string
-var auctioneerMode string
 
 const InProcess = "inprocess"
 const NATS = "nats"
-const RemoteAuctioneerMode = "remote"
+const HTTP = "http"
 
-const numAuctioneers = 10
-const numReps = 100
+const numCells = 100
 const LatencyMin = 1 * time.Millisecond
 const LatencyMax = 2 * time.Millisecond
 
@@ -52,7 +54,7 @@ var repResources = auctiontypes.Resources{
 var maxConcurrentPerExecutor int
 
 var timeout time.Duration
-var auctionDistributor *auctiondistributor.AuctionDistributor
+var auctionDistributor auctiondistributor.AuctionDistributor
 
 var svgReport *visualization.SVGReport
 var reports []*visualization.Report
@@ -60,21 +62,20 @@ var reports []*visualization.Report
 var sessionsToTerminate []*gexec.Session
 var gnatsdProcess ifrit.Process
 var client auctiontypes.SimulationRepPoolClient
-var repGuids []string
+var repAddresses []auctiontypes.RepAddress
 var reportName string
 
 var disableSVGReport bool
 
 func init() {
-	flag.StringVar(&communicationMode, "communicationMode", "inprocess", "one of inprocess or nats")
-	flag.StringVar(&auctioneerMode, "auctioneerMode", "inprocess", "one of inprocess or remote")
+	flag.StringVar(&communicationMode, "communicationMode", "inprocess", "one of inprocess, nats, or http")
 	flag.DurationVar(&timeout, "timeout", time.Second, "timeout when waiting for responses from remote calls")
 
 	flag.StringVar(&(auctionrunner.DefaultStartAuctionRules.Algorithm), "algorithm", auctionrunner.DefaultStartAuctionRules.Algorithm, "the auction algorithm to use")
 	flag.IntVar(&(auctionrunner.DefaultStartAuctionRules.MaxRounds), "maxRounds", auctionrunner.DefaultStartAuctionRules.MaxRounds, "the maximum number of rounds per auction")
 	flag.Float64Var(&(auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction), "maxBiddingPoolFraction", auctionrunner.DefaultStartAuctionRules.MaxBiddingPoolFraction, "the maximum number of participants in the pool")
 
-	flag.IntVar(&maxConcurrentPerExecutor, "maxConcurrentPerExecutor", 20, "the maximum number of concurrent auctions to run, per executor")
+	flag.IntVar(&maxConcurrentPerExecutor, "maxConcurrentPerExecutor", 2, "the maximum number of concurrent auctions to run, per executor")
 
 	flag.BoolVar(&disableSVGReport, "disableSVGReport", false, "disable displaying SVG reports of the simulation runs")
 	flag.StringVar(&reportName, "reportName", "report", "report name")
@@ -88,46 +89,46 @@ func TestAuction(t *testing.T) {
 var _ = BeforeSuite(func() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	fmt.Printf("Running in %s communicationMode\n", communicationMode)
-	fmt.Printf("Running in %s auctioneerMode\n", auctioneerMode)
 
 	startReport()
 
+	logger := lager.NewLogger("auction-sim")
+	logger.RegisterSink(lager.NewWriterSink(GinkgoWriter, lager.DEBUG))
+
 	sessionsToTerminate = []*gexec.Session{}
-	hosts := []string{}
 	switch communicationMode {
 	case InProcess:
-		client, repGuids = buildInProcessReps()
-		if auctioneerMode == RemoteAuctioneerMode {
-			panic("it doesn't make sense to use remote auctioneers when the reps are in-process")
-		}
+		client, repAddresses = buildInProcessReps()
 	case NATS:
 		natsAddrs, natsClient := startNATS()
 		var err error
 
-		natsLogger := lager.NewLogger("test")
-		natsLogger.RegisterSink(lager.NewWriterSink(GinkgoWriter, lager.DEBUG))
-
-		client, err = auction_nats_client.New(natsClient, timeout, natsLogger)
+		client, err = auction_nats_client.New(natsClient, timeout, logger)
 		Ω(err).ShouldNot(HaveOccurred())
-		repGuids = launchExternalReps("-natsAddrs", natsAddrs)
-		if auctioneerMode == RemoteAuctioneerMode {
-			hosts = launchExternalAuctioneers("-natsAddrs", natsAddrs)
-		}
+		repAddresses = launchExternalNATSReps(natsAddrs)
+	case HTTP:
+		repAddresses = launchExternalHTTPReps()
+
+		client = auction_http_client.New(http.DefaultClient, logger)
 	default:
 		panic(fmt.Sprintf("unknown communication mode: %s", communicationMode))
 	}
 
-	if auctioneerMode == InProcess {
-		auctionDistributor = auctiondistributor.NewInProcessAuctionDistributor(client)
-	} else if auctioneerMode == RemoteAuctioneerMode {
-		auctionDistributor = auctiondistributor.NewRemoteAuctionDistributor(hosts, client)
-	}
+	auctionDistributor = auctiondistributor.NewInProcessAuctionDistributor(client, maxConcurrentPerExecutor)
 })
 
 var _ = BeforeEach(func() {
-	for _, repGuid := range repGuids {
-		client.Reset(repGuid)
+	wg := &sync.WaitGroup{}
+	wg.Add(len(repAddresses))
+	for _, repAddress := range repAddresses {
+		repAddress := repAddress
+		go func() {
+			client.Reset(repAddress)
+			wg.Done()
+		}()
 	}
+
+	wg.Wait()
 
 	util.ResetGuids()
 })
@@ -136,6 +137,7 @@ var _ = AfterSuite(func() {
 	if !disableSVGReport {
 		finishReport()
 	}
+
 	for _, sess := range sessionsToTerminate {
 		sess.Kill().Wait()
 	}
@@ -145,23 +147,25 @@ var _ = AfterSuite(func() {
 	}
 })
 
-func buildInProcessReps() (auctiontypes.SimulationRepPoolClient, []string) {
+func buildInProcessReps() (auctiontypes.SimulationRepPoolClient, []auctiontypes.RepAddress) {
 	inprocess.LatencyMin = LatencyMin
 	inprocess.LatencyMax = LatencyMax
 
-	repGuids := []string{}
+	repAddresses := []auctiontypes.RepAddress{}
 	repMap := map[string]*auctionrep.AuctionRep{}
 
-	for i := 0; i < numReps; i++ {
+	for i := 0; i < numCells; i++ {
 		repGuid := util.NewGuid("REP")
-		repGuids = append(repGuids, repGuid)
+		repAddresses = append(repAddresses, auctiontypes.RepAddress{
+			RepGuid: repGuid,
+		})
 
 		repDelegate := simulationrepdelegate.New(repResources)
 		repMap[repGuid] = auctionrep.New(repGuid, repDelegate)
 	}
 
 	client := inprocess.New(repMap)
-	return client, repGuids
+	return client, repAddresses
 }
 
 func startNATS() (string, diegonats.NATSClient) {
@@ -173,19 +177,19 @@ func startNATS() (string, diegonats.NATSClient) {
 	return strings.Join(natsAddrs, ","), natsClient
 }
 
-func launchExternalReps(communicationFlag string, communicationValue string) []string {
+func launchExternalNATSReps(natsAddrs string) []auctiontypes.RepAddress {
 	repNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/repnode")
 	Ω(err).ShouldNot(HaveOccurred())
 
-	repGuids := []string{}
+	repAddresses := []auctiontypes.RepAddress{}
 
-	for i := 0; i < numReps; i++ {
+	for i := 0; i < numCells; i++ {
 		repGuid := util.NewGuid("REP")
 
 		serverCmd := exec.Command(
 			repNodeBinary,
 			"-repGuid", repGuid,
-			communicationFlag, communicationValue,
+			"-natsAddrs", natsAddrs,
 			"-memoryMB", fmt.Sprintf("%d", repResources.MemoryMB),
 			"-diskMB", fmt.Sprintf("%d", repResources.DiskMB),
 			"-containers", fmt.Sprintf("%d", repResources.Containers),
@@ -196,38 +200,49 @@ func launchExternalReps(communicationFlag string, communicationValue string) []s
 		Eventually(sess).Should(gbytes.Say("listening"))
 		sessionsToTerminate = append(sessionsToTerminate, sess)
 
-		repGuids = append(repGuids, repGuid)
+		repAddresses = append(repAddresses, auctiontypes.RepAddress{
+			RepGuid: repGuid,
+		})
 	}
 
-	return repGuids
+	return repAddresses
 }
 
-func launchExternalAuctioneers(communicationFlag string, communicationValue string) []string {
-	auctioneerNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/auctioneernode")
+func launchExternalHTTPReps() []auctiontypes.RepAddress {
+	repNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/repnode")
 	Ω(err).ShouldNot(HaveOccurred())
 
-	auctioneerHosts := []string{}
-	for i := 0; i < numAuctioneers; i++ {
-		port := 48710 + i
-		auctioneerCmd := exec.Command(
-			auctioneerNodeBinary,
-			communicationFlag, communicationValue,
-			"-timeout", fmt.Sprintf("%s", timeout),
-			"-httpAddr", fmt.Sprintf("127.0.0.1:%d", port),
-		)
-		auctioneerHosts = append(auctioneerHosts, fmt.Sprintf("127.0.0.1:%d", port))
+	repAddresses := []auctiontypes.RepAddress{}
 
-		sess, err := gexec.Start(auctioneerCmd, GinkgoWriter, GinkgoWriter)
+	for i := 0; i < numCells; i++ {
+		repGuid := util.NewGuid("REP")
+		httpAddr := fmt.Sprintf("127.0.0.1:%d", 30000+i)
+
+		serverCmd := exec.Command(
+			repNodeBinary,
+			"-repGuid", repGuid,
+			"-httpAddr", httpAddr,
+			"-memoryMB", fmt.Sprintf("%d", repResources.MemoryMB),
+			"-diskMB", fmt.Sprintf("%d", repResources.DiskMB),
+			"-containers", fmt.Sprintf("%d", repResources.Containers),
+		)
+
+		sess, err := gexec.Start(serverCmd, GinkgoWriter, GinkgoWriter)
 		Ω(err).ShouldNot(HaveOccurred())
-		Eventually(sess).Should(gbytes.Say("auctioneering"))
 		sessionsToTerminate = append(sessionsToTerminate, sess)
+		Eventually(sess).Should(gbytes.Say("listening"))
+
+		repAddresses = append(repAddresses, auctiontypes.RepAddress{
+			RepGuid: repGuid,
+			Address: "http://" + httpAddr,
+		})
 	}
 
-	return auctioneerHosts
+	return repAddresses
 }
 
 func startReport() {
-	svgReport = visualization.StartSVGReport("./"+reportName+".svg", 4, 4)
+	svgReport = visualization.StartSVGReport("./"+reportName+".svg", 4, 4, numCells)
 	svgReport.DrawHeader(communicationMode, auctionrunner.DefaultStartAuctionRules, maxConcurrentPerExecutor)
 }
 

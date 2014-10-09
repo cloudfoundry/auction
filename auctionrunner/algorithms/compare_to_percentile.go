@@ -23,7 +23,7 @@ func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionReques
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		t := time.Now()
 		//pick a subset
-		repSubset := auctionRequest.RepGuids.RandomSubsetByFraction(auctionRequest.Rules.MaxBiddingPoolFraction, auctionRequest.Rules.MinBiddingPool)
+		repSubset := auctionRequest.RepAddresses.RandomSubsetByFraction(auctionRequest.Rules.MaxBiddingPoolFraction, auctionRequest.Rules.MinBiddingPool)
 
 		//get everyone's bid, if they're all full: bail
 		numCommunications += len(repSubset)
@@ -41,7 +41,7 @@ func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionReques
 
 		// tell the winner to reserve
 		numCommunications += 1
-		reservations := client.RebidThenTentativelyReserve([]string{winner}, auctionRequest.LRPStartAuction)
+		reservations := client.RebidThenTentativelyReserve(auctionRequest.RepAddresses.Lookup(winner), auctionRequest.LRPStartAuction)
 		events = append(events, auctiontypes.AuctionEvent{"reserve", time.Since(t), rounds, 1, ""})
 
 		if len(reservations) == 0 {
@@ -59,7 +59,7 @@ func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionReques
 			t = time.Now()
 			index := int(math.Floor(float64(len(sortedScores)-2)*auctionRequest.Rules.ComparisonPercentile)) + 1
 			if sortedScores[index].Bid < winnerRecast.Bid {
-				client.ReleaseReservation([]string{winner}, auctionRequest.LRPStartAuction)
+				client.ReleaseReservation(auctionRequest.RepAddresses.Lookup(winner), auctionRequest.LRPStartAuction)
 				events = append(events, auctiontypes.AuctionEvent{"release", time.Since(t), rounds, 0, ""})
 				numCommunications += 1
 				continue
@@ -68,7 +68,7 @@ func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionReques
 
 		t = time.Now()
 		numCommunications += 1
-		client.Run(winner, auctionRequest.LRPStartAuction)
+		client.Run(auctionRequest.RepAddresses.AddressFor(winner), auctionRequest.LRPStartAuction)
 		events = append(events, auctiontypes.AuctionEvent{"run", time.Since(t), rounds, 1, ""})
 
 		events = append(events, auctiontypes.AuctionEvent{"end", 0, rounds, 0, time.Now().String()})

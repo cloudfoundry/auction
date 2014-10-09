@@ -36,17 +36,17 @@ func New(natsClient diegonats.NATSClient, timeout time.Duration, logger lager.Lo
 	}, nil
 }
 
-func (rep *AuctionNATSClient) BidForStartAuction(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
+func (rep *AuctionNATSClient) BidForStartAuction(repAddresses []auctiontypes.RepAddress, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
 	bidLog := rep.logger.Session("start-bid", lager.Data{
 		"start-auction-info": startAuctionInfo,
-		"num-rep-guids":      len(repGuids),
+		"num-rep-guids":      len(repAddresses),
 	})
 
 	bidLog.Info("fetching")
 
 	subjects := []string{}
-	for _, repGuid := range repGuids {
-		subjects = append(subjects, nats.NewSubjects(repGuid).BidForStartAuction)
+	for _, repAddress := range repAddresses {
+		subjects = append(subjects, nats.NewSubjects(repAddress.RepGuid).BidForStartAuction)
 	}
 	payload, _ := json.Marshal(startAuctionInfo)
 
@@ -72,17 +72,17 @@ func (rep *AuctionNATSClient) BidForStartAuction(repGuids []string, startAuction
 	return results
 }
 
-func (rep *AuctionNATSClient) BidForStopAuction(repGuids []string, stopAuctionInfo auctiontypes.StopAuctionInfo) auctiontypes.StopAuctionBids {
+func (rep *AuctionNATSClient) BidForStopAuction(repAddresses []auctiontypes.RepAddress, stopAuctionInfo auctiontypes.StopAuctionInfo) auctiontypes.StopAuctionBids {
 	bidLog := rep.logger.Session("stop-bid", lager.Data{
 		"stop-auction-info": stopAuctionInfo,
-		"num-rep-guids":     len(repGuids),
+		"num-rep-guids":     len(repAddresses),
 	})
 
 	bidLog.Info("fetching")
 
 	subjects := []string{}
-	for _, repGuid := range repGuids {
-		subjects = append(subjects, nats.NewSubjects(repGuid).BidForStopAuction)
+	for _, repAddress := range repAddresses {
+		subjects = append(subjects, nats.NewSubjects(repAddress.RepGuid).BidForStopAuction)
 	}
 	payload, _ := json.Marshal(stopAuctionInfo)
 
@@ -108,20 +108,20 @@ func (rep *AuctionNATSClient) BidForStopAuction(repGuids []string, stopAuctionIn
 	return results
 }
 
-func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, startAuction models.LRPStartAuction) auctiontypes.StartAuctionBids {
+func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repAddresses []auctiontypes.RepAddress, startAuction models.LRPStartAuction) auctiontypes.StartAuctionBids {
 	bidLog := rep.logger.Session("rebid-then-reserve", lager.Data{
 		"start-auction-info": startAuction,
-		"num-rep-guids":      len(repGuids),
+		"num-rep-guids":      len(repAddresses),
 	})
 
 	bidLog.Info("fetching")
 
 	subjects := []string{}
-	subjectToRepGuid := map[string]string{}
-	for _, repGuid := range repGuids {
-		subject := nats.NewSubjects(repGuid).RebidThenTentativelyReserve
+	subjectToRepAddress := map[string]auctiontypes.RepAddress{}
+	for _, repAddress := range repAddresses {
+		subject := nats.NewSubjects(repAddress.RepGuid).RebidThenTentativelyReserve
 		subjects = append(subjects, subject)
-		subjectToRepGuid[subject] = repGuid
+		subjectToRepAddress[subject] = repAddress
 	}
 	payload, _ := json.Marshal(startAuction)
 
@@ -141,9 +141,9 @@ func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, sta
 	}
 
 	if len(failedSubjects) > 0 {
-		releaseGuids := []string{}
+		releaseGuids := []auctiontypes.RepAddress{}
 		for _, failedSubject := range failedSubjects {
-			releaseGuids = append(releaseGuids, subjectToRepGuid[failedSubject])
+			releaseGuids = append(releaseGuids, subjectToRepAddress[failedSubject])
 		}
 
 		rep.ReleaseReservation(releaseGuids, startAuction)
@@ -156,17 +156,17 @@ func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, sta
 	return results
 }
 
-func (rep *AuctionNATSClient) ReleaseReservation(repGuids []string, startAuction models.LRPStartAuction) {
+func (rep *AuctionNATSClient) ReleaseReservation(repAddresses []auctiontypes.RepAddress, startAuction models.LRPStartAuction) {
 	releaseLog := rep.logger.Session("release-reservation", lager.Data{
-		"start-auction-info":   startAuction,
-		"rep-guids-to-release": repGuids,
+		"start-auction-info": startAuction,
+		"num-rep-guids":      len(repAddresses),
 	})
 
 	releaseLog.Info("starting")
 
 	subjects := []string{}
-	for _, repGuid := range repGuids {
-		subjects = append(subjects, nats.NewSubjects(repGuid).ReleaseReservation)
+	for _, repAddress := range repAddresses {
+		subjects = append(subjects, nats.NewSubjects(repAddress.RepGuid).ReleaseReservation)
 	}
 
 	payload, _ := json.Marshal(startAuction)
@@ -176,15 +176,15 @@ func (rep *AuctionNATSClient) ReleaseReservation(repGuids []string, startAuction
 	releaseLog.Info("done")
 }
 
-func (rep *AuctionNATSClient) Run(repGuid string, startAuction models.LRPStartAuction) {
+func (rep *AuctionNATSClient) Run(repAddress auctiontypes.RepAddress, startAuction models.LRPStartAuction) {
 	runLog := rep.logger.Session("run", lager.Data{
 		"start-auction-info": startAuction,
-		"rep-guid":           repGuid,
+		"rep-guid":           repAddress.RepGuid,
 	})
 
 	runLog.Info("starting")
 
-	subjects := nats.NewSubjects(repGuid)
+	subjects := nats.NewSubjects(repAddress.RepGuid)
 	payload, _ := json.Marshal(startAuction)
 	_, err := rep.publishWithTimeout(subjects.Run, payload)
 
@@ -196,15 +196,15 @@ func (rep *AuctionNATSClient) Run(repGuid string, startAuction models.LRPStartAu
 	runLog.Info("done")
 }
 
-func (rep *AuctionNATSClient) Stop(repGuid string, stopInstance models.StopLRPInstance) {
+func (rep *AuctionNATSClient) Stop(repAddress auctiontypes.RepAddress, stopInstance models.StopLRPInstance) {
 	stopLog := rep.logger.Session("stop", lager.Data{
 		"stop-instance": stopInstance,
-		"rep-guid":      repGuid,
+		"rep-guid":      repAddress.RepGuid,
 	})
 
 	stopLog.Info("stopping")
 
-	subjects := nats.NewSubjects(repGuid)
+	subjects := nats.NewSubjects(repAddress.RepGuid)
 	payload, _ := json.Marshal(stopInstance)
 
 	_, err := rep.publishWithTimeout(subjects.Stop, payload)
@@ -266,9 +266,9 @@ func (rep *AuctionNATSClient) aggregateWithTimeout(logger lager.Logger, subjects
 
 //SIMULATION ONLY METHODS:
 
-func (rep *AuctionNATSClient) TotalResources(repGuid string) auctiontypes.Resources {
+func (rep *AuctionNATSClient) TotalResources(repAddress auctiontypes.RepAddress) auctiontypes.Resources {
 	var totalResources auctiontypes.Resources
-	subjects := nats.NewSubjects(repGuid)
+	subjects := nats.NewSubjects(repAddress.RepGuid)
 	response, err := rep.publishWithTimeout(subjects.TotalResources, nil)
 	if err != nil {
 		//test only, so panic is OK
@@ -284,9 +284,9 @@ func (rep *AuctionNATSClient) TotalResources(repGuid string) auctiontypes.Resour
 	return totalResources
 }
 
-func (rep *AuctionNATSClient) SimulatedInstances(repGuid string) []auctiontypes.SimulatedInstance {
+func (rep *AuctionNATSClient) SimulatedInstances(repAddress auctiontypes.RepAddress) []auctiontypes.SimulatedInstance {
 	var instances []auctiontypes.SimulatedInstance
-	subjects := nats.NewSubjects(repGuid)
+	subjects := nats.NewSubjects(repAddress.RepGuid)
 	response, err := rep.publishWithTimeout(subjects.SimulatedInstances, nil)
 	if err != nil {
 		//test only, so panic is OK
@@ -302,8 +302,8 @@ func (rep *AuctionNATSClient) SimulatedInstances(repGuid string) []auctiontypes.
 	return instances
 }
 
-func (rep *AuctionNATSClient) Reset(repGuid string) {
-	subjects := nats.NewSubjects(repGuid)
+func (rep *AuctionNATSClient) Reset(repAddress auctiontypes.RepAddress) {
+	subjects := nats.NewSubjects(repAddress.RepGuid)
 	_, err := rep.publishWithTimeout(subjects.Reset, nil)
 	if err != nil {
 		//test only, so panic is OK
@@ -311,8 +311,8 @@ func (rep *AuctionNATSClient) Reset(repGuid string) {
 	}
 }
 
-func (rep *AuctionNATSClient) SetSimulatedInstances(repGuid string, instances []auctiontypes.SimulatedInstance) {
-	subjects := nats.NewSubjects(repGuid)
+func (rep *AuctionNATSClient) SetSimulatedInstances(repAddress auctiontypes.RepAddress, instances []auctiontypes.SimulatedInstance) {
+	subjects := nats.NewSubjects(repAddress.RepGuid)
 	payload, _ := json.Marshal(instances)
 	_, err := rep.publishWithTimeout(subjects.SetSimulatedInstances, payload)
 	if err != nil {

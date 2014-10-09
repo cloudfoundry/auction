@@ -2,14 +2,16 @@ package visualization
 
 import (
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/GaryBoone/GoStats/stats"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry/gunk/workpool"
 )
 
 type Report struct {
-	RepGuids                     []string
+	RepAddresses                 []auctiontypes.RepAddress
 	AuctionResults               []auctiontypes.StartAuctionResult
 	InstancesByRep               map[string][]auctiontypes.SimulatedInstance
 	AuctionDuration              time.Duration
@@ -50,7 +52,7 @@ func (r *Report) NAuctions() int {
 }
 
 func (r *Report) NReps() int {
-	return len(r.RepGuids)
+	return len(r.RepAddresses)
 }
 
 func (r *Report) NMissingInstances() int {
@@ -129,15 +131,27 @@ func (r *Report) WaitTimeStats() Stat {
 	return NewStat(waitTimes)
 }
 
-func FetchAndSortInstances(client auctiontypes.SimulationRepPoolClient, repGuids []string) map[string][]auctiontypes.SimulatedInstance {
+func FetchAndSortInstances(client auctiontypes.SimulationRepPoolClient, repAddresses []auctiontypes.RepAddress) map[string][]auctiontypes.SimulatedInstance {
+	workPool := workpool.NewWorkPool(50)
+	wg := &sync.WaitGroup{}
+	wg.Add(len(repAddresses))
+	lock := &sync.Mutex{}
 	instancesByRepGuid := map[string][]auctiontypes.SimulatedInstance{}
-	for _, repGuid := range repGuids {
-		instances := client.SimulatedInstances(repGuid)
-		sort.Sort(ByProcessGuid(instances))
-		instancesByRepGuid[repGuid] = instances
+	for _, repAddress := range repAddresses {
+		repAddress := repAddress
+		workPool.Submit(func() {
+			instances := client.SimulatedInstances(repAddress)
+			sort.Sort(ByProcessGuid(instances))
+			lock.Lock()
+			instancesByRepGuid[repAddress.RepGuid] = instances
+			lock.Unlock()
+			wg.Done()
+		})
 	}
-
+	wg.Wait()
+	workPool.Stop()
 	return instancesByRepGuid
+
 }
 
 type ByProcessGuid []auctiontypes.SimulatedInstance

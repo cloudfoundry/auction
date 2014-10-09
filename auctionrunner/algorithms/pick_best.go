@@ -21,7 +21,7 @@ func PickBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctionty
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		t := time.Now()
 		//pick a subset
-		repSubset := auctionRequest.RepGuids.RandomSubsetByFraction(auctionRequest.Rules.MaxBiddingPoolFraction, auctionRequest.Rules.MinBiddingPool)
+		repSubset := auctionRequest.RepAddresses.RandomSubsetByFraction(auctionRequest.Rules.MaxBiddingPoolFraction, auctionRequest.Rules.MinBiddingPool)
 
 		//get everyone's bid, if they're all full: bail
 		numCommunications += len(repSubset)
@@ -37,7 +37,7 @@ func PickBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctionty
 
 		winner := firstRoundScores.FilterErrors().Shuffle().Sort()[0]
 		numCommunications += 1
-		reservations := client.RebidThenTentativelyReserve([]string{winner.Rep}, auctionRequest.LRPStartAuction)
+		reservations := client.RebidThenTentativelyReserve(auctionRequest.RepAddresses.Lookup(winner.Rep), auctionRequest.LRPStartAuction)
 		events = append(events, auctiontypes.AuctionEvent{"reserve", time.Since(t), rounds, 1, ""})
 
 		if len(reservations) == 0 {
@@ -51,7 +51,7 @@ func PickBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctionty
 
 		t = time.Now()
 		numCommunications += 1
-		client.Run(winner.Rep, auctionRequest.LRPStartAuction)
+		client.Run(auctionRequest.RepAddresses.AddressFor(winner.Rep), auctionRequest.LRPStartAuction)
 		events = append(events, auctiontypes.AuctionEvent{"run", time.Since(t), rounds, 1, ""})
 
 		return winner.Rep, rounds, numCommunications, events

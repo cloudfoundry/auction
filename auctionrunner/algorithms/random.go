@@ -20,10 +20,10 @@ func RandomAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontype
 
 	for ; rounds <= auctionRequest.Rules.MaxRounds; rounds++ {
 		t := time.Now()
-		randomPick := auctionRequest.RepGuids.RandomSubsetByCount(1)[0]
+		randomPick := auctionRequest.RepAddresses.RandomSubsetByCount(1)[0]
 
 		numCommunications += 1
-		reservations := client.RebidThenTentativelyReserve([]string{randomPick}, auctionRequest.LRPStartAuction)
+		reservations := client.RebidThenTentativelyReserve([]auctiontypes.RepAddress{randomPick}, auctionRequest.LRPStartAuction)
 		events = append(events, auctiontypes.AuctionEvent{"reserve", time.Since(t), rounds, 1, ""})
 
 		if len(reservations) == 0 {
@@ -40,7 +40,7 @@ func RandomAuction(client auctiontypes.RepPoolClient, auctionRequest auctiontype
 		client.Run(randomPick, auctionRequest.LRPStartAuction)
 		events = append(events, auctiontypes.AuctionEvent{"run", time.Since(t), rounds, 1, ""})
 
-		return randomPick, rounds, numCommunications, events
+		return randomPick.RepGuid, rounds, numCommunications, events
 	}
 
 	return "", rounds, numCommunications, events

@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 
 	"github.com/apcera/nats"
-	"github.com/cloudfoundry/yagnats"
+	"github.com/cloudfoundry/gunk/diegonats"
 )
 
 type MuxedHandler func([]byte) []byte
 
-func HandleMuxedNATSRequest(client yagnats.NATSConn, subject string, callback MuxedHandler) (*nats.Subscription, error) {
+func HandleMuxedNATSRequest(client diegonats.NATSClient, subject string, callback MuxedHandler) (*nats.Subscription, error) {
 	return client.Subscribe(subject, func(msg *nats.Msg) {
 		request := message{}
 		err := json.Unmarshal(msg.Data, &request)

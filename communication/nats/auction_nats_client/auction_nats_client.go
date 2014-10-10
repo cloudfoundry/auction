@@ -10,7 +10,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/communication/nats"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/nats_muxer"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
-	"github.com/cloudfoundry/yagnats"
+	"github.com/cloudfoundry/gunk/diegonats"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -22,7 +22,7 @@ type AuctionNATSClient struct {
 	logger  lager.Logger
 }
 
-func New(natsClient yagnats.NATSConn, timeout time.Duration, logger lager.Logger) (*AuctionNATSClient, error) {
+func New(natsClient diegonats.NATSClient, timeout time.Duration, logger lager.Logger) (*AuctionNATSClient, error) {
 	client := nats_muxer.NewNATSMuxerClient(natsClient)
 	err := client.ListenForResponses()
 	if err != nil {

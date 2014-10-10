@@ -9,13 +9,13 @@ import (
 
 	"github.com/apcera/nats"
 	"github.com/cloudfoundry-incubator/auction/util"
-	"github.com/cloudfoundry/yagnats"
+	"github.com/cloudfoundry/gunk/diegonats"
 )
 
 var TimeoutError = errors.New("timeout")
 
 type NATSMuxerClient struct {
-	client        yagnats.NATSConn
+	client        diegonats.NATSClient
 	replyGuid     string
 	subscription  *nats.Subscription
 	correlationID int64
@@ -28,7 +28,7 @@ type message struct {
 	Payload       []byte
 }
 
-func NewNATSMuxerClient(client yagnats.NATSConn) *NATSMuxerClient {
+func NewNATSMuxerClient(client diegonats.NATSClient) *NATSMuxerClient {
 	replyGuid := util.RandomGuid()
 	return &NATSMuxerClient{
 		client:        client,

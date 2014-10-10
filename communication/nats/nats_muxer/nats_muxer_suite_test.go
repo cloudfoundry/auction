@@ -1,16 +1,15 @@
 package nats_muxer_test
 
 import (
-	"github.com/cloudfoundry/gunk/natsrunner"
-	"github.com/cloudfoundry/yagnats"
+	"github.com/cloudfoundry/gunk/diegonats"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"testing"
 )
 
-var natsRunner *natsrunner.NATSRunner
-var natsClient yagnats.NATSConn
+var natsRunner *diegonats.NATSRunner
+var natsClient diegonats.NATSClient
 
 func TestNatsmuxer(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -18,12 +17,12 @@ func TestNatsmuxer(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	natsRunner = natsrunner.NewNATSRunner(GinkgoParallelNode() + 4001)
+	natsRunner = diegonats.NewRunner(GinkgoParallelNode() + 4001)
 })
 
 var _ = BeforeEach(func() {
 	natsRunner.Start()
-	natsClient = natsRunner.MessageBus
+	natsClient = natsRunner.Client
 })
 
 var _ = AfterEach(func() {

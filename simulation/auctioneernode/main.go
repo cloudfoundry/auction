@@ -14,7 +14,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/auction_nats_client"
 	"github.com/cloudfoundry-incubator/cf-lager"
-	"github.com/cloudfoundry/yagnats"
+	"github.com/cloudfoundry/gunk/diegonats"
 )
 
 var natsAddrs = flag.String("natsAddrs", "", "nats server addresses")
@@ -45,7 +45,8 @@ func main() {
 		}
 		natsMembers = append(natsMembers, uri.String())
 	}
-	client, err := yagnats.Connect(natsMembers)
+	client := diegonats.NewClient()
+	err := client.Connect(natsMembers)
 	if err != nil {
 		log.Fatalln("no nats:", err)
 	}

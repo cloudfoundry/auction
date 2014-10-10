@@ -12,7 +12,7 @@ import (
 	auction_nats_server "github.com/cloudfoundry-incubator/auction/communication/nats/auction_nats_server"
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
 	"github.com/cloudfoundry-incubator/cf-lager"
-	"github.com/cloudfoundry/yagnats"
+	"github.com/cloudfoundry/gunk/diegonats"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/sigmon"
 )
@@ -50,7 +50,9 @@ func main() {
 			}
 			natsMembers = append(natsMembers, uri.String())
 		}
-		client, err := yagnats.Connect(natsMembers)
+
+		client := diegonats.NewClient()
+		err := client.Connect(natsMembers)
 		if err != nil {
 			log.Fatalln("no nats:", err)
 		}

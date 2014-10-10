@@ -10,7 +10,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/communication/nats"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/nats_muxer"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
-	"github.com/cloudfoundry/yagnats"
+	"github.com/cloudfoundry/gunk/diegonats"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -20,11 +20,11 @@ var successResponse = []byte("ok")
 type AuctionNATSServer struct {
 	repGuid string
 	rep     *auctionrep.AuctionRep
-	client  yagnats.NATSConn
+	client  diegonats.NATSClient
 	logger  lager.Logger
 }
 
-func New(client yagnats.NATSConn, rep *auctionrep.AuctionRep, logger lager.Logger) *AuctionNATSServer {
+func New(client diegonats.NATSClient, rep *auctionrep.AuctionRep, logger lager.Logger) *AuctionNATSServer {
 	return &AuctionNATSServer{
 		repGuid: rep.Guid(),
 		rep:     rep,

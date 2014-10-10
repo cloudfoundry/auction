@@ -18,7 +18,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrepdelegate"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
 	"github.com/cloudfoundry-incubator/auction/util"
-	"github.com/cloudfoundry/gunk/natsrunner"
+	"github.com/cloudfoundry/gunk/diegonats"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -56,7 +56,7 @@ var svgReport *visualization.SVGReport
 var reports []*visualization.Report
 
 var sessionsToTerminate []*gexec.Session
-var natsRunner *natsrunner.NATSRunner
+var natsRunner *diegonats.NATSRunner
 var client auctiontypes.SimulationRepPoolClient
 var repGuids []string
 var reportName string
@@ -105,7 +105,7 @@ var _ = BeforeSuite(func() {
 		natsLogger := lager.NewLogger("test")
 		natsLogger.RegisterSink(lager.NewWriterSink(GinkgoWriter, lager.DEBUG))
 
-		client, err = auction_nats_client.New(natsRunner.MessageBus, timeout, natsLogger)
+		client, err = auction_nats_client.New(natsRunner.Client, timeout, natsLogger)
 		Ω(err).ShouldNot(HaveOccurred())
 		repGuids = launchExternalReps("-natsAddrs", natsAddrs)
 		if auctioneerMode == RemoteAuctioneerMode {
@@ -165,7 +165,7 @@ func buildInProcessReps() (auctiontypes.SimulationRepPoolClient, []string) {
 func startNATS() string {
 	natsPort := 5222 + GinkgoParallelNode()
 	natsAddrs := []string{fmt.Sprintf("127.0.0.1:%d", natsPort)}
-	natsRunner = natsrunner.NewNATSRunner(natsPort)
+	natsRunner = diegonats.NewRunner(natsPort)
 	natsRunner.Start()
 	return strings.Join(natsAddrs, ",")
 }

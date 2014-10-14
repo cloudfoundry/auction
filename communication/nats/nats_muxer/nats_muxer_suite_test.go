@@ -24,7 +24,7 @@ var _ = BeforeEach(func() {
 })
 
 var _ = AfterEach(func() {
-	natsClient.Disconnect()
+	natsClient.Close()
 	natsProcess.Signal(os.Interrupt)
 	Eventually(natsProcess.Wait(), 5).Should(Receive())
 })

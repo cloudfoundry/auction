@@ -13,7 +13,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/nats/auction_nats_client"
-	"github.com/cloudfoundry-incubator/cf-lager"
+	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/cloudfoundry/gunk/diegonats"
 )
 
@@ -46,7 +46,7 @@ func main() {
 		natsMembers = append(natsMembers, uri.String())
 	}
 	client := diegonats.NewClient()
-	err := client.Connect(natsMembers)
+	_, err := client.Connect(natsMembers)
 	if err != nil {
 		log.Fatalln("no nats:", err)
 	}

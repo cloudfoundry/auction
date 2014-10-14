@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -24,6 +25,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-golang/lager"
+	"github.com/tedsuo/ifrit"
 
 	"testing"
 	"time"
@@ -56,7 +58,7 @@ var svgReport *visualization.SVGReport
 var reports []*visualization.Report
 
 var sessionsToTerminate []*gexec.Session
-var natsRunner *diegonats.NATSRunner
+var gnatsdProcess ifrit.Process
 var client auctiontypes.SimulationRepPoolClient
 var repGuids []string
 var reportName string
@@ -99,13 +101,13 @@ var _ = BeforeSuite(func() {
 			panic("it doesn't make sense to use remote auctioneers when the reps are in-process")
 		}
 	case NATS:
-		natsAddrs := startNATS()
+		natsAddrs, natsClient := startNATS()
 		var err error
 
 		natsLogger := lager.NewLogger("test")
 		natsLogger.RegisterSink(lager.NewWriterSink(GinkgoWriter, lager.DEBUG))
 
-		client, err = auction_nats_client.New(natsRunner.Client, timeout, natsLogger)
+		client, err = auction_nats_client.New(natsClient, timeout, natsLogger)
 		Ω(err).ShouldNot(HaveOccurred())
 		repGuids = launchExternalReps("-natsAddrs", natsAddrs)
 		if auctioneerMode == RemoteAuctioneerMode {
@@ -138,8 +140,8 @@ var _ = AfterSuite(func() {
 		sess.Kill().Wait()
 	}
 
-	if natsRunner != nil {
-		natsRunner.Stop()
+	if gnatsdProcess != nil {
+		gnatsdProcess.Signal(os.Interrupt)
 	}
 })
 
@@ -162,12 +164,13 @@ func buildInProcessReps() (auctiontypes.SimulationRepPoolClient, []string) {
 	return client, repGuids
 }
 
-func startNATS() string {
+func startNATS() (string, diegonats.NATSClient) {
 	natsPort := 5222 + GinkgoParallelNode()
 	natsAddrs := []string{fmt.Sprintf("127.0.0.1:%d", natsPort)}
-	natsRunner = diegonats.NewRunner(natsPort)
-	natsRunner.Start()
-	return strings.Join(natsAddrs, ",")
+
+	var natsClient diegonats.NATSClient
+	gnatsdProcess, natsClient = diegonats.StartGnatsd(natsPort)
+	return strings.Join(natsAddrs, ","), natsClient
 }
 
 func launchExternalReps(communicationFlag string, communicationValue string) []string {

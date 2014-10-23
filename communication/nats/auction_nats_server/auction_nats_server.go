@@ -142,7 +142,7 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) ([]*apceraNats.Subscri
 
 		bidLog.Info("handling")
 
-		var inst auctiontypes.StartAuctionInfo
+		var inst models.LRPStartAuction
 
 		err := json.Unmarshal(payload, &inst)
 		if err != nil {
@@ -174,7 +174,7 @@ func (s *AuctionNATSServer) start(subjects nats.Subjects) ([]*apceraNats.Subscri
 
 		releaseLog.Info("handling")
 
-		var inst auctiontypes.StartAuctionInfo
+		var inst models.LRPStartAuction
 
 		err := json.Unmarshal(payload, &inst)
 		if err != nil {

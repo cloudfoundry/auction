@@ -8,16 +8,17 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
-type StartAuctionBidFunc func(auctiontypes.StartAuctionInfo) (float64, error)
+type StartAuctionBidFunc func(models.LRPStartAuction) (float64, error)
 
 func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuctionRepDelegate, bidFuncFetcher func() StartAuctionBidFunc) {
 	Describe("[Shared Examples] Computing start bids", func() {
 		var delegate *fakes.FakeAuctionRepDelegate
 		var bidFunc StartAuctionBidFunc
 
-		var startAuctionInfo auctiontypes.StartAuctionInfo
+		var startAuction models.LRPStartAuction
 		var fixtureError error
 		var diskMB, memoryMB int
 
@@ -27,11 +28,13 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 
 			diskMB = 10
 			memoryMB = 20
-			startAuctionInfo = auctiontypes.StartAuctionInfo{
-				ProcessGuid:  "process-guid",
+			startAuction = models.LRPStartAuction{
+				DesiredLRP: models.DesiredLRP{
+					ProcessGuid: "process-guid",
+					DiskMB:      diskMB,
+					MemoryMB:    memoryMB,
+				},
 				InstanceGuid: "instance-guid",
-				DiskMB:       diskMB,
-				MemoryMB:     memoryMB,
 				Index:        0,
 			}
 
@@ -44,7 +47,7 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 			})
 
 			It("should error", func() {
-				score, err := bidFunc(startAuctionInfo)
+				score, err := bidFunc(startAuction)
 				Ω(score).Should(BeZero())
 				Ω(err).Should(MatchError(fixtureError))
 			})
@@ -56,7 +59,7 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 			})
 
 			It("should error", func() {
-				score, err := bidFunc(startAuctionInfo)
+				score, err := bidFunc(startAuction)
 				Ω(score).Should(BeZero())
 				Ω(err).Should(MatchError(fixtureError))
 			})
@@ -68,10 +71,10 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 			})
 
 			It("should error", func() {
-				score, err := bidFunc(startAuctionInfo)
+				score, err := bidFunc(startAuction)
 				Ω(score).Should(BeZero())
 				Ω(err).Should(MatchError(fixtureError))
-				Ω(delegate.NumInstancesForProcessGuidArgsForCall(0)).Should(Equal(startAuctionInfo.ProcessGuid))
+				Ω(delegate.NumInstancesForProcessGuidArgsForCall(0)).Should(Equal(startAuction.DesiredLRP.ProcessGuid))
 			})
 		})
 
@@ -83,7 +86,7 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 			})
 
 			It("should return a score", func() {
-				score, err := bidFunc(startAuctionInfo)
+				score, err := bidFunc(startAuction)
 				Ω(score).ShouldNot(BeZero())
 				Ω(err).ShouldNot(HaveOccurred())
 			})
@@ -98,7 +101,7 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 				})
 
 				It("should return an InsufficientResources error", func() {
-					score, err := bidFunc(startAuctionInfo)
+					score, err := bidFunc(startAuction)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(Equal(auctiontypes.InsufficientResources))
 				})
@@ -112,7 +115,7 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 				})
 
 				It("should return an InsufficientResources error", func() {
-					score, err := bidFunc(startAuctionInfo)
+					score, err := bidFunc(startAuction)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(Equal(auctiontypes.InsufficientResources))
 				})
@@ -126,7 +129,7 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 				})
 
 				It("should return an InsufficientResources error", func() {
-					score, err := bidFunc(startAuctionInfo)
+					score, err := bidFunc(startAuction)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(Equal(auctiontypes.InsufficientResources))
 				})
@@ -142,21 +145,21 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 					delegate.RemainingResourcesReturns(Resources(diskMB, memoryMB, 1), nil)
 					delegate.TotalResourcesReturns(Resources(diskMB*3, memoryMB*2, 2), nil)
 
-					scoreA, err := bidFunc(startAuctionInfo)
+					scoreA, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					// fractionAvailable = 1/2
 					delegate.RemainingResourcesReturns(Resources(diskMB, memoryMB, 1), nil)
 					delegate.TotalResourcesReturns(Resources(diskMB*2, memoryMB*2, 2), nil)
 
-					scoreB, err := bidFunc(startAuctionInfo)
+					scoreB, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					// fractionAvailable = 7/8
 					delegate.RemainingResourcesReturns(Resources(diskMB*7, memoryMB, 1), nil)
 					delegate.TotalResourcesReturns(Resources(diskMB*8, memoryMB*2, 2), nil)
 
-					scoreC, err := bidFunc(startAuctionInfo)
+					scoreC, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					Ω(scoreC).Should(BeNumerically("<", scoreB))
@@ -170,21 +173,21 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 					delegate.RemainingResourcesReturns(Resources(diskMB, memoryMB, 1), nil)
 					delegate.TotalResourcesReturns(Resources(diskMB*2, memoryMB*3, 2), nil)
 
-					scoreA, err := bidFunc(startAuctionInfo)
+					scoreA, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					// fractionAvailable = 1/2
 					delegate.RemainingResourcesReturns(Resources(diskMB, memoryMB, 1), nil)
 					delegate.TotalResourcesReturns(Resources(diskMB*2, memoryMB*2, 2), nil)
 
-					scoreB, err := bidFunc(startAuctionInfo)
+					scoreB, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					// fractionAvailable = 7/8
 					delegate.RemainingResourcesReturns(Resources(diskMB, memoryMB*7, 1), nil)
 					delegate.TotalResourcesReturns(Resources(diskMB*2, memoryMB*8, 2), nil)
 
-					scoreC, err := bidFunc(startAuctionInfo)
+					scoreC, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					Ω(scoreC).Should(BeNumerically("<", scoreB))
@@ -198,21 +201,21 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 					delegate.RemainingResourcesReturns(Resources(diskMB, memoryMB, 1), nil)
 					delegate.TotalResourcesReturns(Resources(diskMB*2, memoryMB*2, 3), nil)
 
-					scoreA, err := bidFunc(startAuctionInfo)
+					scoreA, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					// fractionAvailable = 1/2
 					delegate.RemainingResourcesReturns(Resources(diskMB, memoryMB, 1), nil)
 					delegate.TotalResourcesReturns(Resources(diskMB*2, memoryMB*2, 2), nil)
 
-					scoreB, err := bidFunc(startAuctionInfo)
+					scoreB, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					// fractionAvailable = 7/8
 					delegate.RemainingResourcesReturns(Resources(diskMB, memoryMB, 7), nil)
 					delegate.TotalResourcesReturns(Resources(diskMB*2, memoryMB*2, 8), nil)
 
-					scoreC, err := bidFunc(startAuctionInfo)
+					scoreC, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					Ω(scoreC).Should(BeNumerically("<", scoreB))
@@ -226,19 +229,19 @@ func ItShouldComputeStartBidsCorrectly(delegateFetcher func() *fakes.FakeAuction
 					// running 2 instances of this app
 					delegate.NumInstancesForProcessGuidReturns(2, nil)
 
-					scoreA, err := bidFunc(startAuctionInfo)
+					scoreA, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					// running 1 instance of this app
 					delegate.NumInstancesForProcessGuidReturns(1, nil)
 
-					scoreB, err := bidFunc(startAuctionInfo)
+					scoreB, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					// running no instances of this app
 					delegate.NumInstancesForProcessGuidReturns(0, nil)
 
-					scoreC, err := bidFunc(startAuctionInfo)
+					scoreC, err := bidFunc(startAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					Ω(scoreC).Should(BeNumerically("<", scoreB))

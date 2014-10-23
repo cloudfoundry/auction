@@ -111,7 +111,7 @@ func (client *InprocessClient) BidForStartAuction(representatives []string, star
 	return results
 }
 
-func (client *InprocessClient) reserveAndRecastScore(repGuid string, startAuctionInfo auctiontypes.StartAuctionInfo, c chan auctiontypes.StartAuctionBid) {
+func (client *InprocessClient) reserveAndRecastScore(repGuid string, startAuction models.LRPStartAuction, c chan auctiontypes.StartAuctionBid) {
 	result := auctiontypes.StartAuctionBid{
 		Rep: repGuid,
 	}
@@ -121,7 +121,7 @@ func (client *InprocessClient) reserveAndRecastScore(repGuid string, startAuctio
 
 	client.beSlow(repGuid)
 
-	bid, err := client.reps[repGuid].RebidThenTentativelyReserve(startAuctionInfo)
+	bid, err := client.reps[repGuid].RebidThenTentativelyReserve(startAuction)
 	if err != nil {
 		result.Error = err.Error()
 		return
@@ -131,10 +131,10 @@ func (client *InprocessClient) reserveAndRecastScore(repGuid string, startAuctio
 	return
 }
 
-func (client *InprocessClient) RebidThenTentativelyReserve(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
+func (client *InprocessClient) RebidThenTentativelyReserve(repGuids []string, startAuction models.LRPStartAuction) auctiontypes.StartAuctionBids {
 	c := make(chan auctiontypes.StartAuctionBid)
 	for _, repGuid := range repGuids {
-		go client.reserveAndRecastScore(repGuid, startAuctionInfo, c)
+		go client.reserveAndRecastScore(repGuid, startAuction, c)
 	}
 
 	results := auctiontypes.StartAuctionBids{}
@@ -145,12 +145,12 @@ func (client *InprocessClient) RebidThenTentativelyReserve(repGuids []string, st
 	return results
 }
 
-func (client *InprocessClient) ReleaseReservation(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) {
+func (client *InprocessClient) ReleaseReservation(repGuids []string, startAuction models.LRPStartAuction) {
 	c := make(chan bool)
 	for _, repGuid := range repGuids {
 		go func(repGuid string) {
 			client.beSlow(repGuid)
-			client.reps[repGuid].ReleaseReservation(startAuctionInfo)
+			client.reps[repGuid].ReleaseReservation(startAuction)
 			c <- true
 		}(repGuid)
 	}

@@ -73,15 +73,16 @@ func (rep *AuctionRep) BidForStopAuction(stopAuctionInfo auctiontypes.StopAuctio
 }
 
 // must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) RebidThenTentativelyReserve(startAuctionInfo auctiontypes.StartAuctionInfo) (float64, error) {
+func (rep *AuctionRep) RebidThenTentativelyReserve(startAuction models.LRPStartAuction) (float64, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	repInstanceScoreInfo, err := rep.repInstanceScoreInfo(startAuctionInfo.ProcessGuid)
+	repInstanceScoreInfo, err := rep.repInstanceScoreInfo(startAuction.DesiredLRP.ProcessGuid)
 	if err != nil {
 		return 0, err
 	}
 
+	startAuctionInfo := auctiontypes.NewStartAuctionInfoFromLRPStartAuction(startAuction)
 	err = rep.satisfiesConstraints(startAuctionInfo, repInstanceScoreInfo)
 	if err != nil {
 		return 0, err
@@ -90,7 +91,7 @@ func (rep *AuctionRep) RebidThenTentativelyReserve(startAuctionInfo auctiontypes
 	bid := rep.startAuctionBid(repInstanceScoreInfo)
 
 	//then reserve
-	err = rep.delegate.Reserve(startAuctionInfo)
+	err = rep.delegate.Reserve(startAuction)
 	if err != nil {
 		return 0, err
 	}
@@ -99,11 +100,11 @@ func (rep *AuctionRep) RebidThenTentativelyReserve(startAuctionInfo auctiontypes
 }
 
 // must lock here; the publicly visible operations should be atomic
-func (rep *AuctionRep) ReleaseReservation(startAuctionInfo auctiontypes.StartAuctionInfo) error {
+func (rep *AuctionRep) ReleaseReservation(startAuction models.LRPStartAuction) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	return rep.delegate.ReleaseReservation(startAuctionInfo)
+	return rep.delegate.ReleaseReservation(startAuction)
 }
 
 // no locks here -- the resource allocations have already been determined

@@ -12,14 +12,14 @@ type FakeAuctionRepDelegate struct {
 	RemainingResourcesStub        func() (auctiontypes.Resources, error)
 	remainingResourcesMutex       sync.RWMutex
 	remainingResourcesArgsForCall []struct{}
-	remainingResourcesReturns     struct {
+	remainingResourcesReturns struct {
 		result1 auctiontypes.Resources
 		result2 error
 	}
 	TotalResourcesStub        func() (auctiontypes.Resources, error)
 	totalResourcesMutex       sync.RWMutex
 	totalResourcesArgsForCall []struct{}
-	totalResourcesReturns     struct {
+	totalResourcesReturns struct {
 		result1 auctiontypes.Resources
 		result2 error
 	}
@@ -42,18 +42,18 @@ type FakeAuctionRepDelegate struct {
 		result1 []string
 		result2 error
 	}
-	ReserveStub        func(startAuctionInfo auctiontypes.StartAuctionInfo) error
+	ReserveStub        func(startAuction models.LRPStartAuction) error
 	reserveMutex       sync.RWMutex
 	reserveArgsForCall []struct {
-		startAuctionInfo auctiontypes.StartAuctionInfo
+		startAuction models.LRPStartAuction
 	}
 	reserveReturns struct {
 		result1 error
 	}
-	ReleaseReservationStub        func(startAuctionInfo auctiontypes.StartAuctionInfo) error
+	ReleaseReservationStub        func(startAuction models.LRPStartAuction) error
 	releaseReservationMutex       sync.RWMutex
 	releaseReservationArgsForCall []struct {
-		startAuctionInfo auctiontypes.StartAuctionInfo
+		startAuction models.LRPStartAuction
 	}
 	releaseReservationReturns struct {
 		result1 error
@@ -193,14 +193,14 @@ func (fake *FakeAuctionRepDelegate) InstanceGuidsForProcessGuidAndIndexReturns(r
 	}{result1, result2}
 }
 
-func (fake *FakeAuctionRepDelegate) Reserve(startAuctionInfo auctiontypes.StartAuctionInfo) error {
+func (fake *FakeAuctionRepDelegate) Reserve(startAuction models.LRPStartAuction) error {
 	fake.reserveMutex.Lock()
 	fake.reserveArgsForCall = append(fake.reserveArgsForCall, struct {
-		startAuctionInfo auctiontypes.StartAuctionInfo
-	}{startAuctionInfo})
+		startAuction models.LRPStartAuction
+	}{startAuction})
 	fake.reserveMutex.Unlock()
 	if fake.ReserveStub != nil {
-		return fake.ReserveStub(startAuctionInfo)
+		return fake.ReserveStub(startAuction)
 	} else {
 		return fake.reserveReturns.result1
 	}
@@ -212,10 +212,10 @@ func (fake *FakeAuctionRepDelegate) ReserveCallCount() int {
 	return len(fake.reserveArgsForCall)
 }
 
-func (fake *FakeAuctionRepDelegate) ReserveArgsForCall(i int) auctiontypes.StartAuctionInfo {
+func (fake *FakeAuctionRepDelegate) ReserveArgsForCall(i int) models.LRPStartAuction {
 	fake.reserveMutex.RLock()
 	defer fake.reserveMutex.RUnlock()
-	return fake.reserveArgsForCall[i].startAuctionInfo
+	return fake.reserveArgsForCall[i].startAuction
 }
 
 func (fake *FakeAuctionRepDelegate) ReserveReturns(result1 error) {
@@ -225,14 +225,14 @@ func (fake *FakeAuctionRepDelegate) ReserveReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAuctionRepDelegate) ReleaseReservation(startAuctionInfo auctiontypes.StartAuctionInfo) error {
+func (fake *FakeAuctionRepDelegate) ReleaseReservation(startAuction models.LRPStartAuction) error {
 	fake.releaseReservationMutex.Lock()
 	fake.releaseReservationArgsForCall = append(fake.releaseReservationArgsForCall, struct {
-		startAuctionInfo auctiontypes.StartAuctionInfo
-	}{startAuctionInfo})
+		startAuction models.LRPStartAuction
+	}{startAuction})
 	fake.releaseReservationMutex.Unlock()
 	if fake.ReleaseReservationStub != nil {
-		return fake.ReleaseReservationStub(startAuctionInfo)
+		return fake.ReleaseReservationStub(startAuction)
 	} else {
 		return fake.releaseReservationReturns.result1
 	}
@@ -244,10 +244,10 @@ func (fake *FakeAuctionRepDelegate) ReleaseReservationCallCount() int {
 	return len(fake.releaseReservationArgsForCall)
 }
 
-func (fake *FakeAuctionRepDelegate) ReleaseReservationArgsForCall(i int) auctiontypes.StartAuctionInfo {
+func (fake *FakeAuctionRepDelegate) ReleaseReservationArgsForCall(i int) models.LRPStartAuction {
 	fake.releaseReservationMutex.RLock()
 	defer fake.releaseReservationMutex.RUnlock()
-	return fake.releaseReservationArgsForCall[i].startAuctionInfo
+	return fake.releaseReservationArgsForCall[i].startAuction
 }
 
 func (fake *FakeAuctionRepDelegate) ReleaseReservationReturns(result1 error) {

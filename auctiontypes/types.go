@@ -98,9 +98,9 @@ type RepGuids []string
 type RepPoolClient interface {
 	BidForStartAuction(repGuids []string, startAuctionInfo StartAuctionInfo) StartAuctionBids
 	BidForStopAuction(repGuids []string, stopAuctionInfo StopAuctionInfo) StopAuctionBids
-	RebidThenTentativelyReserve(repGuids []string, startAuctionInfo StartAuctionInfo) StartAuctionBids
-	ReleaseReservation(repGuids []string, startAuctionInfo StartAuctionInfo)
-	Run(repGuid string, startAuctionInfo models.LRPStartAuction)
+	RebidThenTentativelyReserve(repGuids []string, startAuction models.LRPStartAuction) StartAuctionBids
+	ReleaseReservation(repGuids []string, startAuction models.LRPStartAuction)
+	Run(repGuid string, startAuction models.LRPStartAuction)
 	Stop(repGuid string, stopInstance models.StopLRPInstance)
 }
 
@@ -110,8 +110,8 @@ type AuctionRepDelegate interface {
 	NumInstancesForProcessGuid(processGuid string) (int, error)
 	InstanceGuidsForProcessGuidAndIndex(processGuid string, index int) ([]string, error)
 
-	Reserve(startAuctionInfo StartAuctionInfo) error
-	ReleaseReservation(startAuctionInfo StartAuctionInfo) error
+	Reserve(startAuction models.LRPStartAuction) error
+	ReleaseReservation(startAuction models.LRPStartAuction) error
 	Run(startAuction models.LRPStartAuction) error
 	Stop(stopInstance models.StopLRPInstance) error
 }

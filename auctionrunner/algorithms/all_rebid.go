@@ -41,7 +41,7 @@ func AllRebidAuction(client auctiontypes.RepPoolClient, auctionRequest auctionty
 
 		// tell the winner to reserve
 		numCommunications += 1
-		reservations := client.RebidThenTentativelyReserve([]string{winner}, auctionInfo)
+		reservations := client.RebidThenTentativelyReserve([]string{winner}, auctionRequest.LRPStartAuction)
 		events = append(events, auctiontypes.AuctionEvent{"reserve", time.Since(t), rounds, 1, ""})
 
 		if len(reservations) == 0 {
@@ -67,7 +67,7 @@ func AllRebidAuction(client auctiontypes.RepPoolClient, auctionRequest auctionty
 				sortedSecondRoundScores := secondRoundScores.FilterErrors().Sort()
 				index := int(math.Floor(float64(len(sortedSecondRoundScores)-1) * auctionRequest.Rules.ComparisonPercentile))
 				if sortedSecondRoundScores[index].Bid < winnerRecast.Bid && rounds < auctionRequest.Rules.MaxRounds {
-					client.ReleaseReservation([]string{winner}, auctionInfo)
+					client.ReleaseReservation([]string{winner}, auctionRequest.LRPStartAuction)
 					events = append(events, auctiontypes.AuctionEvent{"release", time.Since(t), rounds, 0, ""})
 					numCommunications += 1
 					continue

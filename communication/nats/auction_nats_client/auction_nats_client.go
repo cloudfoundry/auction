@@ -108,9 +108,9 @@ func (rep *AuctionNATSClient) BidForStopAuction(repGuids []string, stopAuctionIn
 	return results
 }
 
-func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
+func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, startAuction models.LRPStartAuction) auctiontypes.StartAuctionBids {
 	bidLog := rep.logger.Session("rebid-then-reserve", lager.Data{
-		"start-auction-info": startAuctionInfo,
+		"start-auction-info": startAuction,
 		"num-rep-guids":      len(repGuids),
 	})
 
@@ -123,7 +123,7 @@ func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, sta
 		subjects = append(subjects, subject)
 		subjectToRepGuid[subject] = repGuid
 	}
-	payload, _ := json.Marshal(startAuctionInfo)
+	payload, _ := json.Marshal(startAuction)
 
 	responses, failedSubjects := rep.aggregateWithTimeout(bidLog, subjects, payload)
 
@@ -146,7 +146,7 @@ func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, sta
 			releaseGuids = append(releaseGuids, subjectToRepGuid[failedSubject])
 		}
 
-		rep.ReleaseReservation(releaseGuids, startAuctionInfo)
+		rep.ReleaseReservation(releaseGuids, startAuction)
 	}
 
 	bidLog.Info("fetched", lager.Data{
@@ -156,9 +156,9 @@ func (rep *AuctionNATSClient) RebidThenTentativelyReserve(repGuids []string, sta
 	return results
 }
 
-func (rep *AuctionNATSClient) ReleaseReservation(repGuids []string, startAuctionInfo auctiontypes.StartAuctionInfo) {
+func (rep *AuctionNATSClient) ReleaseReservation(repGuids []string, startAuction models.LRPStartAuction) {
 	releaseLog := rep.logger.Session("release-reservation", lager.Data{
-		"start-auction-info":   startAuctionInfo,
+		"start-auction-info":   startAuction,
 		"rep-guids-to-release": repGuids,
 	})
 
@@ -169,7 +169,7 @@ func (rep *AuctionNATSClient) ReleaseReservation(repGuids []string, startAuction
 		subjects = append(subjects, nats.NewSubjects(repGuid).ReleaseReservation)
 	}
 
-	payload, _ := json.Marshal(startAuctionInfo)
+	payload, _ := json.Marshal(startAuction)
 
 	rep.aggregateWithTimeout(releaseLog, subjects, payload)
 

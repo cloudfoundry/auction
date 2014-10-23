@@ -41,7 +41,7 @@ func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionReques
 
 		// tell the winner to reserve
 		numCommunications += 1
-		reservations := client.RebidThenTentativelyReserve([]string{winner}, auctionInfo)
+		reservations := client.RebidThenTentativelyReserve([]string{winner}, auctionRequest.LRPStartAuction)
 		events = append(events, auctiontypes.AuctionEvent{"reserve", time.Since(t), rounds, 1, ""})
 
 		if len(reservations) == 0 {
@@ -59,7 +59,7 @@ func CompareToPercentileAuction(client auctiontypes.RepPoolClient, auctionReques
 			t = time.Now()
 			index := int(math.Floor(float64(len(sortedScores)-2)*auctionRequest.Rules.ComparisonPercentile)) + 1
 			if sortedScores[index].Bid < winnerRecast.Bid {
-				client.ReleaseReservation([]string{winner}, auctionInfo)
+				client.ReleaseReservation([]string{winner}, auctionRequest.LRPStartAuction)
 				events = append(events, auctiontypes.AuctionEvent{"release", time.Since(t), rounds, 0, ""})
 				numCommunications += 1
 				continue

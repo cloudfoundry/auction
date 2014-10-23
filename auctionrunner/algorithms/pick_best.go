@@ -37,7 +37,7 @@ func PickBestAuction(client auctiontypes.RepPoolClient, auctionRequest auctionty
 
 		winner := firstRoundScores.FilterErrors().Shuffle().Sort()[0]
 		numCommunications += 1
-		reservations := client.RebidThenTentativelyReserve([]string{winner.Rep}, auctionInfo)
+		reservations := client.RebidThenTentativelyReserve([]string{winner.Rep}, auctionRequest.LRPStartAuction)
 		events = append(events, auctiontypes.AuctionEvent{"reserve", time.Since(t), rounds, 1, ""})
 
 		if len(reservations) == 0 {

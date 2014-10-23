@@ -23,6 +23,7 @@ func Resources(diskMB int, memoryMB int, containers int) auctiontypes.Resources 
 var _ = Describe("Auction Rep", func() {
 	var delegate *fakes.FakeAuctionRepDelegate
 	var rep *AuctionRep
+	var startAuction models.LRPStartAuction
 	var startAuctionInfo auctiontypes.StartAuctionInfo
 	var stopAuctionInfo auctiontypes.StopAuctionInfo
 
@@ -30,13 +31,17 @@ var _ = Describe("Auction Rep", func() {
 		delegate = &fakes.FakeAuctionRepDelegate{}
 		rep = New("rep-guid", delegate)
 
-		startAuctionInfo = auctiontypes.StartAuctionInfo{
-			ProcessGuid:  "process-guid",
+		startAuction = models.LRPStartAuction{
+			DesiredLRP: models.DesiredLRP{
+				ProcessGuid: "process-guid",
+				DiskMB:      10,
+				MemoryMB:    20,
+			},
 			InstanceGuid: "instance-guid",
-			DiskMB:       10,
-			MemoryMB:     20,
 			Index:        0,
 		}
+
+		startAuctionInfo = auctiontypes.NewStartAuctionInfoFromLRPStartAuction(startAuction)
 
 		stopAuctionInfo = auctiontypes.StopAuctionInfo{
 			ProcessGuid: "process-guid",
@@ -54,7 +59,9 @@ var _ = Describe("Auction Rep", func() {
 		ItShouldComputeStartBidsCorrectly(func() *fakes.FakeAuctionRepDelegate {
 			return delegate
 		}, func() StartAuctionBidFunc {
-			return rep.BidForStartAuction
+			return func(startAuction models.LRPStartAuction) (float64, error) {
+				return rep.BidForStartAuction(auctiontypes.NewStartAuctionInfoFromLRPStartAuction(startAuction))
+			}
 		})
 	})
 
@@ -88,26 +95,26 @@ var _ = Describe("Auction Rep", func() {
 					return Resources(startAuctionInfo.DiskMB, startAuctionInfo.MemoryMB, 1), nil
 				}
 
-				delegate.ReserveStub = func(startAuctionInfo auctiontypes.StartAuctionInfo) error {
+				delegate.ReserveStub = func(startAuctionInfo models.LRPStartAuction) error {
 					ordering = append(ordering, "Reserve")
 					return nil
 				}
 
-				_, err := rep.RebidThenTentativelyReserve(startAuctionInfo)
+				_, err := rep.RebidThenTentativelyReserve(startAuction)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(ordering).Should(Equal([]string{"Remaining", "Total", "Reserve"}))
 			})
 
 			It("should pass the reservation the correct startAuctionInfo", func() {
-				_, err := rep.RebidThenTentativelyReserve(startAuctionInfo)
+				_, err := rep.RebidThenTentativelyReserve(startAuction)
 				Ω(err).ShouldNot(HaveOccurred())
-				Ω(delegate.ReserveArgsForCall(0)).Should(Equal(startAuctionInfo))
+				Ω(delegate.ReserveArgsForCall(0)).Should(Equal(startAuction))
 			})
 
 			Context("when the reservation fails", func() {
 				It("should error", func() {
 					delegate.ReserveReturns(errors.New("kaboom"))
-					_, err := rep.RebidThenTentativelyReserve(startAuctionInfo)
+					_, err := rep.RebidThenTentativelyReserve(startAuction)
 					Ω(err).Should(MatchError(errors.New("kaboom")))
 				})
 			})
@@ -116,14 +123,14 @@ var _ = Describe("Auction Rep", func() {
 
 	Describe("ReleaseReservation", func() {
 		It("should instruct the delegate to release the reservation", func() {
-			rep.ReleaseReservation(startAuctionInfo)
-			Ω(delegate.ReleaseReservationArgsForCall(0)).Should(Equal(startAuctionInfo))
+			rep.ReleaseReservation(startAuction)
+			Ω(delegate.ReleaseReservationArgsForCall(0)).Should(Equal(startAuction))
 		})
 
 		Context("when the delegate errors", func() {
 			It("should error", func() {
 				delegate.ReleaseReservationReturns(errors.New("kaboom"))
-				err := rep.ReleaseReservation(startAuctionInfo)
+				err := rep.ReleaseReservation(startAuction)
 				Ω(err).Should(MatchError(errors.New("kaboom")))
 			})
 		})
@@ -300,8 +307,8 @@ var _ = Describe("Auction Rep", func() {
 				return Resources(diskMB, memoryMB, 1), nil
 			}
 
-			go rep.RebidThenTentativelyReserve(startAuctionInfo)
-			go rep.RebidThenTentativelyReserve(startAuctionInfo)
+			go rep.RebidThenTentativelyReserve(startAuction)
+			go rep.RebidThenTentativelyReserve(startAuction)
 
 			Eventually(spy).Should(Receive())
 			Consistently(spy).ShouldNot(Receive())
@@ -314,14 +321,14 @@ var _ = Describe("Auction Rep", func() {
 			spy := make(chan struct{}, 2)
 			release := make(chan struct{})
 
-			delegate.ReleaseReservationStub = func(auctiontypes.StartAuctionInfo) error {
+			delegate.ReleaseReservationStub = func(models.LRPStartAuction) error {
 				spy <- struct{}{}
 				<-release
 				return nil
 			}
 
-			go rep.ReleaseReservation(startAuctionInfo)
-			go rep.ReleaseReservation(startAuctionInfo)
+			go rep.ReleaseReservation(startAuction)
+			go rep.ReleaseReservation(startAuction)
 
 			Eventually(spy).Should(Receive())
 			Consistently(spy).ShouldNot(Receive())

@@ -66,41 +66,41 @@ func (rep *SimulationRepDelegate) InstanceGuidsForProcessGuidAndIndex(processGui
 	return instanceGuids, nil
 }
 
-func (rep *SimulationRepDelegate) Reserve(startAuctionInfo auctiontypes.StartAuctionInfo) error {
+func (rep *SimulationRepDelegate) Reserve(startAuction models.LRPStartAuction) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
 	remaining := rep.remainingResources()
 
-	hasEnoughMemory := remaining.MemoryMB >= startAuctionInfo.MemoryMB
-	hasEnoughDisk := remaining.DiskMB >= startAuctionInfo.DiskMB
+	hasEnoughMemory := remaining.MemoryMB >= startAuction.DesiredLRP.MemoryMB
+	hasEnoughDisk := remaining.DiskMB >= startAuction.DesiredLRP.DiskMB
 	hasEnoughContainers := remaining.Containers > 0
 
 	if !(hasEnoughMemory && hasEnoughDisk && hasEnoughContainers) {
 		return auctiontypes.InsufficientResources
 	}
 
-	rep.instances[startAuctionInfo.InstanceGuid] = auctiontypes.SimulatedInstance{
-		ProcessGuid:  startAuctionInfo.ProcessGuid,
-		InstanceGuid: startAuctionInfo.InstanceGuid,
-		MemoryMB:     startAuctionInfo.MemoryMB,
-		DiskMB:       startAuctionInfo.DiskMB,
-		Index:        startAuctionInfo.Index,
+	rep.instances[startAuction.InstanceGuid] = auctiontypes.SimulatedInstance{
+		ProcessGuid:  startAuction.DesiredLRP.ProcessGuid,
+		InstanceGuid: startAuction.InstanceGuid,
+		MemoryMB:     startAuction.DesiredLRP.MemoryMB,
+		DiskMB:       startAuction.DesiredLRP.DiskMB,
+		Index:        startAuction.Index,
 	}
 
 	return nil
 }
 
-func (rep *SimulationRepDelegate) ReleaseReservation(startAuctionInfo auctiontypes.StartAuctionInfo) error {
+func (rep *SimulationRepDelegate) ReleaseReservation(startAuction models.LRPStartAuction) error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	_, ok := rep.instances[startAuctionInfo.InstanceGuid]
+	_, ok := rep.instances[startAuction.InstanceGuid]
 	if !ok {
-		return errors.New(fmt.Sprintf("no reservation for instance %s", startAuctionInfo.InstanceGuid))
+		return errors.New(fmt.Sprintf("no reservation for instance %s", startAuction.InstanceGuid))
 	}
 
-	delete(rep.instances, startAuctionInfo.InstanceGuid)
+	delete(rep.instances, startAuction.InstanceGuid)
 
 	return nil
 }

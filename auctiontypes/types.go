@@ -182,14 +182,6 @@ type StartAuctionInfo struct {
 	Index        int
 }
 
-func (info StartAuctionInfo) LRPIdentifier() models.LRPIdentifier {
-	return models.LRPIdentifier{
-		ProcessGuid:  info.ProcessGuid,
-		Index:        info.Index,
-		InstanceGuid: info.InstanceGuid,
-	}
-}
-
 type StopAuctionInfo struct {
 	ProcessGuid string
 	Index       int

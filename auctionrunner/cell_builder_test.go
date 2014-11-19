@@ -1,0 +1,63 @@
+package auctionrunner_test
+
+import (
+	"errors"
+
+	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
+	"github.com/cloudfoundry/gunk/workpool"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("CellBuilder", func() {
+	var repA, repB *fakes.FakeSimulationAuctionRep
+	var clients map[string]auctiontypes.AuctionRep
+	var workPool *workpool.WorkPool
+
+	BeforeEach(func() {
+		workPool = workpool.NewWorkPool(5)
+		repA = &fakes.FakeSimulationAuctionRep{}
+		repB = &fakes.FakeSimulationAuctionRep{}
+
+		clients = map[string]auctiontypes.AuctionRep{
+			"A": repA,
+			"B": repB,
+		}
+
+		repA.StateReturns(BuildRepState(100, 200, 100, nil), nil)
+		repB.StateReturns(BuildRepState(10, 10, 100, nil), nil)
+	})
+
+	AfterEach(func() {
+		workPool.Stop()
+	})
+
+	It("fetches state by calling each client", func() {
+		cells := FetchStateAndBuildCells(workPool, clients)
+		Ω(cells).Should(HaveLen(2))
+		Ω(cells).Should(HaveKey("A"))
+		Ω(cells).Should(HaveKey("B"))
+
+		instance := BuildLRPStartAuction("pg-1", "ig-1", 0, "lucid64", 20, 20)
+		_, err := cells["A"].ScoreForStartAuction(instance)
+		Ω(err).ShouldNot(HaveOccurred())
+
+		_, err = cells["B"].ScoreForStartAuction(instance)
+		Ω(err).Should(MatchError(ErrorInsufficientResources))
+	})
+
+	Context("when a client fails", func() {
+		BeforeEach(func() {
+			repB.StateReturns(BuildRepState(10, 10, 100, nil), errors.New("boom"))
+		})
+
+		It("does not include the client in the map", func() {
+			cells := FetchStateAndBuildCells(workPool, clients)
+			Ω(cells).Should(HaveLen(1))
+			Ω(cells).Should(HaveKey("A"))
+		})
+	})
+})

@@ -6,18 +6,22 @@ import (
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
-type StartAuctionResult struct {
+type StartAuction struct {
 	LRPStartAuction models.LRPStartAuction
 	Winner          string
+	Attempts        int
 
-	WaitTime time.Duration
+	QueueTime    time.Time
+	WaitDuration time.Duration
 }
 
-type StopAuctionResult struct {
+type StopAuction struct {
 	LRPStopAuction models.LRPStopAuction
 	Winner         string
+	Attempts       int
 
-	WaitTime time.Duration
+	QueueTime    time.Time
+	WaitDuration time.Duration
 }
 
 type RepAddress struct {

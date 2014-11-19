@@ -1,8 +1,11 @@
 package auctionrunner_test
 
 import (
+	"time"
+
 	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/cloudfoundry/gunk/timeprovider/faketimeprovider"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,9 +15,11 @@ var _ = Describe("Batch", func() {
 	var startAuction models.LRPStartAuction
 	var stopAuction models.LRPStopAuction
 	var batch *Batch
+	var timeProvider *faketimeprovider.FakeTimeProvider
 
 	BeforeEach(func() {
-		batch = NewBatch()
+		timeProvider = faketimeprovider.New(time.Now())
+		batch = NewBatch(timeProvider)
 	})
 
 	It("should start off empty", func() {
@@ -33,7 +38,7 @@ var _ = Describe("Batch", func() {
 
 			It("makes the start auction available when drained", func() {
 				startAuctions, _ := batch.DedupeAndDrain()
-				Ω(startAuctions).Should(ConsistOf(startAuction))
+				Ω(startAuctions).Should(ConsistOf(BuildStartAuction(startAuction, timeProvider.Time())))
 			})
 
 			It("should have work", func() {
@@ -49,7 +54,7 @@ var _ = Describe("Batch", func() {
 
 			It("makes the stop auction available when drained", func() {
 				_, stopAuctions := batch.DedupeAndDrain()
-				Ω(stopAuctions).Should(ConsistOf(stopAuction))
+				Ω(stopAuctions).Should(ConsistOf(BuildStopAuction(stopAuction, timeProvider.Time())))
 			})
 
 			It("should have work", func() {
@@ -72,13 +77,25 @@ var _ = Describe("Batch", func() {
 		It("should dedupe any duplicate start auctions and stop auctions", func() {
 			startAuctions, stopAuctions := batch.DedupeAndDrain()
 			Ω(startAuctions).Should(ConsistOf(
-				BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10),
-				BuildLRPStartAuction("pg-2", "ig-2", 2, "lucid64", 10, 10),
+				BuildStartAuction(
+					BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10),
+					timeProvider.Time(),
+				),
+				BuildStartAuction(
+					BuildLRPStartAuction("pg-2", "ig-2", 2, "lucid64", 10, 10),
+					timeProvider.Time(),
+				),
 			))
 
 			Ω(stopAuctions).Should(ConsistOf(
-				BuildLRPStopAuction("pg-1", 1),
-				BuildLRPStopAuction("pg-2", 3),
+				BuildStopAuction(
+					BuildLRPStopAuction("pg-1", 1),
+					timeProvider.Time(),
+				),
+				BuildStopAuction(
+					BuildLRPStopAuction("pg-2", 3),
+					timeProvider.Time(),
+				),
 			))
 		})
 

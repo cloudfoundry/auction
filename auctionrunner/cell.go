@@ -15,7 +15,7 @@ type Cell struct {
 	client auctiontypes.AuctionRep
 	state  auctiontypes.RepState
 
-	workToCommit []auctiontypes.Work
+	workToCommit auctiontypes.Work
 }
 
 func NewCell(client auctiontypes.AuctionRep, state auctiontypes.RepState) *Cell {
@@ -98,6 +98,8 @@ func (c *Cell) StartLRP(startAuction models.LRPStartAuction) error {
 	c.state.AvailableResources.DiskMB -= startAuction.DesiredLRP.DiskMB
 	c.state.AvailableResources.Containers -= 1
 
+	c.workToCommit.Starts = append(c.workToCommit.Starts, startAuction)
+
 	return nil
 }
 
@@ -126,12 +128,21 @@ func (c *Cell) StopLRP(stop models.StopLRPInstance) error {
 	c.state.AvailableResources.Containers += 1
 
 	c.state.LRPs = append(c.state.LRPs[0:indexToDelete], c.state.LRPs[indexToDelete+1:]...)
+	c.workToCommit.Stops = append(c.workToCommit.Stops, stop)
 
 	return nil
 }
 
-func (c *Cell) Commit() []auctiontypes.Work {
-	return nil
+func (c *Cell) Commit() auctiontypes.Work {
+	if len(c.workToCommit.Starts) == 0 && len(c.workToCommit.Stops) == 0 {
+		return auctiontypes.Work{}
+	}
+
+	failedWork, err := c.client.Perform(c.workToCommit)
+	if err != nil {
+		return c.workToCommit
+	}
+	return failedWork
 }
 
 func (c *Cell) canHandleStartAuction(startAuction models.LRPStartAuction) error {

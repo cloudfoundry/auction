@@ -1,6 +1,8 @@
 package auctionrunner_test
 
 import (
+	"errors"
+
 	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
@@ -57,15 +59,14 @@ func BuildRepState(memoryMB int, diskMB int, containers int, lrps []auctiontypes
 }
 
 var _ = Describe("Cell", func() {
-	var emptyClient, client *fakes.FakeSimulationAuctionRep
+	var client *fakes.FakeSimulationAuctionRep
 	var emptyCell, cell *Cell
 
 	BeforeEach(func() {
-		emptyClient = &fakes.FakeSimulationAuctionRep{}
-		emptyState := BuildRepState(100, 200, 50, nil)
-		emptyCell = NewCell(emptyClient, emptyState)
-
 		client = &fakes.FakeSimulationAuctionRep{}
+		emptyState := BuildRepState(100, 200, 50, nil)
+		emptyCell = NewCell(client, emptyState)
+
 		state := BuildRepState(100, 200, 50, []auctiontypes.LRP{
 			{"pg-1", "ig-1", 0, 10, 20},
 			{"pg-1", "ig-2", 1, 10, 20},
@@ -506,6 +507,62 @@ var _ = Describe("Cell", func() {
 				}
 				err = cell.StopLRP(instanceToStop)
 				Ω(err).Should(MatchError(ErrorNothingToStop))
+			})
+		})
+	})
+
+	Describe("Commit", func() {
+		Context("with nothing to commit", func() {
+			It("does nothing and returns empty", func() {
+				failedWork := cell.Commit()
+				Ω(failedWork).Should(BeZero())
+				Ω(client.PerformCallCount()).Should(Equal(0))
+			})
+		})
+
+		Context("with work to commit", func() {
+			var instanceToStart models.LRPStartAuction
+			var instanceToStop models.StopLRPInstance
+
+			BeforeEach(func() {
+				instanceToStart = BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 20, 10)
+				instanceToStop = models.StopLRPInstance{
+					ProcessGuid:  "pg-1",
+					InstanceGuid: "ig-2",
+					Index:        1,
+				}
+
+				Ω(cell.StartLRP(instanceToStart)).Should(Succeed())
+				Ω(cell.StopLRP(instanceToStop)).Should(Succeed())
+			})
+
+			It("asks the client to perform", func() {
+				cell.Commit()
+				Ω(client.PerformCallCount()).Should(Equal(1))
+				Ω(client.PerformArgsForCall(0)).Should(Equal(auctiontypes.Work{
+					Starts: []models.LRPStartAuction{instanceToStart},
+					Stops:  []models.StopLRPInstance{instanceToStop},
+				}))
+			})
+
+			Context("when the client returns some failed work", func() {
+				It("forwards the failed work", func() {
+					failedWork := auctiontypes.Work{
+						Stops: []models.StopLRPInstance{instanceToStop},
+					}
+					client.PerformReturns(failedWork, nil)
+					Ω(cell.Commit()).Should(Equal(failedWork))
+				})
+			})
+
+			Context("when the client returns an error", func() {
+				It("returns all work as failed work", func() {
+					client.PerformReturns(auctiontypes.Work{}, errors.New("boom"))
+					Ω(cell.Commit()).Should(Equal(auctiontypes.Work{
+						Starts: []models.LRPStartAuction{instanceToStart},
+						Stops:  []models.StopLRPInstance{instanceToStop},
+					}))
+				})
 			})
 		})
 	})

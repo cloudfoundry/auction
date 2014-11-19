@@ -26,17 +26,9 @@ func NewCell(client auctiontypes.AuctionRep, state auctiontypes.RepState) *Cell 
 }
 
 func (c *Cell) ScoreForStartAuction(startAuction models.LRPStartAuction) (float64, error) {
-	if c.state.Stack != startAuction.DesiredLRP.Stack {
-		return 0, ErrorStackMismatch
-	}
-	if c.state.AvailableResources.MemoryMB < startAuction.DesiredLRP.MemoryMB {
-		return 0, ErrorInsufficientResources
-	}
-	if c.state.AvailableResources.DiskMB < startAuction.DesiredLRP.DiskMB {
-		return 0, ErrorInsufficientResources
-	}
-	if c.state.AvailableResources.Containers < 1 {
-		return 0, ErrorInsufficientResources
+	err := c.canHandleStartAuction(startAuction)
+	if err != nil {
+		return 0, err
 	}
 
 	numberOfInstancesWithMatchingProcessGuid := 0
@@ -89,14 +81,73 @@ func (c *Cell) ScoreForStopAuction(stopAuction models.LRPStopAuction) (float64, 
 }
 
 func (c *Cell) StartLRP(startAuction models.LRPStartAuction) error {
+	err := c.canHandleStartAuction(startAuction)
+	if err != nil {
+		return err
+	}
+
+	c.state.LRPs = append(c.state.LRPs, auctiontypes.LRP{
+		ProcessGuid:  startAuction.DesiredLRP.ProcessGuid,
+		InstanceGuid: startAuction.InstanceGuid,
+		Index:        startAuction.Index,
+		MemoryMB:     startAuction.DesiredLRP.MemoryMB,
+		DiskMB:       startAuction.DesiredLRP.DiskMB,
+	})
+
+	c.state.AvailableResources.MemoryMB -= startAuction.DesiredLRP.MemoryMB
+	c.state.AvailableResources.DiskMB -= startAuction.DesiredLRP.DiskMB
+	c.state.AvailableResources.Containers -= 1
+
 	return nil
 }
 
-func (c *Cell) StopLRP(lrp models.StopLRPInstance) error {
+func (c *Cell) StopLRP(stop models.StopLRPInstance) error {
+	indexToDelete := -1
+	for i, lrp := range c.state.LRPs {
+		if lrp.ProcessGuid != stop.ProcessGuid {
+			continue
+		}
+		if lrp.InstanceGuid != stop.InstanceGuid {
+			continue
+		}
+		if lrp.Index != stop.Index {
+			continue
+		}
+		indexToDelete = i
+		break
+	}
+
+	if indexToDelete == -1 {
+		return ErrorNothingToStop
+	}
+
+	c.state.AvailableResources.MemoryMB += c.state.LRPs[indexToDelete].MemoryMB
+	c.state.AvailableResources.DiskMB += c.state.LRPs[indexToDelete].DiskMB
+	c.state.AvailableResources.Containers += 1
+
+	c.state.LRPs = append(c.state.LRPs[0:indexToDelete], c.state.LRPs[indexToDelete+1:]...)
+
 	return nil
 }
 
 func (c *Cell) Commit() []auctiontypes.Work {
+	return nil
+}
+
+func (c *Cell) canHandleStartAuction(startAuction models.LRPStartAuction) error {
+	if c.state.Stack != startAuction.DesiredLRP.Stack {
+		return ErrorStackMismatch
+	}
+	if c.state.AvailableResources.MemoryMB < startAuction.DesiredLRP.MemoryMB {
+		return ErrorInsufficientResources
+	}
+	if c.state.AvailableResources.DiskMB < startAuction.DesiredLRP.DiskMB {
+		return ErrorInsufficientResources
+	}
+	if c.state.AvailableResources.Containers < 1 {
+		return ErrorInsufficientResources
+	}
+
 	return nil
 }
 

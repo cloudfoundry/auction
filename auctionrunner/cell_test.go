@@ -384,4 +384,129 @@ var _ = Describe("Cell", func() {
 			})
 		})
 	})
+
+	Describe("StartLRP", func() {
+		Context("when there is room for the LRP", func() {
+			It("should register its resources usage and keep it in mind when handling future requests", func() {
+				instance := BuildLRPStartAuction("pg-test", "ig-test", 0, "lucid64", 10, 10)
+				instanceToAdd := BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 10, 10)
+
+				initialScore, err := cell.ScoreForStartAuction(instance)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(cell.StartLRP(instanceToAdd)).Should(Succeed())
+
+				subsequentScore, err := cell.ScoreForStartAuction(instance)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(initialScore).Should(BeNumerically("<", subsequentScore), "the score should have gotten worse")
+			})
+
+			It("should register the LRP and keep it in mind when handling future requests", func() {
+				instance := BuildLRPStartAuction("pg-test", "ig-test", 0, "lucid64", 10, 10)
+				instanceWithMatchingProcessGuid := BuildLRPStartAuction("pg-new", "ig-new-2", 1, "lucid64", 10, 10)
+				instanceToAdd := BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 10, 10)
+
+				initialScore, err := cell.ScoreForStartAuction(instance)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				initialScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForStartAuction(instanceWithMatchingProcessGuid)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(initialScore).Should(BeNumerically("==", initialScoreForInstanceWithMatchingProcessGuid))
+
+				Ω(cell.StartLRP(instanceToAdd)).Should(Succeed())
+
+				subsequentScore, err := cell.ScoreForStartAuction(instance)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				subsequentScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForStartAuction(instanceWithMatchingProcessGuid)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(initialScore).Should(BeNumerically("<", subsequentScore), "the score should have gotten worse")
+				Ω(initialScoreForInstanceWithMatchingProcessGuid).Should(BeNumerically("<", subsequentScoreForInstanceWithMatchingProcessGuid), "the score should have gotten worse")
+
+				Ω(subsequentScore).Should(BeNumerically("<", subsequentScoreForInstanceWithMatchingProcessGuid), "the score should be substantially worse for the instance with the matching process guid")
+			})
+		})
+
+		Context("when there is a stack mismatch", func() {
+			It("should error", func() {
+				instance := BuildLRPStartAuction("pg-test", "ig-test", 0, ".net", 10, 10)
+				err := cell.StartLRP(instance)
+				Ω(err).Should(MatchError(ErrorStackMismatch))
+			})
+		})
+
+		Context("when there is no room for the LRP", func() {
+			It("should error", func() {
+				instance := BuildLRPStartAuction("pg-test", "ig-test", 0, "lucid64", 10000, 10)
+				err := cell.StartLRP(instance)
+				Ω(err).Should(MatchError(ErrorInsufficientResources))
+			})
+		})
+	})
+
+	Describe("StopLRP", func() {
+		It("removes the LRP and keep the fact in mind when handling future requests", func() {
+			instance := BuildLRPStartAuction("pg-test", "ig-test", 0, "lucid64", 10, 10)
+			instanceToStop := models.StopLRPInstance{
+				ProcessGuid:  "pg-1",
+				InstanceGuid: "ig-2",
+				Index:        1,
+			}
+
+			initialScore, err := cell.ScoreForStartAuction(instance)
+			Ω(err).ShouldNot(HaveOccurred())
+
+			Ω(cell.StopLRP(instanceToStop)).Should(Succeed())
+
+			subsequentScore, err := cell.ScoreForStartAuction(instance)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(initialScore).Should(BeNumerically(">", subsequentScore), "the score should have gotten better")
+		})
+
+		It("removes the LRP, making it impossible to remove again", func() {
+			instanceToStop := models.StopLRPInstance{
+				ProcessGuid:  "pg-1",
+				InstanceGuid: "ig-2",
+				Index:        1,
+			}
+
+			Ω(cell.StopLRP(instanceToStop)).Should(Succeed())
+			Ω(cell.StopLRP(instanceToStop)).ShouldNot(Succeed())
+		})
+
+		Context("when the lrp is not present", func() {
+			It("returns an error", func() {
+				Because := By
+
+				Because("of a mismatched process guid")
+				instanceToStop := models.StopLRPInstance{
+					ProcessGuid:  "pg-0",
+					InstanceGuid: "ig-2",
+					Index:        1,
+				}
+				err := cell.StopLRP(instanceToStop)
+				Ω(err).Should(MatchError(ErrorNothingToStop))
+
+				Because("of a mismatched instance guid")
+				instanceToStop = models.StopLRPInstance{
+					ProcessGuid:  "pg-1",
+					InstanceGuid: "ig-3",
+					Index:        1,
+				}
+				err = cell.StopLRP(instanceToStop)
+				Ω(err).Should(MatchError(ErrorNothingToStop))
+
+				Because("of a mismatched index")
+				instanceToStop = models.StopLRPInstance{
+					ProcessGuid:  "pg-1",
+					InstanceGuid: "ig-2",
+					Index:        0,
+				}
+				err = cell.StopLRP(instanceToStop)
+				Ω(err).Should(MatchError(ErrorNothingToStop))
+			})
+		})
+	})
 })

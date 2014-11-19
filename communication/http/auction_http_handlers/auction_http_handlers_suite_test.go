@@ -35,8 +35,6 @@ var _ = BeforeEach(func() {
 	logger := lagertest.NewTestLogger("auction_http_handlers")
 
 	auctionRep = &fakes.FakeSimulationAuctionRep{}
-	repGuid = "alpha-omicron-delta"
-	auctionRep.GuidReturns(repGuid)
 
 	handler, err := rata.NewRouter(routes.Routes, auction_http_handlers.New(auctionRep, logger))
 	Ω(err).ShouldNot(HaveOccurred())

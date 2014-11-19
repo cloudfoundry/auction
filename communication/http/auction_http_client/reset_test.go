@@ -1,25 +1,41 @@
 package auction_http_client_test
 
 import (
+	"errors"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("(Sim) Reset", func() {
 	It("should tell the rep to reset", func() {
-		client.Reset(RepAddressFor("A"))
-		Ω(auctionRepA.ResetCallCount()).Should(Equal(1))
+		client.Reset()
+		Ω(auctionRep.ResetCallCount()).Should(Equal(1))
 	})
 
-	Context("when a request doesn't succeed", func() {
-		It("does not explode", func() {
-			client.Reset(RepAddressFor("RepThat500s"))
+	Context("when the request succeeds", func() {
+		BeforeEach(func() {
+			auctionRep.ResetReturns(nil)
+		})
+
+		It("should return the state returned by the rep", func() {
+			Ω(client.Reset()).Should(Succeed())
+		})
+	})
+
+	Context("when the request fails", func() {
+		BeforeEach(func() {
+			auctionRep.ResetReturns(errors.New("boom"))
+		})
+
+		It("should error", func() {
+			Ω(client.Reset()).ShouldNot(Succeed())
 		})
 	})
 
 	Context("when a request errors (in the network sense)", func() {
-		It("does not explode", func() {
-			client.Reset(RepAddressFor("RepThatErrors"))
+		It("should error", func() {
+			Ω(clientForServerThatErrors.Reset()).ShouldNot(Succeed())
 		})
 	})
 })

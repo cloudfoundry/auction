@@ -3,260 +3,143 @@ package auction_http_client
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
 	"net/http"
-	"sync"
+
+	"github.com/cloudfoundry-incubator/auction/communication/http/routes"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/pivotal-golang/lager"
+	"github.com/tedsuo/rata"
 )
 
 type AuctionHTTPClient struct {
-	client *http.Client
-	logger lager.Logger
+	client           *http.Client
+	repAddress       auctiontypes.RepAddress
+	requestGenerator *rata.RequestGenerator
+	logger           lager.Logger
 }
 
 type Response struct {
 	Body []byte
 }
 
-func New(client *http.Client, logger lager.Logger) *AuctionHTTPClient {
+func New(client *http.Client, repAddress auctiontypes.RepAddress, logger lager.Logger) *AuctionHTTPClient {
 	return &AuctionHTTPClient{
-		client: client,
-		logger: logger,
+		client:           client,
+		repAddress:       repAddress,
+		requestGenerator: rata.NewRequestGenerator(repAddress.Address, routes.Routes),
+		logger:           logger,
 	}
 }
 
-func (c *AuctionHTTPClient) BidForStartAuction(repAddresses []auctiontypes.RepAddress, startAuctionInfo auctiontypes.StartAuctionInfo) auctiontypes.StartAuctionBids {
-	logger := c.logger.Session("bid-for-start-auction", lager.Data{
-		"process-guid":  startAuctionInfo.ProcessGuid,
-		"instance-guid": startAuctionInfo.InstanceGuid,
-		"disk-mb":       startAuctionInfo.DiskMB,
-		"memory-mb":     startAuctionInfo.MemoryMB,
-		"index":         startAuctionInfo.Index,
+func (c *AuctionHTTPClient) State() (auctiontypes.RepState, error) {
+	logger := c.logger.Session("fetching-state", lager.Data{
+		"rep": c.repAddress.RepGuid,
 	})
-	logger = logger.WithData(lager.Data{
-		"num-requests": len(repAddresses),
-	})
-	logger.Info("requesting")
 
-	body, _ := json.Marshal(startAuctionInfo)
-	responses := c.batch(repAddresses, "GET", "/bids/start_auction", body)
+	logger.Debug("requesting")
 
-	startAuctionBids := auctiontypes.StartAuctionBids{}
-	for _, response := range responses {
-		startAuctionBid := auctiontypes.StartAuctionBid{}
-		err := json.Unmarshal(response.Body, &startAuctionBid)
-		if err != nil {
-			logger.Error("failed-to-parse-response", err)
-			continue
-		}
-		startAuctionBids = append(startAuctionBids, startAuctionBid)
-	}
-
-	logger = logger.WithData(lager.Data{
-		"num-responses": len(startAuctionBids),
-	})
-	logger.Info("done")
-
-	return startAuctionBids
-}
-
-func (c *AuctionHTTPClient) BidForStopAuction(repAddresses []auctiontypes.RepAddress, stopAuctionInfo auctiontypes.StopAuctionInfo) auctiontypes.StopAuctionBids {
-	logger := c.logger.Session("bid-for-stop-auction", lager.Data{
-		"process-guid": stopAuctionInfo.ProcessGuid,
-		"index":        stopAuctionInfo.Index,
-		"num-requests": len(repAddresses),
-	})
-	logger.Info("requesting")
-
-	body, _ := json.Marshal(stopAuctionInfo)
-	responses := c.batch(repAddresses, "GET", "/bids/stop_auction", body)
-
-	stopAuctionBids := auctiontypes.StopAuctionBids{}
-	for _, response := range responses {
-		stopAuctionBid := auctiontypes.StopAuctionBid{}
-		err := json.Unmarshal(response.Body, &stopAuctionBid)
-		if err != nil {
-			logger.Error("failed-to-parse-response", err)
-			continue
-		}
-		stopAuctionBids = append(stopAuctionBids, stopAuctionBid)
-	}
-
-	logger = logger.WithData(lager.Data{
-		"num-responses": len(stopAuctionBids),
-	})
-	logger.Info("done")
-
-	return stopAuctionBids
-}
-
-func (c *AuctionHTTPClient) RebidThenTentativelyReserve(repAddresses []auctiontypes.RepAddress, startAuction models.LRPStartAuction) auctiontypes.StartAuctionBids {
-	logger := c.logger.Session("rebid-then-tentatively-reserve", lager.Data{
-		"process-guid":  startAuction.DesiredLRP.ProcessGuid,
-		"instance-guid": startAuction.InstanceGuid,
-		"disk-mb":       startAuction.DesiredLRP.DiskMB,
-		"memory-mb":     startAuction.DesiredLRP.MemoryMB,
-		"index":         startAuction.Index,
-	})
-	logger = logger.WithData(lager.Data{
-		"num-requests": len(repAddresses),
-	})
-	logger.Info("requesting")
-
-	body, _ := json.Marshal(startAuction)
-	responses := c.batch(repAddresses, "POST", "/reservations", body)
-
-	startAuctionBids := auctiontypes.StartAuctionBids{}
-	for _, response := range responses {
-		startAuctionBid := auctiontypes.StartAuctionBid{}
-		err := json.Unmarshal(response.Body, &startAuctionBid)
-		if err != nil {
-			logger.Error("failed-to-parse-response", err)
-			continue
-		}
-		startAuctionBids = append(startAuctionBids, startAuctionBid)
-	}
-
-	logger = logger.WithData(lager.Data{
-		"num-responses": len(startAuctionBids),
-	})
-	logger.Info("done")
-
-	return startAuctionBids
-}
-
-func (c *AuctionHTTPClient) ReleaseReservation(repAddresses []auctiontypes.RepAddress, startAuction models.LRPStartAuction) {
-	logger := c.logger.Session("release-reservation", lager.Data{
-		"process-guid":  startAuction.DesiredLRP.ProcessGuid,
-		"instance-guid": startAuction.InstanceGuid,
-		"disk-mb":       startAuction.DesiredLRP.DiskMB,
-		"memory-mb":     startAuction.DesiredLRP.MemoryMB,
-		"index":         startAuction.Index,
-	})
-	logger.Info("requesting")
-	body, _ := json.Marshal(startAuction)
-	c.batch(repAddresses, "DELETE", "/reservations", body)
-	logger.Info("done")
-}
-
-func (c *AuctionHTTPClient) Run(repAddress auctiontypes.RepAddress, lrpStartAuction models.LRPStartAuction) {
-	logger := c.logger.Session("run", lager.Data{
-		"process-guid":  lrpStartAuction.DesiredLRP.ProcessGuid,
-		"instance-guid": lrpStartAuction.InstanceGuid,
-		"index":         lrpStartAuction.Index,
-	})
-	logger.Info("requesting")
-	body, _ := json.Marshal(lrpStartAuction)
-	c.batch([]auctiontypes.RepAddress{repAddress}, "POST", "/run", body)
-	logger.Info("done")
-}
-
-func (c *AuctionHTTPClient) Stop(repAddress auctiontypes.RepAddress, stopInstance models.StopLRPInstance) {
-	logger := c.logger.Session("stop", lager.Data{
-		"process-guid":  stopInstance.ProcessGuid,
-		"instance-guid": stopInstance.InstanceGuid,
-		"index":         stopInstance.Index,
-	})
-	logger.Info("requesting")
-	body, _ := json.Marshal(stopInstance)
-	c.batch([]auctiontypes.RepAddress{repAddress}, "POST", "/stop", body)
-	logger.Info("done")
-}
-
-func (c *AuctionHTTPClient) TotalResources(repAddress auctiontypes.RepAddress) auctiontypes.Resources {
-	responses := c.batch([]auctiontypes.RepAddress{repAddress}, "GET", "/sim/total_resources", nil)
-	if len(responses) != 1 {
-		return auctiontypes.Resources{}
-	}
-	resources := auctiontypes.Resources{}
-	err := json.Unmarshal(responses[0].Body, &resources)
+	req, err := c.requestGenerator.CreateRequest(routes.State, nil, nil)
 	if err != nil {
-		return auctiontypes.Resources{}
+		logger.Error("failed-to-create-request", err)
+		return auctiontypes.RepState{}, err
 	}
-	return resources
-}
 
-func (c *AuctionHTTPClient) SimulatedInstances(repAddress auctiontypes.RepAddress) []auctiontypes.SimulatedInstance {
-	responses := c.batch([]auctiontypes.RepAddress{repAddress}, "GET", "/sim/simulated_instances", nil)
-	if len(responses) != 1 {
-		return nil
-	}
-	instances := []auctiontypes.SimulatedInstance{}
-	err := json.Unmarshal(responses[0].Body, &instances)
+	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil
+		logger.Error("failed-to-perform-request", err)
+		return auctiontypes.RepState{}, err
 	}
-	return instances
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Error("invalid-status-code", fmt.Errorf("%d", resp.StatusCode))
+		return auctiontypes.RepState{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var state auctiontypes.RepState
+	err = json.NewDecoder(resp.Body).Decode(&state)
+	if err != nil {
+		logger.Error("failed-to-decode-rep-state", err)
+		return auctiontypes.RepState{}, err
+	}
+
+	logger.Debug("done")
+
+	return state, nil
 }
 
-func (c *AuctionHTTPClient) SetSimulatedInstances(repAddress auctiontypes.RepAddress, instances []auctiontypes.SimulatedInstance) {
-	body, _ := json.Marshal(instances)
-	c.batch([]auctiontypes.RepAddress{repAddress}, "POST", "/sim/simulated_instances", body)
+func (c *AuctionHTTPClient) Perform(work auctiontypes.Work) (auctiontypes.Work, error) {
+	logger := c.logger.Session("sending-work", lager.Data{
+		"rep":    c.repAddress.RepGuid,
+		"starts": len(work.Starts),
+		"stops":  len(work.Stops),
+	})
+
+	logger.Debug("requesting")
+
+	body, err := json.Marshal(work)
+	if err != nil {
+		logger.Error("failed-to-marshal-work", err)
+		return auctiontypes.Work{}, err
+	}
+
+	req, err := c.requestGenerator.CreateRequest(routes.Perform, nil, bytes.NewReader(body))
+	if err != nil {
+		logger.Error("failed-to-create-request", err)
+		return auctiontypes.Work{}, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		logger.Error("failed-to-perform-request", err)
+		return auctiontypes.Work{}, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Error("invalid-status-code", fmt.Errorf("%d", resp.StatusCode))
+		return auctiontypes.Work{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var failedWork auctiontypes.Work
+	err = json.NewDecoder(resp.Body).Decode(&failedWork)
+	if err != nil {
+		logger.Error("failed-to-decode-failed-work", err)
+		return auctiontypes.Work{}, err
+	}
+
+	logger.Debug("done")
+
+	return failedWork, nil
 }
 
-func (c *AuctionHTTPClient) Reset(repAddress auctiontypes.RepAddress) {
-	c.batch([]auctiontypes.RepAddress{repAddress}, "POST", "/sim/reset", nil)
-}
+func (c *AuctionHTTPClient) Reset() error {
+	logger := c.logger.Session("SIM-reseting", lager.Data{
+		"rep": c.repAddress.RepGuid,
+	})
 
-/// batch http requests
+	logger.Debug("requesting")
 
-func (c *AuctionHTTPClient) batch(repAddresses []auctiontypes.RepAddress, method string, path string, body []byte) []Response {
-	requests := []*http.Request{}
-	for _, repAddress := range repAddresses {
-		reader := bytes.NewBuffer(body)
-		url := repAddress.Address
-		request, err := http.NewRequest(method, url+path, reader)
-		if err != nil {
-			continue
-		}
-		requests = append(requests, request)
+	req, err := c.requestGenerator.CreateRequest(routes.Sim_Reset, nil, nil)
+	if err != nil {
+		logger.Error("failed-to-create-request", err)
+		return err
 	}
 
-	return c.performRequests(requests)
-}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		logger.Error("failed-to-perform-request", err)
+		return err
+	}
+	defer resp.Body.Close()
 
-func (c *AuctionHTTPClient) performRequests(requests []*http.Request) []Response {
-	if len(requests) == 0 {
-		return []Response{}
+	if resp.StatusCode != http.StatusOK {
+		logger.Error("invalid-status-code", fmt.Errorf("%d", resp.StatusCode))
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	responsesChan := make(chan Response, len(requests))
-	wg := &sync.WaitGroup{}
-	wg.Add(len(requests))
-
-	for _, request := range requests {
-		go func(request *http.Request) {
-			defer wg.Done()
-			resp, err := c.client.Do(request)
-			if err != nil {
-				return
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode < 200 || resp.StatusCode > 299 {
-				return
-			}
-
-			responseBody, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				return
-			}
-
-			responsesChan <- Response{
-				Body: responseBody,
-			}
-		}(request)
-	}
-
-	wg.Wait()
-	close(responsesChan)
-	responses := []Response{}
-	for response := range responsesChan {
-		responses = append(responses, response)
-	}
-
-	return responses
+	logger.Debug("done")
+	return nil
 }

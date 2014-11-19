@@ -1,15 +1,10 @@
 package auctiontypes
 
 import (
-	"errors"
 	"time"
 
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
-
-//errors
-var InsufficientResources = errors.New("insufficient resources for instance")
-var NothingToStop = errors.New("found nothing to stop")
 
 type StartAuctionResult struct {
 	LRPStartAuction models.LRPStartAuction

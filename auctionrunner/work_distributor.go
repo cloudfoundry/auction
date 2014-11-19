@@ -1,8 +1,9 @@
 package auctionrunner
 
 import (
-	"fmt"
+	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
@@ -19,13 +20,13 @@ type DistributeWorkResults struct {
 }
 
 func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider timeprovider.TimeProvider, startAuctions []auctiontypes.StartAuction, stopAuctions []auctiontypes.StopAuction) DistributeWorkResults {
+	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
+
 	results := DistributeWorkResults{}
 	if len(cells) == 0 {
-		markStartsAsFailed(startAuctions)
-		markStopsAsFailed(stopAuctions)
 		results.FailedStarts = startAuctions
 		results.FailedStops = stopAuctions
-		return results
+		return markResults(results, timeProvider)
 	}
 
 	for _, stopAuction := range stopAuctions {
@@ -33,32 +34,54 @@ func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timePro
 		results.SuccessfulStops = append(results.SuccessfulStops, succesfulStop)
 	}
 
-	failedWork := commitCells(workPool, cells)
-	fmt.Println("deal with", failedWork)
+	var successfulStarts = map[string]auctiontypes.StartAuction{}
+	var startAuctionLookup = map[string]auctiontypes.StartAuction{}
 
-	markStopsAsAsSucceeded(results.SuccessfulStops, timeProvider)
+	for _, startAuction := range startAuctions {
+		startAuctionLookup[startAuction.Identifier()] = startAuction
+
+		successfulStart, err := processStartAuction(cells, startAuction, randomizer)
+		if err != nil {
+			results.FailedStarts = append(results.FailedStarts, startAuction)
+			continue
+		}
+		successfulStarts[successfulStart.Identifier()] = successfulStart
+	}
+
+	failedWorks := commitCells(workPool, cells)
+	for _, failedWork := range failedWorks {
+		for _, failedStart := range failedWork.Starts {
+			identifier := auctiontypes.IdentifierForLRPStartAuction(failedStart)
+			delete(successfulStarts, identifier)
+			results.FailedStarts = append(results.FailedStarts, startAuctionLookup[identifier])
+		}
+	}
+
+	for _, successfulStart := range successfulStarts {
+		results.SuccessfulStarts = append(results.SuccessfulStarts, successfulStart)
+	}
+
+	return markResults(results, timeProvider)
+}
+
+func markResults(results DistributeWorkResults, timeProvider timeprovider.TimeProvider) DistributeWorkResults {
+	now := timeProvider.Time()
+	for i := range results.FailedStarts {
+		results.FailedStarts[i].Attempts++
+	}
+	for i := range results.FailedStops {
+		results.FailedStops[i].Attempts++
+	}
+	for i := range results.SuccessfulStarts {
+		results.SuccessfulStarts[i].Attempts++
+		results.SuccessfulStarts[i].WaitDuration = now.Sub(results.SuccessfulStarts[i].QueueTime)
+	}
+	for i := range results.SuccessfulStops {
+		results.SuccessfulStops[i].Attempts++
+		results.SuccessfulStops[i].WaitDuration = now.Sub(results.SuccessfulStops[i].QueueTime)
+	}
 
 	return results
-}
-
-func markStartsAsFailed(startAuctions []auctiontypes.StartAuction) {
-	for i := range startAuctions {
-		startAuctions[i].Attempts++
-	}
-}
-
-func markStopsAsFailed(stopAuctions []auctiontypes.StopAuction) {
-	for i := range stopAuctions {
-		stopAuctions[i].Attempts++
-	}
-}
-
-func markStopsAsAsSucceeded(stopAuctions []auctiontypes.StopAuction, timeProvider timeprovider.TimeProvider) {
-	now := timeProvider.Time()
-	for i := range stopAuctions {
-		stopAuctions[i].Attempts++
-		stopAuctions[i].WaitDuration = now.Sub(stopAuctions[i].QueueTime)
-	}
 }
 
 func commitCells(workPool *workpool.WorkPool, cells map[string]*Cell) []auctiontypes.Work {
@@ -66,15 +89,15 @@ func commitCells(workPool *workpool.WorkPool, cells map[string]*Cell) []auctiont
 	wg.Add(len(cells))
 
 	lock := &sync.Mutex{}
-	failedWork := []auctiontypes.Work{}
+	failedWorks := []auctiontypes.Work{}
 
 	for _, cell := range cells {
 		cell := cell
 		workPool.Submit(func() {
-			failedWorkOnCell := cell.Commit()
+			failedWork := cell.Commit()
 
 			lock.Lock()
-			failedWork = append(failedWork, failedWorkOnCell)
+			failedWorks = append(failedWorks, failedWork)
 			lock.Unlock()
 
 			wg.Done()
@@ -82,7 +105,41 @@ func commitCells(workPool *workpool.WorkPool, cells map[string]*Cell) []auctiont
 	}
 
 	wg.Wait()
-	return failedWork
+	return failedWorks
+}
+
+func processStartAuction(cells map[string]*Cell, startAuction auctiontypes.StartAuction, randomizer *rand.Rand) (auctiontypes.StartAuction, error) {
+	winnerGuids := []string{}
+	winnerScore := 1e20
+
+	for guid, cell := range cells {
+		score, err := cell.ScoreForStartAuction(startAuction.LRPStartAuction)
+		if err != nil {
+			continue
+		}
+
+		if score == winnerScore {
+			winnerGuids = append(winnerGuids, guid)
+		} else if score < winnerScore {
+			winnerScore = score
+			winnerGuids = []string{guid}
+		}
+	}
+
+	if len(winnerGuids) == 0 {
+		return auctiontypes.StartAuction{}, ErrorInsufficientResources
+	}
+
+	winnerGuid := winnerGuids[randomizer.Intn(len(winnerGuids))]
+
+	err := cells[winnerGuid].StartLRP(startAuction.LRPStartAuction)
+	if err != nil {
+		return auctiontypes.StartAuction{}, err
+	}
+
+	startAuction.Winner = winnerGuid
+
+	return startAuction, nil
 }
 
 func processStopAuction(cells map[string]*Cell, stopAuction auctiontypes.StopAuction) auctiontypes.StopAuction {

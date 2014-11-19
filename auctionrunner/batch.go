@@ -1,7 +1,6 @@
 package auctionrunner
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
@@ -59,7 +58,7 @@ func (b *Batch) DedupeAndDrain() ([]auctiontypes.StartAuction, []auctiontypes.St
 	dedupedStartAuctions := []auctiontypes.StartAuction{}
 	presentStartAuctions := map[string]bool{}
 	for _, startAuction := range startAuctions {
-		id := fmt.Sprintf("%s.%d.%s", startAuction.LRPStartAuction.DesiredLRP.ProcessGuid, startAuction.LRPStartAuction.Index, startAuction.LRPStartAuction.InstanceGuid)
+		id := startAuction.Identifier()
 		if presentStartAuctions[id] {
 			continue
 		}
@@ -70,7 +69,7 @@ func (b *Batch) DedupeAndDrain() ([]auctiontypes.StartAuction, []auctiontypes.St
 	dedupedStopAuctions := []auctiontypes.StopAuction{}
 	presentStopAuctions := map[string]bool{}
 	for _, stopAuction := range stopAuctions {
-		id := fmt.Sprintf("%s.%d", stopAuction.LRPStopAuction.ProcessGuid, stopAuction.LRPStopAuction.Index)
+		id := stopAuction.Identifier()
 		if presentStopAuctions[id] {
 			continue
 		}

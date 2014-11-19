@@ -1,6 +1,7 @@
 package auctiontypes
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
@@ -15,6 +16,14 @@ type StartAuction struct {
 	WaitDuration time.Duration
 }
 
+func (s StartAuction) Identifier() string {
+	return IdentifierForLRPStartAuction(s.LRPStartAuction)
+}
+
+func IdentifierForLRPStartAuction(start models.LRPStartAuction) string {
+	return fmt.Sprintf("%s.%d.%s", start.DesiredLRP.ProcessGuid, start.Index, start.InstanceGuid)
+}
+
 type StopAuction struct {
 	LRPStopAuction models.LRPStopAuction
 	Winner         string
@@ -22,6 +31,10 @@ type StopAuction struct {
 
 	QueueTime    time.Time
 	WaitDuration time.Duration
+}
+
+func (s StopAuction) Identifier() string {
+	return fmt.Sprintf("%s.%d", s.LRPStopAuction.ProcessGuid, s.LRPStopAuction.Index)
 }
 
 type RepAddress struct {

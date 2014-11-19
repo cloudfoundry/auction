@@ -57,6 +57,83 @@ var _ = Describe("WorkDistributor", func() {
 		})
 	})
 
+	Describe("handling start auctions", func() {
+		var startAuction auctiontypes.StartAuction
+
+		BeforeEach(func() {
+			clients["A"] = &fakes.FakeSimulationAuctionRep{}
+			cells["A"] = NewCell(clients["A"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+				{"pg-1", "ig-1", 0, 10, 10},
+				{"pg-2", "ig-2", 0, 10, 10},
+			}))
+
+			clients["B"] = &fakes.FakeSimulationAuctionRep{}
+			cells["B"] = NewCell(clients["B"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+				{"pg-3", "ig-3", 0, 10, 10},
+			}))
+
+			startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", "ig-4", 0, "lucid64", 10, 10), timeProvider.Time())
+			timeProvider.Increment(time.Minute)
+		})
+
+		Context("when it picks a winner", func() {
+			BeforeEach(func() {
+				results = DistributeWork(workPool, cells, timeProvider, []auctiontypes.StartAuction{startAuction}, nil)
+			})
+
+			It("picks the best cell for the job", func() {
+				Ω(clients["A"].PerformCallCount()).Should(Equal(0))
+				Ω(clients["B"].PerformCallCount()).Should(Equal(1))
+
+				startsToB := clients["B"].PerformArgsForCall(0).Starts
+
+				Ω(startsToB).Should(ConsistOf(
+					startAuction.LRPStartAuction,
+				))
+			})
+
+			It("marks the start auction as succeeded", func() {
+				startAuction.Winner = "B"
+				startAuction.Attempts = 1
+				startAuction.WaitDuration = time.Minute
+				Ω(results.SuccessfulStarts).Should(ConsistOf(startAuction))
+				Ω(results.FailedStarts).Should(BeEmpty())
+			})
+		})
+
+		Context("when the cell rejects the start auction", func() {
+			BeforeEach(func() {
+				clients["B"].PerformReturns(auctiontypes.Work{}, errors.New("boom"))
+				results = DistributeWork(workPool, cells, timeProvider, []auctiontypes.StartAuction{startAuction}, nil)
+			})
+
+			It("marks the start auction as failed", func() {
+				startAuction.Attempts = 1
+				Ω(results.SuccessfulStarts).Should(BeEmpty())
+				Ω(results.FailedStarts).Should(ConsistOf(startAuction))
+			})
+		})
+
+		Context("when there is no room", func() {
+			BeforeEach(func() {
+				startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", "ig-4", 0, "lucid64", 1000, 1000), timeProvider.Time())
+				timeProvider.Increment(time.Minute)
+				results = DistributeWork(workPool, cells, timeProvider, []auctiontypes.StartAuction{startAuction}, nil)
+			})
+
+			It("should not attempt to start the LRP", func() {
+				Ω(clients["A"].PerformCallCount()).Should(Equal(0))
+				Ω(clients["B"].PerformCallCount()).Should(Equal(0))
+			})
+
+			It("should mark the start auction as failed", func() {
+				startAuction.Attempts = 1
+				Ω(results.SuccessfulStarts).Should(BeEmpty())
+				Ω(results.FailedStarts).Should(ConsistOf(startAuction))
+			})
+		})
+	})
+
 	Describe("handling stop auctions", func() {
 		var stopAuction auctiontypes.StopAuction
 

@@ -11,12 +11,6 @@ import (
 var InsufficientResources = errors.New("insufficient resources for instance")
 var NothingToStop = errors.New("found nothing to stop")
 
-//AuctionRunner
-type AuctionRunner interface {
-	RunLRPStartAuction(auctionRequest models.LRPStartAuction) (StartAuctionResult, error)
-	RunLRPStopAuction(auctionRequest models.LRPStopAuction) (StopAuctionResult, error)
-}
-
 type StartAuctionResult struct {
 	LRPStartAuction models.LRPStartAuction
 	Winner          string
@@ -64,6 +58,8 @@ type LRP struct {
 	ProcessGuid  string
 	InstanceGuid string
 	Index        int
+	MemoryMB     int
+	DiskMB       int
 }
 
 type Resources struct {

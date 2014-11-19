@@ -1,70 +1,79 @@
 package auctionrunner
 
 import (
-	"errors"
+	"os"
 	"time"
 
-	"github.com/cloudfoundry-incubator/auction/auctionrunner/algorithms"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
-var AllBiddersFull = errors.New("all the bidders were full")
+type AuctionRunner interface {
+	AddLRPStartAuction(models.LRPStartAuction)
+	AddLRPStopAuction(models.LRPStopAuction)
+}
 
-var DefaultStartAuctionRules = auctiontypes.StartAuctionRules{
-	Algorithm:              "compare_to_percentile",
-	MaxRounds:              100,
-	MaxBiddingPoolFraction: 0.2,
-	MinBiddingPool:         10,
-	ComparisonPercentile:   0.2,
+type AuctionRunnerDelegate interface {
+	FetchAuctionRepClients() (map[string]auctiontypes.AuctionRep, error)
 }
 
 type auctionRunner struct {
-	client auctiontypes.RepPoolClient
+	delegate AuctionRunnerDelegate
+	hasWork  chan struct{}
 }
 
-func New(client auctiontypes.RepPoolClient) *auctionRunner {
+func New(delegate AuctionRunnerDelegate) *auctionRunner {
 	return &auctionRunner{
-		client: client,
+		delegate: delegate,
+		hasWork:  make(chan struct{}, 1),
 	}
 }
 
-func (a *auctionRunner) RunLRPStartAuction(auctionRequest auctiontypes.StartAuctionRequest) (auctiontypes.StartAuctionResult, error) {
-	result := auctiontypes.StartAuctionResult{
-		LRPStartAuction:  auctionRequest.LRPStartAuction,
-		AuctionStartTime: time.Now(),
-	}
+func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
+	close(ready)
 
-	t := time.Now()
-	switch auctionRequest.Rules.Algorithm {
-	case "all_rebid":
-		result.Winner, result.NumRounds, result.NumCommunications, result.Events = algorithms.AllRebidAuction(a.client, auctionRequest)
-	case "compare_to_percentile":
-		result.Winner, result.NumRounds, result.NumCommunications, result.Events = algorithms.CompareToPercentileAuction(a.client, auctionRequest)
-	case "pick_best":
-		result.Winner, result.NumRounds, result.NumCommunications, result.Events = algorithms.PickBestAuction(a.client, auctionRequest)
-	case "random":
-		result.Winner, result.NumRounds, result.NumCommunications, result.Events = algorithms.RandomAuction(a.client, auctionRequest)
+	for {
+		select {
+		case <-a.hasWork:
+			clients, err := a.delegate.FetchAuctionRepClients()
+			if err != nil {
+				time.Sleep(time.Second)
+				a.recordWork()
+				continue
+			}
+			state := a.fetchRepState(clients)
+			a.performWork(clients, state)
+		case <-signals:
+			return nil
+		}
+	}
+}
+
+func (a *auctionRunner) AddLRPStartAuction(models.LRPStartAuction) {
+	//record the time, append the start auction
+	a.recordWork()
+}
+
+func (a *auctionRunner) AddLRPStopAuction(models.LRPStopAuction) {
+	//record the time, append the stop auction
+	a.recordWork()
+}
+
+func (a *auctionRunner) recordWork() {
+	select {
+	case a.hasWork <- struct{}{}:
 	default:
-		panic("unkown algorithm " + auctionRequest.Rules.Algorithm)
 	}
-	result.BiddingDuration = time.Since(t)
-
-	if result.Winner == "" {
-		return result, auctiontypes.InsufficientResources
-	}
-
-	return result, nil
 }
 
-func (a *auctionRunner) RunLRPStopAuction(auctionRequest auctiontypes.StopAuctionRequest) (auctiontypes.StopAuctionResult, error) {
-	result := auctiontypes.StopAuctionResult{
-		LRPStopAuction: auctionRequest.LRPStopAuction,
-	}
+func (a *auctionRunner) fetchRepState(clients map[string]auctiontypes.AuctionRep) map[string]auctiontypes.RepState {
+	//fetch all the state via a workpool
+	//if anything errors, don't include it
+	return nil
+}
 
-	var err error
-	t := time.Now()
-	result.Winner, result.NumCommunications, err = algorithms.StopAuction(a.client, auctionRequest)
-	result.BiddingDuration = time.Since(t)
-
-	return result, err
+func (a *auctionRunner) performWork(clients map[string]auctiontypes.AuctionRep, state map[string]auctiontypes.RepState) {
+	//get the next batch of work (clears out the previous batch)
+	//loop through the work (stops first, then starts)
+	//on each iteration, figure out where to put the work (pick a winner, keep some sort of state of the winners)
 }

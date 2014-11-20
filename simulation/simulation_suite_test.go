@@ -5,10 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
 	"sync"
+
+	"github.com/cloudfoundry-incubator/auction/communication/http/auction_http_client"
 
 	"github.com/cloudfoundry/gunk/timeprovider"
 
@@ -22,6 +25,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-golang/lager"
 
@@ -60,7 +64,7 @@ var auctionRunner auctionrunner.AuctionRunner
 var logger lager.Logger
 
 func init() {
-	flag.StringVar(&communicationMode, "communicationMode", "inprocess", "one of inprocess, nats, or http")
+	flag.StringVar(&communicationMode, "communicationMode", "inprocess", "one of inprocess or http")
 	flag.DurationVar(&timeout, "timeout", time.Second, "timeout when waiting for responses from remote calls")
 	flag.IntVar(&workers, "workers", 500, "number of concurrent communication worker pools")
 
@@ -145,38 +149,36 @@ func buildInProcessReps() map[string]auctiontypes.SimulationAuctionRep {
 }
 
 func launchExternalHTTPReps() map[string]auctiontypes.SimulationAuctionRep {
-	panic("not yet!")
-	return nil
-	// repNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/repnode")
-	// Ω(err).ShouldNot(HaveOccurred())
+	repNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/repnode")
+	Ω(err).ShouldNot(HaveOccurred())
 
-	// repAddresses := []auctiontypes.RepAddress{}
+	cells := map[string]auctiontypes.SimulationAuctionRep{}
 
-	// for i := 0; i < numCells; i++ {
-	// 	repGuid := util.NewGuid("REP")
-	// 	httpAddr := fmt.Sprintf("127.0.0.1:%d", 30000+i)
+	client := &http.Client{
+		Timeout: timeout,
+	}
+	for i := 0; i < numCells; i++ {
+		repGuid := cellGuid(i)
+		httpAddr := fmt.Sprintf("127.0.0.1:%d", 30000+i)
 
-	// 	serverCmd := exec.Command(
-	// 		repNodeBinary,
-	// 		"-repGuid", repGuid,
-	// 		"-httpAddr", httpAddr,
-	// 		"-memoryMB", fmt.Sprintf("%d", repResources.MemoryMB),
-	// 		"-diskMB", fmt.Sprintf("%d", repResources.DiskMB),
-	// 		"-containers", fmt.Sprintf("%d", repResources.Containers),
-	// 	)
+		serverCmd := exec.Command(
+			repNodeBinary,
+			"-repGuid", repGuid,
+			"-httpAddr", httpAddr,
+			"-memoryMB", fmt.Sprintf("%d", repResources.MemoryMB),
+			"-diskMB", fmt.Sprintf("%d", repResources.DiskMB),
+			"-containers", fmt.Sprintf("%d", repResources.Containers),
+		)
 
-	// 	sess, err := gexec.Start(serverCmd, GinkgoWriter, GinkgoWriter)
-	// 	Ω(err).ShouldNot(HaveOccurred())
-	// 	sessionsToTerminate = append(sessionsToTerminate, sess)
-	// 	Eventually(sess).Should(gbytes.Say("listening"))
+		sess, err := gexec.Start(serverCmd, GinkgoWriter, GinkgoWriter)
+		Ω(err).ShouldNot(HaveOccurred())
+		sessionsToTerminate = append(sessionsToTerminate, sess)
+		Eventually(sess).Should(gbytes.Say("listening"))
 
-	// 	repAddresses = append(repAddresses, auctiontypes.RepAddress{
-	// 		RepGuid: repGuid,
-	// 		Address: "http://" + httpAddr,
-	// 	})
-	// }
+		cells[cellGuid(i)] = auction_http_client.New(client, cellGuid(i), "http://"+httpAddr, logger)
+	}
 
-	// return repAddresses
+	return cells
 }
 
 func startReport() {

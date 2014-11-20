@@ -15,7 +15,8 @@ import (
 
 type AuctionHTTPClient struct {
 	client           *http.Client
-	repAddress       auctiontypes.RepAddress
+	repGuid          string
+	address          string
 	requestGenerator *rata.RequestGenerator
 	logger           lager.Logger
 }
@@ -24,18 +25,19 @@ type Response struct {
 	Body []byte
 }
 
-func New(client *http.Client, repAddress auctiontypes.RepAddress, logger lager.Logger) *AuctionHTTPClient {
+func New(client *http.Client, repGuid string, address string, logger lager.Logger) *AuctionHTTPClient {
 	return &AuctionHTTPClient{
 		client:           client,
-		repAddress:       repAddress,
-		requestGenerator: rata.NewRequestGenerator(repAddress.Address, routes.Routes),
+		repGuid:          repGuid,
+		address:          address,
+		requestGenerator: rata.NewRequestGenerator(address, routes.Routes),
 		logger:           logger,
 	}
 }
 
 func (c *AuctionHTTPClient) State() (auctiontypes.RepState, error) {
 	logger := c.logger.Session("fetching-state", lager.Data{
-		"rep": c.repAddress.RepGuid,
+		"rep": c.repGuid,
 	})
 
 	logger.Debug("requesting")
@@ -72,7 +74,7 @@ func (c *AuctionHTTPClient) State() (auctiontypes.RepState, error) {
 
 func (c *AuctionHTTPClient) Perform(work auctiontypes.Work) (auctiontypes.Work, error) {
 	logger := c.logger.Session("sending-work", lager.Data{
-		"rep":    c.repAddress.RepGuid,
+		"rep":    c.repGuid,
 		"starts": len(work.Starts),
 		"stops":  len(work.Stops),
 	})
@@ -117,7 +119,7 @@ func (c *AuctionHTTPClient) Perform(work auctiontypes.Work) (auctiontypes.Work, 
 
 func (c *AuctionHTTPClient) Reset() error {
 	logger := c.logger.Session("SIM-reseting", lager.Data{
-		"rep": c.repAddress.RepGuid,
+		"rep": c.repGuid,
 	})
 
 	logger.Debug("requesting")

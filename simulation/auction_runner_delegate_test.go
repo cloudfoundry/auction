@@ -20,8 +20,9 @@ func NewAuctionRunnerDelegate(cells map[string]auctiontypes.SimulationAuctionRep
 		typecastCells[guid] = cell
 	}
 	return &AuctionRunnerDelegate{
-		cells: typecastCells,
-		lock:  &sync.Mutex{},
+		cells:     typecastCells,
+		cellLimit: len(typecastCells),
+		lock:      &sync.Mutex{},
 	}
 }
 

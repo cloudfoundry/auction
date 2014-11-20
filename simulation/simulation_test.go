@@ -5,9 +5,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auction/simulation/util"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
-	"github.com/cloudfoundry-incubator/auction/util"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -36,13 +37,13 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	// generateLRPsForProcessGuid := func(processGuid string, numInstances int, index int, memoryMB int) []auctiontypes.LRP {
-	// 	instances := []auctiontypes.LRP{}
-	// 	for i := 0; i < numInstances; i++ {
-	// 		instances = append(instances, newLRP(processGuid, index, memoryMB))
-	// 	}
-	// 	return instances
-	// }
+	generateLRPsForProcessGuid := func(processGuid string, numInstances int, index int, memoryMB int) []auctiontypes.LRP {
+		instances := []auctiontypes.LRP{}
+		for i := 0; i < numInstances; i++ {
+			instances = append(instances, newLRP(processGuid, index, memoryMB))
+		}
+		return instances
+	}
 
 	newLRPStartAuction := func(processGuid string, memoryMB int) models.LRPStartAuction {
 		return models.LRPStartAuction{
@@ -110,7 +111,6 @@ var _ = Describe("Auction", func() {
 			auctionRunner.AddLRPStartAuction(startAuction)
 		}
 
-		//can do a progress bar here...
 		Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(startAuctions)))
 		duration := time.Since(t)
 
@@ -242,130 +242,150 @@ var _ = Describe("Auction", func() {
 			}
 		})
 
-		// Context("Stop Auctions", func() {
-		// 	processGuid := util.NewGrayscaleGuid("AAA")
+		Context("Stop Auctions", func() {
+			processGuid := util.NewGrayscaleGuid("AAA")
 
-		// 	Context("when there are duplicate instances on executors with disaparate resource availabilities", func() {
-		// 		BeforeEach(func() {
-		// 			initialDistributions[0] = generateUniqueLRPs(50, 0, 1)
-		// 			initialDistributions[0] = append(initialDistributions[0], generateLRPsForProcessGuid(processGuid, 1, 0, 1)...)
+			performStopAuctions := func(stopAuctions []models.LRPStopAuction) auctionrunner.WorkResults {
+				for _, stopAuction := range stopAuctions {
+					auctionRunner.AddLRPStopAuction(stopAuction)
+				}
 
-		// 			initialDistributions[1] = generateUniqueLRPs(30, 0, 1)
-		// 			initialDistributions[1] = append(initialDistributions[1], generateLRPsForProcessGuid(processGuid, 1, 0, 1)...)
-		// 		})
+				Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(stopAuctions)))
 
-		// 		It("should favor removing the instance from the heavy-laden executor", func() {
-		// 			stopAuctions := []models.LRPStopAuction{
-		// 				{
-		// 					ProcessGuid: processGuid,
-		// 					Index:       0,
-		// 				},
-		// 			}
+				return auctionRunnerDelegate.Results()
+			}
 
-		// 			results := auctionDistributor.HoldStopAuctions(numCells, stopAuctions, repAddresses)
-		// 			Ω(results).Should(HaveLen(1))
-		// 			Ω(results[0].Winner).Should(Equal(repAddresses[1].RepGuid))
+			Context("when there are duplicate instances on executors with disaparate resource availabilities", func() {
+				BeforeEach(func() {
+					initialDistributions[0] = generateUniqueLRPs(50, 0, 1)
+					initialDistributions[0] = append(initialDistributions[0], generateLRPsForProcessGuid(processGuid, 1, 0, 1)...)
 
-		// 			instancesOn0 := client.LRPs(repAddresses[0])
-		// 			instancesOn1 := client.LRPs(repAddresses[1])
+					initialDistributions[1] = generateUniqueLRPs(30, 0, 1)
+					initialDistributions[1] = append(initialDistributions[1], generateLRPsForProcessGuid(processGuid, 1, 0, 1)...)
+				})
 
-		// 			Ω(instancesOn0).Should(HaveLen(50))
-		// 			Ω(instancesOn1).Should(HaveLen(31))
-		// 		})
-		// 	})
+				It("should favor removing the instance from the heavy-laden executor", func() {
+					stopAuctions := []models.LRPStopAuction{
+						{
+							ProcessGuid: processGuid,
+							Index:       0,
+						},
+					}
 
-		// 	Context("when the executor with more available resources already has another instance of the app running", func() {
-		// 		BeforeEach(func() {
-		// 			initialDistributions[0] = generateUniqueLRPs(50, 0, 1)
-		// 			initialDistributions[0] = append(initialDistributions[0], generateLRPsForProcessGuid(processGuid, 1, 0, 1)...)
+					results := performStopAuctions(stopAuctions)
+					Ω(results.SuccessfulStops).Should(HaveLen(1))
+					Ω(results.SuccessfulStops[0].Winner).Should(Equal(cellGuid(1)))
 
-		// 			initialDistributions[1] = generateUniqueLRPs(30, 0, 1)
-		// 			initialDistributions[1] = append(initialDistributions[1], generateLRPsForProcessGuid(processGuid, 1, 0, 1)...)
-		// 			initialDistributions[1] = append(initialDistributions[1], generateLRPsForProcessGuid(processGuid, 1, 1, 1)...)
-		// 		})
+					state, err := cells[cellGuid(0)].State()
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(state.LRPs).Should(HaveLen(50))
 
-		// 		It("should favor leaving the instance on the more heavy-laden executor", func() {
-		// 			stopAuctions := []models.LRPStopAuction{
-		// 				{
-		// 					ProcessGuid: processGuid,
-		// 					Index:       0,
-		// 				},
-		// 			}
+					state, err = cells[cellGuid(1)].State()
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(state.LRPs).Should(HaveLen(31))
+				})
+			})
 
-		// 			results := auctionDistributor.HoldStopAuctions(numCells, stopAuctions, repAddresses)
-		// 			Ω(results).Should(HaveLen(1))
-		// 			Ω(results[0].Winner).Should(Equal(repAddresses[0].RepGuid))
+			Context("when the executor with more available resources already has another instance of the app running", func() {
+				BeforeEach(func() {
+					initialDistributions[0] = generateUniqueLRPs(50, 0, 1)
+					initialDistributions[0] = append(initialDistributions[0], generateLRPsForProcessGuid(processGuid, 1, 0, 1)...)
 
-		// 			instancesOn0 := client.LRPs(repAddresses[0])
-		// 			instancesOn1 := client.LRPs(repAddresses[1])
+					initialDistributions[1] = generateUniqueLRPs(30, 0, 1)
+					initialDistributions[1] = append(initialDistributions[1], generateLRPsForProcessGuid(processGuid, 1, 0, 1)...)
+					initialDistributions[1] = append(initialDistributions[1], generateLRPsForProcessGuid(processGuid, 1, 1, 1)...)
+				})
 
-		// 			Ω(instancesOn0).Should(HaveLen(51))
-		// 			Ω(instancesOn1).Should(HaveLen(31))
-		// 		})
-		// 	})
+				It("should favor leaving the instance on the more heavy-laden executor", func() {
+					stopAuctions := []models.LRPStopAuction{
+						{
+							ProcessGuid: processGuid,
+							Index:       0,
+						},
+					}
 
-		// 	Context("when the executor with fewer available resources has two instances running", func() {
-		// 		BeforeEach(func() {
-		// 			initialDistributions[0] = generateUniqueLRPs(50, 0, 1)
-		// 			initialDistributions[0] = append(initialDistributions[0], generateLRPsForProcessGuid(processGuid, 1, 0, 1)...)
+					results := performStopAuctions(stopAuctions)
+					Ω(results.SuccessfulStops).Should(HaveLen(1))
+					Ω(results.SuccessfulStops[0].Winner).Should(Equal(cellGuid(0)))
 
-		// 			initialDistributions[1] = generateUniqueLRPs(30, 0, 1)
-		// 			initialDistributions[1] = append(initialDistributions[1], generateLRPsForProcessGuid(processGuid, 2, 0, 1)...)
-		// 		})
+					state, err := cells[cellGuid(0)].State()
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(state.LRPs).Should(HaveLen(51))
 
-		// 		It("should favor removing the instance from the heavy-laden executor", func() {
-		// 			stopAuctions := []models.LRPStopAuction{
-		// 				{
-		// 					ProcessGuid: processGuid,
-		// 					Index:       0,
-		// 				},
-		// 			}
+					state, err = cells[cellGuid(1)].State()
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(state.LRPs).Should(HaveLen(31))
+				})
+			})
 
-		// 			results := auctionDistributor.HoldStopAuctions(numCells, stopAuctions, repAddresses)
-		// 			Ω(results).Should(HaveLen(1))
-		// 			Ω(results[0].Winner).Should(Equal(repAddresses[1].RepGuid))
+			Context("when the executor with fewer available resources has two instances running", func() {
+				BeforeEach(func() {
+					initialDistributions[0] = generateUniqueLRPs(50, 0, 1)
+					initialDistributions[0] = append(initialDistributions[0], generateLRPsForProcessGuid(processGuid, 1, 0, 1)...)
 
-		// 			instancesOn0 := client.LRPs(repAddresses[0])
-		// 			instancesOn1 := client.LRPs(repAddresses[1])
+					initialDistributions[1] = generateUniqueLRPs(30, 0, 1)
+					initialDistributions[1] = append(initialDistributions[1], generateLRPsForProcessGuid(processGuid, 2, 0, 1)...)
+				})
 
-		// 			Ω(instancesOn0).Should(HaveLen(50))
-		// 			Ω(instancesOn1).Should(HaveLen(31))
-		// 		})
-		// 	})
+				It("should favor removing the instance from the heavy-laden executor", func() {
+					stopAuctions := []models.LRPStopAuction{
+						{
+							ProcessGuid: processGuid,
+							Index:       0,
+						},
+					}
 
-		// 	Context("when there are very many duplicate instances out there", func() {
-		// 		BeforeEach(func() {
-		// 			initialDistributions[0] = generateLRPsForProcessGuid(processGuid, 50, 0, 1)
-		// 			initialDistributions[0] = append(initialDistributions[0], generateLRPsForProcessGuid(processGuid, 90-50, 1, 1)...)
+					results := performStopAuctions(stopAuctions)
+					Ω(results.SuccessfulStops).Should(HaveLen(1))
+					Ω(results.SuccessfulStops[0].Winner).Should(Equal(cellGuid(1)))
 
-		// 			initialDistributions[1] = generateLRPsForProcessGuid(processGuid, 30, 0, 1)
-		// 			initialDistributions[1] = append(initialDistributions[1], generateLRPsForProcessGuid(processGuid, 90-30, 1, 1)...)
+					state, err := cells[cellGuid(0)].State()
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(state.LRPs).Should(HaveLen(50))
 
-		// 			initialDistributions[2] = generateLRPsForProcessGuid(processGuid, 70, 0, 1)
-		// 			initialDistributions[2] = append(initialDistributions[2], generateLRPsForProcessGuid(processGuid, 90-70, 1, 1)...)
-		// 		})
+					state, err = cells[cellGuid(1)].State()
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(state.LRPs).Should(HaveLen(31))
+				})
+			})
 
-		// 		It("should stop all but 1", func() {
-		// 			stopAuctions := []models.LRPStopAuction{
-		// 				{
-		// 					ProcessGuid: processGuid,
-		// 					Index:       1,
-		// 				},
-		// 			}
+			Context("when there are very many duplicate instances out there", func() {
+				BeforeEach(func() {
+					initialDistributions[0] = generateLRPsForProcessGuid(processGuid, 50, 0, 1)
+					initialDistributions[0] = append(initialDistributions[0], generateLRPsForProcessGuid(processGuid, 90-50, 1, 1)...)
 
-		// 			results := auctionDistributor.HoldStopAuctions(numCells, stopAuctions, repAddresses)
-		// 			Ω(results).Should(HaveLen(1))
-		// 			Ω(results[0].Winner).Should(Equal(repAddresses[1].RepGuid))
+					initialDistributions[1] = generateLRPsForProcessGuid(processGuid, 30, 0, 1)
+					initialDistributions[1] = append(initialDistributions[1], generateLRPsForProcessGuid(processGuid, 90-30, 1, 1)...)
 
-		// 			instancesOn0 := client.LRPs(repAddresses[0])
-		// 			instancesOn1 := client.LRPs(repAddresses[1])
-		// 			instancesOn2 := client.LRPs(repAddresses[2])
+					initialDistributions[2] = generateLRPsForProcessGuid(processGuid, 70, 0, 1)
+					initialDistributions[2] = append(initialDistributions[2], generateLRPsForProcessGuid(processGuid, 90-70, 1, 1)...)
+				})
 
-		// 			Ω(instancesOn0).Should(HaveLen(50))
-		// 			Ω(instancesOn1).Should(HaveLen(31))
-		// 			Ω(instancesOn2).Should(HaveLen(70))
-		// 		})
-		// 	})
-		// })
+				It("should stop all but 1", func() {
+					stopAuctions := []models.LRPStopAuction{
+						{
+							ProcessGuid: processGuid,
+							Index:       1,
+						},
+					}
+
+					results := performStopAuctions(stopAuctions)
+					Ω(results.SuccessfulStops).Should(HaveLen(1))
+					Ω(results.SuccessfulStops[0].Winner).Should(Equal(cellGuid(1)))
+
+					state, err := cells[cellGuid(0)].State()
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(state.LRPs).Should(HaveLen(50))
+
+					state, err = cells[cellGuid(1)].State()
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(state.LRPs).Should(HaveLen(31))
+
+					state, err = cells[cellGuid(2)].State()
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(state.LRPs).Should(HaveLen(70))
+				})
+			})
+		})
 	})
 })

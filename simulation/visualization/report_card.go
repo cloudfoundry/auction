@@ -20,7 +20,7 @@ var instanceBoxWidth = instanceSize*100 + instanceSpacing*99
 
 var headerHeight = 80
 
-var graphWidth = 300
+var graphWidth = 200
 var graphTextX = 50
 var graphBinX = 55
 var binHeight = 14

@@ -6,15 +6,18 @@ import (
 	"time"
 
 	"github.com/GaryBoone/GoStats/stats"
+	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
 type Report struct {
-	RepAddresses                 []auctiontypes.RepAddress
-	AuctionResults               []auctiontypes.StartAuctionResult
-	InstancesByRep               map[string][]auctiontypes.SimulatedInstance
+	Cells                        map[string]auctiontypes.AuctionRep
+	NumAuctions                  int
+	AuctionResults               auctionrunner.WorkResults
 	AuctionDuration              time.Duration
+	CellStates                   map[string]auctiontypes.RepState
+	InstancesByRep               map[string][]auctiontypes.LRP
 	auctionedInstancesByInstGuid map[string]bool
 }
 
@@ -36,10 +39,22 @@ func NewStat(data []float64) Stat {
 	}
 }
 
-func (r *Report) IsAuctionedInstance(inst auctiontypes.SimulatedInstance) bool {
+func NewReport(numAuctions int, cells map[string]auctiontypes.AuctionRep, results auctionrunner.WorkResults, duration time.Duration) *Report {
+	states := fetchStates(cells)
+	return &Report{
+		Cells:           cells,
+		NumAuctions:     numAuctions,
+		AuctionResults:  results,
+		AuctionDuration: duration,
+		CellStates:      states,
+		InstancesByRep:  instancesByRepFromStates(states),
+	}
+}
+
+func (r *Report) IsAuctionedInstance(inst auctiontypes.LRP) bool {
 	if r.auctionedInstancesByInstGuid == nil {
 		r.auctionedInstancesByInstGuid = map[string]bool{}
-		for _, result := range r.AuctionResults {
+		for _, result := range r.AuctionResults.SuccessfulStarts {
 			r.auctionedInstancesByInstGuid[result.LRPStartAuction.InstanceGuid] = true
 		}
 	}
@@ -47,25 +62,16 @@ func (r *Report) IsAuctionedInstance(inst auctiontypes.SimulatedInstance) bool {
 	return r.auctionedInstancesByInstGuid[inst.InstanceGuid]
 }
 
-func (r *Report) NAuctions() int {
-	return len(r.AuctionResults)
+func (r *Report) AuctionsPerformed() int {
+	return len(r.AuctionResults.SuccessfulStarts) + len(r.AuctionResults.FailedStarts)
 }
 
 func (r *Report) NReps() int {
-	return len(r.RepAddresses)
+	return len(r.Cells)
 }
 
 func (r *Report) NMissingInstances() int {
-	numRunningThatWereAuctioned := 0
-	for _, instances := range r.InstancesByRep {
-		for _, instance := range instances {
-			if r.IsAuctionedInstance(instance) {
-				numRunningThatWereAuctioned += 1
-			}
-		}
-	}
-
-	return len(r.AuctionResults) - numRunningThatWereAuctioned
+	return len(r.AuctionResults.FailedStarts)
 }
 
 func (r *Report) InitialDistributionScore() float64 {
@@ -101,60 +107,52 @@ func (r *Report) DistributionScore() float64 {
 }
 
 func (r *Report) AuctionsPerSecond() float64 {
-	return float64(r.NAuctions()) / r.AuctionDuration.Seconds()
-}
-
-func (r *Report) CommStats() Stat {
-	comms := []float64{}
-	for _, result := range r.AuctionResults {
-		comms = append(comms, float64(result.NumCommunications))
-	}
-
-	return NewStat(comms)
-}
-
-func (r *Report) BiddingTimeStats() Stat {
-	biddingTimes := []float64{}
-	for _, result := range r.AuctionResults {
-		biddingTimes = append(biddingTimes, result.BiddingDuration.Seconds())
-	}
-
-	return NewStat(biddingTimes)
+	return float64(r.AuctionsPerformed()) / r.AuctionDuration.Seconds()
 }
 
 func (r *Report) WaitTimeStats() Stat {
 	waitTimes := []float64{}
-	for _, result := range r.AuctionResults {
-		waitTimes = append(waitTimes, result.Duration.Seconds())
+	for _, result := range r.AuctionResults.SuccessfulStarts {
+		waitTimes = append(waitTimes, result.WaitDuration.Seconds())
 	}
 
 	return NewStat(waitTimes)
 }
 
-func FetchAndSortInstances(client auctiontypes.SimulationRepPoolClient, repAddresses []auctiontypes.RepAddress) map[string][]auctiontypes.SimulatedInstance {
+func fetchStates(cells map[string]auctiontypes.AuctionRep) map[string]auctiontypes.RepState {
 	workPool := workpool.NewWorkPool(50)
 	wg := &sync.WaitGroup{}
-	wg.Add(len(repAddresses))
+	wg.Add(len(cells))
 	lock := &sync.Mutex{}
-	instancesByRepGuid := map[string][]auctiontypes.SimulatedInstance{}
-	for _, repAddress := range repAddresses {
-		repAddress := repAddress
+	states := map[string]auctiontypes.RepState{}
+	for repGuid, cell := range cells {
+		repGuid := repGuid
+		cell := cell
 		workPool.Submit(func() {
-			instances := client.SimulatedInstances(repAddress)
-			sort.Sort(ByProcessGuid(instances))
+			state, _ := cell.State()
 			lock.Lock()
-			instancesByRepGuid[repAddress.RepGuid] = instances
+			states[repGuid] = state
 			lock.Unlock()
 			wg.Done()
 		})
 	}
 	wg.Wait()
 	workPool.Stop()
-	return instancesByRepGuid
-
+	return states
 }
 
-type ByProcessGuid []auctiontypes.SimulatedInstance
+func instancesByRepFromStates(states map[string]auctiontypes.RepState) map[string][]auctiontypes.LRP {
+	instancesByRepGuid := map[string][]auctiontypes.LRP{}
+	for repGuid, state := range states {
+		instances := state.LRPs
+		sort.Sort(ByProcessGuid(instances))
+		instancesByRepGuid[repGuid] = instances
+	}
+
+	return instancesByRepGuid
+}
+
+type ByProcessGuid []auctiontypes.LRP
 
 func (a ByProcessGuid) Len() int           { return len(a) }
 func (a ByProcessGuid) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }

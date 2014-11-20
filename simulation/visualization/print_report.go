@@ -25,49 +25,26 @@ func init() {
 	format.UseStringerRepresentation = true
 }
 
-type ReportData struct {
-	Instances      []auctiontypes.SimulatedInstance
-	TotalResources auctiontypes.Resources
+func cellID(index) string {
+	return fmt.Sprintf("REP-%d", index+1)
 }
 
-func PrintReport(client auctiontypes.SimulationRepPoolClient, expectedAuctionCount int, results []auctiontypes.StartAuctionResult, representatives []auctiontypes.RepAddress, duration time.Duration, rules auctiontypes.StartAuctionRules) {
-	if len(results) == 0 {
+func PrintReport(report *Report) {
+	if report.AuctionsPerformed() == 0 {
 		fmt.Println("Got no results!")
 		return
 	}
-	roundsDistribution := map[int]int{}
-	roundsBiddingTimeDistributions := map[int][]time.Duration{}
-	auctionedInstances := map[string]bool{}
 
-	fmt.Printf("Finished %d Auctions among %d Representatives in %s\n", len(results), len(representatives), duration)
+	fmt.Printf("Finished %d Auctions (%d succeeded, %d failed) among %d Cells in %s\n", report.AuctionsPerformed(), len(r.AuctionResults.SuccessfulStarts), len(r.AuctionResults.FailedStarts), len(report.Cells), report.AuctionDuration)
 	fmt.Println()
-	///
-	fmt.Println("Rounds Distributions")
-	for _, result := range results {
-		roundsDistribution[result.NumRounds] += 1
-		roundsBiddingTimeDistributions[result.NumRounds] = append(roundsBiddingTimeDistributions[result.NumRounds], result.BiddingDuration)
-		auctionedInstances[result.LRPStartAuction.InstanceGuid] = true
-	}
 
-	for i := 1; i <= rules.MaxRounds; i++ {
-		if roundsDistribution[i] > 0 {
-			minTime, maxTime, meanTime := StatsForDurations(roundsBiddingTimeDistributions[i])
-			percentage := fmt.Sprintf("(%.1f%%)", float64(roundsDistribution[i])/float64(len(results))*100.0)
-			fmt.Printf("  %3d: %4d %7s Time: min:%16s max:%16s mean:%16s\n", i, roundsDistribution[i], percentage, minTime, maxTime, meanTime)
-		}
+	auctionedInstances := map[string]bool{}
+	for _, start := range report.AuctionResults.SuccessfulStarts {
+		auctionedInstances[start.LRPStartAuction.InstanceGuid] = true
 	}
-
-	///
-	fmt.Println("Fetching Data...")
-	reportData := prefetchReportData(client, representatives)
 
 	fmt.Println("Distribution")
-	maxGuidLength := 0
-	for _, repAddress := range representatives {
-		if len(repAddress.RepGuid) > maxGuidLength {
-			maxGuidLength = len(repAddress.RepGuid)
-		}
-	}
+	maxGuidLength := cellID(len(report.Cells) - 1)
 	guidFormat := fmt.Sprintf("%%%ds", maxGuidLength)
 
 	numNew := 0

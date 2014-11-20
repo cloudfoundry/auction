@@ -60,7 +60,7 @@ var sessionsToTerminate []*gexec.Session
 var auctionRunnerProcess ifrit.Process
 var auctionRunnerDelegate *AuctionRunnerDelegate
 var auctionWorkPool *workpool.WorkPool
-var auctionRunner auctionrunner.AuctionRunner
+var auctionRunner auctiontypes.AuctionRunner
 var logger lager.Logger
 
 func init() {

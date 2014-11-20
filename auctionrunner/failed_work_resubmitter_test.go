@@ -14,7 +14,7 @@ import (
 var _ = Describe("FailedWorkResubmitter", func() {
 	var batch *Batch
 	var timeProvider *faketimeprovider.FakeTimeProvider
-	var results WorkResults
+	var results auctiontypes.AuctionResults
 	var maxRetries int
 
 	BeforeEach(func() {
@@ -24,7 +24,7 @@ var _ = Describe("FailedWorkResubmitter", func() {
 	})
 
 	It("always returns succesful work untouched", func() {
-		results = WorkResults{
+		results = auctiontypes.AuctionResults{
 			SuccessfulStarts: []auctiontypes.StartAuction{
 				BuildStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10), timeProvider.Time()),
 				BuildStartAuction(BuildLRPStartAuction("pg-2", "ig-2", 1, "lucid64", 10, 10), timeProvider.Time()),
@@ -56,7 +56,7 @@ var _ = Describe("FailedWorkResubmitter", func() {
 			failedStopAuction = BuildStopAuction(BuildLRPStopAuction("pg-2", 2), timeProvider.Time())
 			failedStopAuction.Attempts = maxRetries + 1
 
-			results = WorkResults{
+			results = auctiontypes.AuctionResults{
 				FailedStarts: []auctiontypes.StartAuction{retryableStartAuction, failedStartAuction},
 				FailedStops:  []auctiontypes.StopAuction{retryableStopAuction, failedStopAuction},
 			}

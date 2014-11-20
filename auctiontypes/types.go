@@ -1,11 +1,35 @@
 package auctiontypes
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/tedsuo/ifrit"
 )
+
+var ErrorStackMismatch = errors.New("stack mismatch")
+var ErrorInsufficientResources = errors.New("insuccifient resources")
+var ErrorNothingToStop = errors.New("nothing to stop")
+
+type AuctionRunner interface {
+	ifrit.Runner
+	AddLRPStartAuction(models.LRPStartAuction)
+	AddLRPStopAuction(models.LRPStopAuction)
+}
+
+type AuctionRunnerDelegate interface {
+	FetchAuctionRepClients() (map[string]AuctionRep, error)
+	DistributedBatch(AuctionResults)
+}
+
+type AuctionResults struct {
+	SuccessfulStarts []StartAuction
+	SuccessfulStops  []StopAuction
+	FailedStarts     []StartAuction
+	FailedStops      []StopAuction
+}
 
 type StartAuction struct {
 	LRPStartAuction models.LRPStartAuction

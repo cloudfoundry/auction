@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/simulation/util"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
@@ -245,7 +244,7 @@ var _ = Describe("Auction", func() {
 		Context("Stop Auctions", func() {
 			processGuid := util.NewGrayscaleGuid("AAA")
 
-			performStopAuctions := func(stopAuctions []models.LRPStopAuction) auctionrunner.WorkResults {
+			performStopAuctions := func(stopAuctions []models.LRPStopAuction) auctiontypes.AuctionResults {
 				for _, stopAuction := range stopAuctions {
 					auctionRunner.AddLRPStopAuction(stopAuction)
 				}

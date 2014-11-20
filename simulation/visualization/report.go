@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/GaryBoone/GoStats/stats"
-	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry/gunk/workpool"
 )
@@ -14,7 +13,7 @@ import (
 type Report struct {
 	Cells                        map[string]auctiontypes.AuctionRep
 	NumAuctions                  int
-	AuctionResults               auctionrunner.WorkResults
+	AuctionResults               auctiontypes.AuctionResults
 	AuctionDuration              time.Duration
 	CellStates                   map[string]auctiontypes.RepState
 	InstancesByRep               map[string][]auctiontypes.LRP
@@ -39,7 +38,7 @@ func NewStat(data []float64) Stat {
 	}
 }
 
-func NewReport(numAuctions int, cells map[string]auctiontypes.AuctionRep, results auctionrunner.WorkResults, duration time.Duration) *Report {
+func NewReport(numAuctions int, cells map[string]auctiontypes.AuctionRep, results auctiontypes.AuctionResults, duration time.Duration) *Report {
 	states := fetchStates(cells)
 	return &Report{
 		Cells:           cells,

@@ -46,7 +46,7 @@ var _ = Describe("CellBuilder", func() {
 		Ω(err).ShouldNot(HaveOccurred())
 
 		_, err = cells["B"].ScoreForStartAuction(instance)
-		Ω(err).Should(MatchError(ErrorInsufficientResources))
+		Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 	})
 
 	Context("when a client fails", func() {

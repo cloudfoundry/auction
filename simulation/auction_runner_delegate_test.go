@@ -3,14 +3,13 @@ package simulation_test
 import (
 	"sync"
 
-	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 )
 
 type AuctionRunnerDelegate struct {
 	cells       map[string]auctiontypes.AuctionRep
 	cellLimit   int
-	workResults auctionrunner.WorkResults
+	workResults auctiontypes.AuctionResults
 	lock        *sync.Mutex
 }
 
@@ -38,7 +37,7 @@ func (a *AuctionRunnerDelegate) FetchAuctionRepClients() (map[string]auctiontype
 	return subset, nil
 }
 
-func (a *AuctionRunnerDelegate) DistributedBatch(work auctionrunner.WorkResults) {
+func (a *AuctionRunnerDelegate) DistributedBatch(work auctiontypes.AuctionResults) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.workResults.FailedStarts = append(a.workResults.FailedStarts, work.FailedStarts...)
@@ -57,7 +56,7 @@ func (a *AuctionRunnerDelegate) ResultSize() int {
 		len(a.workResults.SuccessfulStops)
 }
 
-func (a *AuctionRunnerDelegate) Results() auctionrunner.WorkResults {
+func (a *AuctionRunnerDelegate) Results() auctiontypes.AuctionResults {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 

@@ -6,33 +6,14 @@ import (
 
 	"github.com/cloudfoundry/gunk/timeprovider"
 	"github.com/pivotal-golang/lager"
-	"github.com/tedsuo/ifrit"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
-type AuctionRunner interface {
-	ifrit.Runner
-	AddLRPStartAuction(models.LRPStartAuction)
-	AddLRPStopAuction(models.LRPStopAuction)
-}
-
-type AuctionRunnerDelegate interface {
-	FetchAuctionRepClients() (map[string]auctiontypes.AuctionRep, error)
-	DistributedBatch(WorkResults)
-}
-
-type WorkResults struct {
-	SuccessfulStarts []auctiontypes.StartAuction
-	SuccessfulStops  []auctiontypes.StopAuction
-	FailedStarts     []auctiontypes.StartAuction
-	FailedStops      []auctiontypes.StopAuction
-}
-
 type auctionRunner struct {
-	delegate     AuctionRunnerDelegate
+	delegate     auctiontypes.AuctionRunnerDelegate
 	batch        *Batch
 	timeProvider timeprovider.TimeProvider
 	workPool     *workpool.WorkPool
@@ -40,7 +21,7 @@ type auctionRunner struct {
 	logger       lager.Logger
 }
 
-func New(delegate AuctionRunnerDelegate, timeProvider timeprovider.TimeProvider, maxRetries int, workPool *workpool.WorkPool, logger lager.Logger) *auctionRunner {
+func New(delegate auctiontypes.AuctionRunnerDelegate, timeProvider timeprovider.TimeProvider, maxRetries int, workPool *workpool.WorkPool, logger lager.Logger) *auctionRunner {
 	return &auctionRunner{
 		delegate:     delegate,
 		batch:        NewBatch(timeProvider),

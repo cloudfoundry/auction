@@ -110,7 +110,7 @@ var _ = Describe("Cell", func() {
 					massiveMemoryInstance := BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 10000, 10)
 					score, err := cell.ScoreForStartAuction(massiveMemoryInstance)
 					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(ErrorInsufficientResources))
+					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
 			})
 
@@ -119,7 +119,7 @@ var _ = Describe("Cell", func() {
 					massiveDiskInstance := BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 10, 10000)
 					score, err := cell.ScoreForStartAuction(massiveDiskInstance)
 					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(ErrorInsufficientResources))
+					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
 			})
 
@@ -130,7 +130,7 @@ var _ = Describe("Cell", func() {
 					zeroCell := NewCell(client, zeroState)
 					score, err := zeroCell.ScoreForStartAuction(instance)
 					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(ErrorInsufficientResources))
+					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
 			})
 		})
@@ -140,7 +140,7 @@ var _ = Describe("Cell", func() {
 				nonMatchingInstance := BuildLRPStartAuction("pg-new", "ig-new", 0, ".net", 10, 10)
 				score, err := cell.ScoreForStartAuction(nonMatchingInstance)
 				Ω(score).Should(BeZero())
-				Ω(err).Should(MatchError(ErrorStackMismatch))
+				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
 			})
 		})
 	})
@@ -325,7 +325,7 @@ var _ = Describe("Cell", func() {
 				score, instanceGuids, err := cell.ScoreForStopAuction(noneMatchingAuction)
 				Ω(score).Should(BeZero())
 				Ω(instanceGuids).Should(BeEmpty())
-				Ω(err).Should(MatchError(ErrorNothingToStop))
+				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
 			})
 		})
 
@@ -335,7 +335,7 @@ var _ = Describe("Cell", func() {
 				score, instanceGuids, err := cell.ScoreForStopAuction(noneMatchingAuction)
 				Ω(score).Should(BeZero())
 				Ω(instanceGuids).Should(BeEmpty())
-				Ω(err).Should(MatchError(ErrorNothingToStop))
+				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
 			})
 		})
 	})
@@ -388,7 +388,7 @@ var _ = Describe("Cell", func() {
 			It("should error", func() {
 				instance := BuildLRPStartAuction("pg-test", "ig-test", 0, ".net", 10, 10)
 				err := cell.StartLRP(instance)
-				Ω(err).Should(MatchError(ErrorStackMismatch))
+				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
 			})
 		})
 
@@ -396,7 +396,7 @@ var _ = Describe("Cell", func() {
 			It("should error", func() {
 				instance := BuildLRPStartAuction("pg-test", "ig-test", 0, "lucid64", 10000, 10)
 				err := cell.StartLRP(instance)
-				Ω(err).Should(MatchError(ErrorInsufficientResources))
+				Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
 		})
 	})
@@ -442,7 +442,7 @@ var _ = Describe("Cell", func() {
 					Index:        1,
 				}
 				err := cell.StopLRP(instanceToStop)
-				Ω(err).Should(MatchError(ErrorNothingToStop))
+				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
 
 				Because("of a mismatched instance guid")
 				instanceToStop = models.StopLRPInstance{
@@ -451,7 +451,7 @@ var _ = Describe("Cell", func() {
 					Index:        1,
 				}
 				err = cell.StopLRP(instanceToStop)
-				Ω(err).Should(MatchError(ErrorNothingToStop))
+				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
 
 				Because("of a mismatched index")
 				instanceToStop = models.StopLRPInstance{
@@ -460,7 +460,7 @@ var _ = Describe("Cell", func() {
 					Index:        0,
 				}
 				err = cell.StopLRP(instanceToStop)
-				Ω(err).Should(MatchError(ErrorNothingToStop))
+				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
 			})
 		})
 	})

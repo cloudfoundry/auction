@@ -13,10 +13,10 @@ import (
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
-func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider timeprovider.TimeProvider, startAuctions []auctiontypes.StartAuction, stopAuctions []auctiontypes.StopAuction) WorkResults {
+func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider timeprovider.TimeProvider, startAuctions []auctiontypes.StartAuction, stopAuctions []auctiontypes.StopAuction) auctiontypes.AuctionResults {
 	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	results := WorkResults{}
+	results := auctiontypes.AuctionResults{}
 	if len(cells) == 0 {
 		results.FailedStarts = startAuctions
 		results.FailedStops = stopAuctions
@@ -59,7 +59,7 @@ func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timePro
 	return markResults(results, timeProvider)
 }
 
-func markResults(results WorkResults, timeProvider timeprovider.TimeProvider) WorkResults {
+func markResults(results auctiontypes.AuctionResults, timeProvider timeprovider.TimeProvider) auctiontypes.AuctionResults {
 	now := timeProvider.Time()
 	for i := range results.FailedStarts {
 		results.FailedStarts[i].Attempts++
@@ -122,7 +122,7 @@ func processStartAuction(cells map[string]*Cell, startAuction auctiontypes.Start
 	}
 
 	if len(winnerGuids) == 0 {
-		return auctiontypes.StartAuction{}, ErrorInsufficientResources
+		return auctiontypes.StartAuction{}, auctiontypes.ErrorInsufficientResources
 	}
 
 	winnerGuid := winnerGuids[randomizer.Intn(len(winnerGuids))]

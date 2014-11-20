@@ -1,15 +1,9 @@
 package auctionrunner
 
 import (
-	"errors"
-
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
-
-var ErrorStackMismatch = errors.New("stack mismatch")
-var ErrorInsufficientResources = errors.New("insuccifient resources")
-var ErrorNothingToStop = errors.New("nothing to stop")
 
 type Cell struct {
 	client auctiontypes.AuctionRep
@@ -62,7 +56,7 @@ func (c *Cell) ScoreForStopAuction(stopAuction models.LRPStopAuction) (float64, 
 	}
 
 	if len(matchingLRPs) == 0 {
-		return 0, nil, ErrorNothingToStop
+		return 0, nil, auctiontypes.ErrorNothingToStop
 	}
 
 	remainingResources := c.state.AvailableResources
@@ -120,7 +114,7 @@ func (c *Cell) StopLRP(stop models.StopLRPInstance) error {
 	}
 
 	if indexToDelete == -1 {
-		return ErrorNothingToStop
+		return auctiontypes.ErrorNothingToStop
 	}
 
 	c.state.AvailableResources.MemoryMB += c.state.LRPs[indexToDelete].MemoryMB
@@ -147,16 +141,16 @@ func (c *Cell) Commit() auctiontypes.Work {
 
 func (c *Cell) canHandleStartAuction(startAuction models.LRPStartAuction) error {
 	if c.state.Stack != startAuction.DesiredLRP.Stack {
-		return ErrorStackMismatch
+		return auctiontypes.ErrorStackMismatch
 	}
 	if c.state.AvailableResources.MemoryMB < startAuction.DesiredLRP.MemoryMB {
-		return ErrorInsufficientResources
+		return auctiontypes.ErrorInsufficientResources
 	}
 	if c.state.AvailableResources.DiskMB < startAuction.DesiredLRP.DiskMB {
-		return ErrorInsufficientResources
+		return auctiontypes.ErrorInsufficientResources
 	}
 	if c.state.AvailableResources.Containers < 1 {
-		return ErrorInsufficientResources
+		return auctiontypes.ErrorInsufficientResources
 	}
 
 	return nil

@@ -13,15 +13,15 @@ import (
 )
 
 var _ = Describe("Cell", func() {
-	var client *fakes.FakeSimulationAuctionRep
+	var client *fakes.FakeSimulationCellRep
 	var emptyCell, cell *Cell
 
 	BeforeEach(func() {
-		client = &fakes.FakeSimulationAuctionRep{}
-		emptyState := BuildRepState(100, 200, 50, nil)
+		client = &fakes.FakeSimulationCellRep{}
+		emptyState := BuildCellState(100, 200, 50, nil)
 		emptyCell = NewCell(client, emptyState)
 
-		state := BuildRepState(100, 200, 50, []auctiontypes.LRP{
+		state := BuildCellState(100, 200, 50, []auctiontypes.LRP{
 			{"pg-1", "ig-1", 0, 10, 20},
 			{"pg-1", "ig-2", 1, 10, 20},
 			{"pg-2", "ig-3", 0, 10, 20},
@@ -75,10 +75,10 @@ var _ = Describe("Cell", func() {
 		It("factors in container usage", func() {
 			instance := BuildLRPStartAuction("pg-big", "ig-big", 0, "lucid64", 20, 20)
 
-			bigState := BuildRepState(100, 200, 50, nil)
+			bigState := BuildCellState(100, 200, 50, nil)
 			bigCell := NewCell(client, bigState)
 
-			smallState := BuildRepState(100, 200, 20, nil)
+			smallState := BuildCellState(100, 200, 20, nil)
 			smallCell := NewCell(client, smallState)
 
 			bigScore, err := bigCell.ScoreForStartAuction(instance)
@@ -126,7 +126,7 @@ var _ = Describe("Cell", func() {
 			Context("because of container constraints", func() {
 				It("should error", func() {
 					instance := BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 10, 10)
-					zeroState := BuildRepState(100, 100, 0, nil)
+					zeroState := BuildCellState(100, 100, 0, nil)
 					zeroCell := NewCell(client, zeroState)
 					score, err := zeroCell.ScoreForStartAuction(instance)
 					Ω(score).Should(BeZero())
@@ -152,12 +152,12 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in memory constraints", func() {
-			cellA := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+			cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 				{"pg-1", "ig-1", 1, 10, 20},
 				{"pg-other", "ig-other", 0, 10, 20},
 			}))
 
-			cellB := NewCell(client, BuildRepState(50, 200, 50, []auctiontypes.LRP{
+			cellB := NewCell(client, BuildCellState(50, 200, 50, []auctiontypes.LRP{
 				{"pg-1", "ig-2", 1, 10, 20},
 				{"pg-other", "ig-other", 0, 10, 20},
 			}))
@@ -174,12 +174,12 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in disk constraints", func() {
-			cellA := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+			cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 				{"pg-1", "ig-1", 1, 10, 20},
 				{"pg-other", "ig-other", 0, 10, 20},
 			}))
 
-			cellB := NewCell(client, BuildRepState(100, 100, 50, []auctiontypes.LRP{
+			cellB := NewCell(client, BuildCellState(100, 100, 50, []auctiontypes.LRP{
 				{"pg-1", "ig-2", 1, 10, 20},
 				{"pg-other", "ig-other", 0, 10, 20},
 			}))
@@ -196,11 +196,11 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in container constraints", func() {
-			cellA := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+			cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 				{"pg-1", "ig-1", 1, 10, 20},
 			}))
 
-			cellB := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+			cellB := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 				{"pg-1", "ig-2", 1, 10, 20},
 				{"pg-other", "ig-other", 0, 10, 20},
 			}))
@@ -217,12 +217,12 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in colocated process guids", func() {
-			cellA := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+			cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 				{"pg-1", "ig-1", 1, 10, 20},
 				{"pg-other", "ig-other", 0, 10, 20},
 			}))
 
-			cellB := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+			cellB := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 				{"pg-1", "ig-2", 1, 10, 20},
 				{"pg-1", "ig-3", 2, 10, 20},
 			}))
@@ -240,7 +240,7 @@ var _ = Describe("Cell", func() {
 
 		Context("with multiple instances on an individual cell", func() {
 			It("returns an array of instance guids that can be stopped", func() {
-				cell := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+				cell := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 					{"pg-1", "ig-1", 1, 10, 20},
 					{"pg-1", "ig-2", 1, 10, 20},
 				}))
@@ -252,12 +252,12 @@ var _ = Describe("Cell", func() {
 
 			Context("when it makes sense to preserve an instance on a cell with multiple instances", func() {
 				It("should give that cell a lower score", func() {
-					cellA := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+					cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 						{"pg-1", "ig-1", 1, 10, 20},
 						{"pg-1", "ig-2", 1, 10, 20},
 					}))
 
-					cellB := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+					cellB := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 						{"pg-1", "ig-3", 1, 10, 20},
 						{"pg-other", "ig-other", 0, 10, 20},
 						{"pg-yet-another", "ig-yet-another", 1, 10, 20},
@@ -275,11 +275,11 @@ var _ = Describe("Cell", func() {
 
 			Context("when it makes sense to preserve an instance on a cell with just one instance", func() {
 				It("should give that cell a lower score", func() {
-					cellA := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+					cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 						{"pg-1", "ig-1", 1, 10, 20},
 					}))
 
-					cellB := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+					cellB := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 						{"pg-1", "ig-2", 1, 10, 20},
 						{"pg-1", "ig-3", 1, 10, 20},
 						{"pg-yet-another", "ig-yet-another", 1, 10, 20},
@@ -297,12 +297,12 @@ var _ = Describe("Cell", func() {
 
 			Context("when it's a crapshoot", func() {
 				It("should give both cells the same score", func() {
-					cellA := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+					cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 						{"pg-1", "ig-1", 1, 10, 20},
 						{"pg-yet-another", "ig-yet-another", 1, 10, 20},
 					}))
 
-					cellB := NewCell(client, BuildRepState(100, 200, 50, []auctiontypes.LRP{
+					cellB := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
 						{"pg-1", "ig-2", 1, 10, 20},
 						{"pg-1", "ig-3", 1, 10, 20},
 						{"pg-yet-another", "ig-yet-another", 1, 10, 20},

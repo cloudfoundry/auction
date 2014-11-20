@@ -9,6 +9,8 @@ import (
 	"github.com/tedsuo/ifrit"
 )
 
+// Auction Runners
+
 var ErrorStackMismatch = errors.New("stack mismatch")
 var ErrorInsufficientResources = errors.New("insuccifient resources")
 var ErrorNothingToStop = errors.New("nothing to stop")
@@ -20,7 +22,7 @@ type AuctionRunner interface {
 }
 
 type AuctionRunnerDelegate interface {
-	FetchAuctionRepClients() (map[string]AuctionRep, error)
+	FetchCellReps() (map[string]CellRep, error)
 	DistributedBatch(AuctionResults)
 }
 
@@ -30,6 +32,8 @@ type AuctionResults struct {
 	FailedStarts     []StartAuction
 	FailedStops      []StopAuction
 }
+
+// Start and Stop Auctions
 
 type StartAuction struct {
 	LRPStartAuction models.LRPStartAuction
@@ -61,19 +65,15 @@ func (s StopAuction) Identifier() string {
 	return fmt.Sprintf("%s.%d", s.LRPStopAuction.ProcessGuid, s.LRPStopAuction.Index)
 }
 
-type RepAddress struct {
-	RepGuid string
-	Address string
-}
+// Cell Representatives
 
-type AuctionRep interface {
-	State() (RepState, error)
+type CellRep interface {
+	State() (CellState, error)
 	Perform(Work) (Work, error)
 }
 
-//simulation-only interface
-type SimulationAuctionRep interface {
-	AuctionRep
+type SimulationCellRep interface {
+	CellRep
 
 	Reset() error
 }
@@ -83,7 +83,7 @@ type Work struct {
 	Stops  []models.StopLRPInstance
 }
 
-type RepState struct {
+type CellState struct {
 	Stack              string
 	AvailableResources Resources
 	TotalResources     Resources

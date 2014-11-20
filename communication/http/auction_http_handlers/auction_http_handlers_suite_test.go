@@ -28,13 +28,13 @@ func TestAuctionHttpHandlers(t *testing.T) {
 var server *httptest.Server
 var requestGenerator *rata.RequestGenerator
 var client *http.Client
-var auctionRep *fakes.FakeSimulationAuctionRep
+var auctionRep *fakes.FakeSimulationCellRep
 var repGuid string
 
 var _ = BeforeEach(func() {
 	logger := lagertest.NewTestLogger("auction_http_handlers")
 
-	auctionRep = &fakes.FakeSimulationAuctionRep{}
+	auctionRep = &fakes.FakeSimulationCellRep{}
 
 	handler, err := rata.NewRouter(routes.Routes, auction_http_handlers.New(auctionRep, logger))
 	Ω(err).ShouldNot(HaveOccurred())

@@ -50,22 +50,22 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				break
 			}
 
-			logger.Info("fetching-cell-clients")
-			clients, err := a.delegate.FetchAuctionRepClients()
+			logger.Info("fetching-cell-reps")
+			clients, err := a.delegate.FetchCellReps()
 			if err != nil {
-				logger.Error("failed-to-fetch-clients", err)
+				logger.Error("failed-to-fetch-reps", err)
 				time.Sleep(time.Second)
 				hasWork = make(chan struct{}, 1)
 				hasWork <- struct{}{}
 				break
 			}
-			logger.Info("fetched-cell-clients", lager.Data{"cell-client-count": len(clients)})
+			logger.Info("fetched-cell-reps", lager.Data{"cell-reps-count": len(clients)})
 
 			hasWork = a.batch.HasWork
 
-			logger.Info("fetching-state")
+			logger.Info("fetching-cell-state")
 			cells := FetchStateAndBuildCells(a.workPool, clients)
-			logger.Info("fetched-state", lager.Data{"cell-count": len(cells), "num-cells-failed": len(clients) - len(cells)})
+			logger.Info("fetched-cell-state", lager.Data{"cell-state-count": len(cells), "num-failed-requests": len(clients) - len(cells)})
 
 			logger.Info("updating-work")
 			startAuctionsUpdate, stopAuctionsUpdate := a.batch.DedupeAndDrain()

@@ -7,14 +7,14 @@ import (
 )
 
 type AuctionRunnerDelegate struct {
-	cells       map[string]auctiontypes.AuctionRep
+	cells       map[string]auctiontypes.CellRep
 	cellLimit   int
 	workResults auctiontypes.AuctionResults
 	lock        *sync.Mutex
 }
 
-func NewAuctionRunnerDelegate(cells map[string]auctiontypes.SimulationAuctionRep) *AuctionRunnerDelegate {
-	typecastCells := map[string]auctiontypes.AuctionRep{}
+func NewAuctionRunnerDelegate(cells map[string]auctiontypes.SimulationCellRep) *AuctionRunnerDelegate {
+	typecastCells := map[string]auctiontypes.CellRep{}
 	for guid, cell := range cells {
 		typecastCells[guid] = cell
 	}
@@ -29,8 +29,8 @@ func (a *AuctionRunnerDelegate) SetCellLimit(limit int) {
 	a.cellLimit = limit
 }
 
-func (a *AuctionRunnerDelegate) FetchAuctionRepClients() (map[string]auctiontypes.AuctionRep, error) {
-	subset := map[string]auctiontypes.AuctionRep{}
+func (a *AuctionRunnerDelegate) FetchCellReps() (map[string]auctiontypes.CellRep, error) {
+	subset := map[string]auctiontypes.CellRep{}
 	for i := 0; i < a.cellLimit; i++ {
 		subset[cellGuid(i)] = a.cells[cellGuid(i)]
 	}

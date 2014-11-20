@@ -11,11 +11,11 @@ import (
 )
 
 type Report struct {
-	Cells                        map[string]auctiontypes.AuctionRep
+	Cells                        map[string]auctiontypes.CellRep
 	NumAuctions                  int
 	AuctionResults               auctiontypes.AuctionResults
 	AuctionDuration              time.Duration
-	CellStates                   map[string]auctiontypes.RepState
+	CellStates                   map[string]auctiontypes.CellState
 	InstancesByRep               map[string][]auctiontypes.LRP
 	auctionedInstancesByInstGuid map[string]bool
 }
@@ -38,7 +38,7 @@ func NewStat(data []float64) Stat {
 	}
 }
 
-func NewReport(numAuctions int, cells map[string]auctiontypes.AuctionRep, results auctiontypes.AuctionResults, duration time.Duration) *Report {
+func NewReport(numAuctions int, cells map[string]auctiontypes.CellRep, results auctiontypes.AuctionResults, duration time.Duration) *Report {
 	states := fetchStates(cells)
 	return &Report{
 		Cells:           cells,
@@ -118,13 +118,13 @@ func (r *Report) WaitTimeStats() Stat {
 	return NewStat(waitTimes)
 }
 
-func fetchStates(cells map[string]auctiontypes.AuctionRep) map[string]auctiontypes.RepState {
+func fetchStates(cells map[string]auctiontypes.CellRep) map[string]auctiontypes.CellState {
 	workPool := workpool.NewWorkPool(500)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(cells))
 	lock := &sync.Mutex{}
-	states := map[string]auctiontypes.RepState{}
+	states := map[string]auctiontypes.CellState{}
 
 	for repGuid, cell := range cells {
 		repGuid := repGuid
@@ -142,7 +142,7 @@ func fetchStates(cells map[string]auctiontypes.AuctionRep) map[string]auctiontyp
 	return states
 }
 
-func instancesByRepFromStates(states map[string]auctiontypes.RepState) map[string][]auctiontypes.LRP {
+func instancesByRepFromStates(states map[string]auctiontypes.CellState) map[string][]auctiontypes.LRP {
 	instancesByRepGuid := map[string][]auctiontypes.LRP{}
 	for repGuid, state := range states {
 		instances := state.LRPs

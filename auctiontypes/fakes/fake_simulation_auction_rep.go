@@ -7,12 +7,12 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 )
 
-type FakeSimulationAuctionRep struct {
-	StateStub        func() (auctiontypes.RepState, error)
+type FakeSimulationCellRep struct {
+	StateStub        func() (auctiontypes.CellState, error)
 	stateMutex       sync.RWMutex
 	stateArgsForCall []struct{}
-	stateReturns struct {
-		result1 auctiontypes.RepState
+	stateReturns     struct {
+		result1 auctiontypes.CellState
 		result2 error
 	}
 	PerformStub        func(auctiontypes.Work) (auctiontypes.Work, error)
@@ -27,12 +27,12 @@ type FakeSimulationAuctionRep struct {
 	ResetStub        func() error
 	resetMutex       sync.RWMutex
 	resetArgsForCall []struct{}
-	resetReturns struct {
+	resetReturns     struct {
 		result1 error
 	}
 }
 
-func (fake *FakeSimulationAuctionRep) State() (auctiontypes.RepState, error) {
+func (fake *FakeSimulationCellRep) State() (auctiontypes.CellState, error) {
 	fake.stateMutex.Lock()
 	fake.stateArgsForCall = append(fake.stateArgsForCall, struct{}{})
 	fake.stateMutex.Unlock()
@@ -43,21 +43,21 @@ func (fake *FakeSimulationAuctionRep) State() (auctiontypes.RepState, error) {
 	}
 }
 
-func (fake *FakeSimulationAuctionRep) StateCallCount() int {
+func (fake *FakeSimulationCellRep) StateCallCount() int {
 	fake.stateMutex.RLock()
 	defer fake.stateMutex.RUnlock()
 	return len(fake.stateArgsForCall)
 }
 
-func (fake *FakeSimulationAuctionRep) StateReturns(result1 auctiontypes.RepState, result2 error) {
+func (fake *FakeSimulationCellRep) StateReturns(result1 auctiontypes.CellState, result2 error) {
 	fake.StateStub = nil
 	fake.stateReturns = struct {
-		result1 auctiontypes.RepState
+		result1 auctiontypes.CellState
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeSimulationAuctionRep) Perform(arg1 auctiontypes.Work) (auctiontypes.Work, error) {
+func (fake *FakeSimulationCellRep) Perform(arg1 auctiontypes.Work) (auctiontypes.Work, error) {
 	fake.performMutex.Lock()
 	fake.performArgsForCall = append(fake.performArgsForCall, struct {
 		arg1 auctiontypes.Work
@@ -70,19 +70,19 @@ func (fake *FakeSimulationAuctionRep) Perform(arg1 auctiontypes.Work) (auctionty
 	}
 }
 
-func (fake *FakeSimulationAuctionRep) PerformCallCount() int {
+func (fake *FakeSimulationCellRep) PerformCallCount() int {
 	fake.performMutex.RLock()
 	defer fake.performMutex.RUnlock()
 	return len(fake.performArgsForCall)
 }
 
-func (fake *FakeSimulationAuctionRep) PerformArgsForCall(i int) auctiontypes.Work {
+func (fake *FakeSimulationCellRep) PerformArgsForCall(i int) auctiontypes.Work {
 	fake.performMutex.RLock()
 	defer fake.performMutex.RUnlock()
 	return fake.performArgsForCall[i].arg1
 }
 
-func (fake *FakeSimulationAuctionRep) PerformReturns(result1 auctiontypes.Work, result2 error) {
+func (fake *FakeSimulationCellRep) PerformReturns(result1 auctiontypes.Work, result2 error) {
 	fake.PerformStub = nil
 	fake.performReturns = struct {
 		result1 auctiontypes.Work
@@ -90,7 +90,7 @@ func (fake *FakeSimulationAuctionRep) PerformReturns(result1 auctiontypes.Work, 
 	}{result1, result2}
 }
 
-func (fake *FakeSimulationAuctionRep) Reset() error {
+func (fake *FakeSimulationCellRep) Reset() error {
 	fake.resetMutex.Lock()
 	fake.resetArgsForCall = append(fake.resetArgsForCall, struct{}{})
 	fake.resetMutex.Unlock()
@@ -101,17 +101,17 @@ func (fake *FakeSimulationAuctionRep) Reset() error {
 	}
 }
 
-func (fake *FakeSimulationAuctionRep) ResetCallCount() int {
+func (fake *FakeSimulationCellRep) ResetCallCount() int {
 	fake.resetMutex.RLock()
 	defer fake.resetMutex.RUnlock()
 	return len(fake.resetArgsForCall)
 }
 
-func (fake *FakeSimulationAuctionRep) ResetReturns(result1 error) {
+func (fake *FakeSimulationCellRep) ResetReturns(result1 error) {
 	fake.ResetStub = nil
 	fake.resetReturns = struct {
 		result1 error
 	}{result1}
 }
 
-var _ auctiontypes.SimulationAuctionRep = new(FakeSimulationAuctionRep)
+var _ auctiontypes.SimulationCellRep = new(FakeSimulationCellRep)

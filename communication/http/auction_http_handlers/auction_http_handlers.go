@@ -7,7 +7,7 @@ import (
 	"github.com/tedsuo/rata"
 )
 
-func New(rep auctiontypes.AuctionRep, logger lager.Logger) rata.Handlers {
+func New(rep auctiontypes.CellRep, logger lager.Logger) rata.Handlers {
 	handlers := rata.Handlers{
 		routes.State:   &state{rep: rep, logger: logger},
 		routes.Perform: &perform{rep: rep, logger: logger},

@@ -17,7 +17,7 @@ import (
 )
 
 var _ = Describe("WorkDistributor", func() {
-	var clients map[string]*fakes.FakeSimulationAuctionRep
+	var clients map[string]*fakes.FakeSimulationCellRep
 	var cells map[string]*Cell
 	var timeProvider *faketimeprovider.FakeTimeProvider
 	var workPool *workpool.WorkPool
@@ -27,7 +27,7 @@ var _ = Describe("WorkDistributor", func() {
 		timeProvider = faketimeprovider.New(time.Now())
 		workPool = workpool.NewWorkPool(5)
 
-		clients = map[string]*fakes.FakeSimulationAuctionRep{}
+		clients = map[string]*fakes.FakeSimulationCellRep{}
 		cells = map[string]*Cell{}
 	})
 
@@ -65,14 +65,14 @@ var _ = Describe("WorkDistributor", func() {
 		var startAuction auctiontypes.StartAuction
 
 		BeforeEach(func() {
-			clients["A"] = &fakes.FakeSimulationAuctionRep{}
-			cells["A"] = NewCell(clients["A"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+			clients["A"] = &fakes.FakeSimulationCellRep{}
+			cells["A"] = NewCell(clients["A"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
 				{"pg-1", "ig-1", 0, 10, 10},
 				{"pg-2", "ig-2", 0, 10, 10},
 			}))
 
-			clients["B"] = &fakes.FakeSimulationAuctionRep{}
-			cells["B"] = NewCell(clients["B"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+			clients["B"] = &fakes.FakeSimulationCellRep{}
+			cells["B"] = NewCell(clients["B"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
 				{"pg-3", "ig-3", 0, 10, 10},
 			}))
 
@@ -142,8 +142,8 @@ var _ = Describe("WorkDistributor", func() {
 		var stopAuction auctiontypes.StopAuction
 
 		BeforeEach(func() {
-			clients["A"] = &fakes.FakeSimulationAuctionRep{}
-			cells["A"] = NewCell(clients["A"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+			clients["A"] = &fakes.FakeSimulationCellRep{}
+			cells["A"] = NewCell(clients["A"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
 				{"pg", "ig-1", 0, 10, 10},
 				{"pg", "ig-2", 1, 10, 10},
 				{"pg", "ig-3", 1, 10, 10},
@@ -151,14 +151,14 @@ var _ = Describe("WorkDistributor", func() {
 				{"pg-other", "ig-5", 0, 10, 10},
 			}))
 
-			clients["B"] = &fakes.FakeSimulationAuctionRep{}
-			cells["B"] = NewCell(clients["B"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+			clients["B"] = &fakes.FakeSimulationCellRep{}
+			cells["B"] = NewCell(clients["B"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
 				{"pg", "ig-6", 1, 10, 10},
 				{"pg-other", "ig-7", 0, 10, 10},
 			}))
 
-			clients["C"] = &fakes.FakeSimulationAuctionRep{}
-			cells["C"] = NewCell(clients["C"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+			clients["C"] = &fakes.FakeSimulationCellRep{}
+			cells["C"] = NewCell(clients["C"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
 				{"pg", "ig-8", 1, 10, 10},
 				{"pg-other", "ig-9", 0, 10, 10},
 				{"pg-other", "ig-10", 0, 10, 10},
@@ -310,15 +310,15 @@ var _ = Describe("WorkDistributor", func() {
 
 	Describe("a comprehensive scenario", func() {
 		BeforeEach(func() {
-			clients["A"] = &fakes.FakeSimulationAuctionRep{}
-			cells["A"] = NewCell(clients["A"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+			clients["A"] = &fakes.FakeSimulationCellRep{}
+			cells["A"] = NewCell(clients["A"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
 				{"pg-1", "ig-1", 0, 10, 10},
 				{"pg-2", "ig-2", 0, 10, 10},
 				{"pg-dupe", "ig-3", 0, 80, 80},
 			}))
 
-			clients["B"] = &fakes.FakeSimulationAuctionRep{}
-			cells["B"] = NewCell(clients["B"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+			clients["B"] = &fakes.FakeSimulationCellRep{}
+			cells["B"] = NewCell(clients["B"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
 				{"pg-3", "ig-4", 0, 10, 10},
 				{"pg-dupe", "ig-5", 0, 80, 80},
 			}))
@@ -380,13 +380,13 @@ var _ = Describe("WorkDistributor", func() {
 
 	Describe("ordering work", func() {
 		BeforeEach(func() {
-			clients["A"] = &fakes.FakeSimulationAuctionRep{}
-			cells["A"] = NewCell(clients["A"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+			clients["A"] = &fakes.FakeSimulationCellRep{}
+			cells["A"] = NewCell(clients["A"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
 				{"pg-1", "ig-1", 0, 30, 30},
 			}))
 
-			clients["B"] = &fakes.FakeSimulationAuctionRep{}
-			cells["B"] = NewCell(clients["B"], BuildRepState(100, 100, 100, []auctiontypes.LRP{}))
+			clients["B"] = &fakes.FakeSimulationCellRep{}
+			cells["B"] = NewCell(clients["B"], BuildCellState(100, 100, 100, []auctiontypes.LRP{}))
 		})
 
 		It("orders work such that large start auctions occur first", func() {

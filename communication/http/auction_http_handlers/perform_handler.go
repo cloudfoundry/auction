@@ -9,7 +9,7 @@ import (
 )
 
 type perform struct {
-	rep    auctiontypes.AuctionRep
+	rep    auctiontypes.CellRep
 	logger lager.Logger
 }
 

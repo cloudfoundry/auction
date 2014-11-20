@@ -13,22 +13,22 @@ import (
 )
 
 var _ = Describe("CellBuilder", func() {
-	var repA, repB *fakes.FakeSimulationAuctionRep
-	var clients map[string]auctiontypes.AuctionRep
+	var repA, repB *fakes.FakeSimulationCellRep
+	var clients map[string]auctiontypes.CellRep
 	var workPool *workpool.WorkPool
 
 	BeforeEach(func() {
 		workPool = workpool.NewWorkPool(5)
-		repA = &fakes.FakeSimulationAuctionRep{}
-		repB = &fakes.FakeSimulationAuctionRep{}
+		repA = &fakes.FakeSimulationCellRep{}
+		repB = &fakes.FakeSimulationCellRep{}
 
-		clients = map[string]auctiontypes.AuctionRep{
+		clients = map[string]auctiontypes.CellRep{
 			"A": repA,
 			"B": repB,
 		}
 
-		repA.StateReturns(BuildRepState(100, 200, 100, nil), nil)
-		repB.StateReturns(BuildRepState(10, 10, 100, nil), nil)
+		repA.StateReturns(BuildCellState(100, 200, 100, nil), nil)
+		repB.StateReturns(BuildCellState(10, 10, 100, nil), nil)
 	})
 
 	AfterEach(func() {
@@ -51,7 +51,7 @@ var _ = Describe("CellBuilder", func() {
 
 	Context("when a client fails", func() {
 		BeforeEach(func() {
-			repB.StateReturns(BuildRepState(10, 10, 100, nil), errors.New("boom"))
+			repB.StateReturns(BuildCellState(10, 10, 100, nil), errors.New("boom"))
 		})
 
 		It("does not include the client in the map", func() {

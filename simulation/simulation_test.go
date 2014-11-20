@@ -113,7 +113,7 @@ var _ = Describe("Auction", func() {
 		Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(startAuctions)))
 		duration := time.Since(t)
 
-		cells, _ := auctionRunnerDelegate.FetchAuctionRepClients()
+		cells, _ := auctionRunnerDelegate.FetchCellReps()
 		report := visualization.NewReport(len(startAuctions), cells, auctionRunnerDelegate.Results(), duration)
 
 		visualization.PrintReport(report)

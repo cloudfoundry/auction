@@ -8,7 +8,7 @@ import (
 )
 
 type reset struct {
-	rep    auctiontypes.AuctionRep
+	rep    auctiontypes.CellRep
 	logger lager.Logger
 }
 
@@ -16,7 +16,7 @@ func (h *reset) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger.Session("sim-reset")
 	logger.Info("handling")
 
-	simRep, ok := h.rep.(auctiontypes.SimulationAuctionRep)
+	simRep, ok := h.rep.(auctiontypes.SimulationCellRep)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		logger.Error("not-a-simulation-rep", nil)

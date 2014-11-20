@@ -40,7 +40,7 @@ const HTTP = "http"
 
 const numCells = 100
 
-var cells map[string]auctiontypes.SimulationAuctionRep
+var cells map[string]auctiontypes.SimulationCellRep
 
 var repResources = auctiontypes.Resources{
 	MemoryMB:   100.0,
@@ -138,8 +138,8 @@ func cellGuid(index int) string {
 	return fmt.Sprintf("REP-%d", index+1)
 }
 
-func buildInProcessReps() map[string]auctiontypes.SimulationAuctionRep {
-	cells := map[string]auctiontypes.SimulationAuctionRep{}
+func buildInProcessReps() map[string]auctiontypes.SimulationCellRep {
+	cells := map[string]auctiontypes.SimulationCellRep{}
 
 	for i := 0; i < numCells; i++ {
 		cells[cellGuid(i)] = simulationrep.New("lucid64", repResources)
@@ -148,11 +148,11 @@ func buildInProcessReps() map[string]auctiontypes.SimulationAuctionRep {
 	return cells
 }
 
-func launchExternalHTTPReps() map[string]auctiontypes.SimulationAuctionRep {
+func launchExternalHTTPReps() map[string]auctiontypes.SimulationCellRep {
 	repNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/repnode")
 	Ω(err).ShouldNot(HaveOccurred())
 
-	cells := map[string]auctiontypes.SimulationAuctionRep{}
+	cells := map[string]auctiontypes.SimulationCellRep{}
 
 	client := &http.Client{
 		Timeout: timeout,

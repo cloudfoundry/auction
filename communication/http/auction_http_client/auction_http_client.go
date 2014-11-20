@@ -35,7 +35,7 @@ func New(client *http.Client, repGuid string, address string, logger lager.Logge
 	}
 }
 
-func (c *AuctionHTTPClient) State() (auctiontypes.RepState, error) {
+func (c *AuctionHTTPClient) State() (auctiontypes.CellState, error) {
 	logger := c.logger.Session("fetching-state", lager.Data{
 		"rep": c.repGuid,
 	})
@@ -45,26 +45,26 @@ func (c *AuctionHTTPClient) State() (auctiontypes.RepState, error) {
 	req, err := c.requestGenerator.CreateRequest(routes.State, nil, nil)
 	if err != nil {
 		logger.Error("failed-to-create-request", err)
-		return auctiontypes.RepState{}, err
+		return auctiontypes.CellState{}, err
 	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
 		logger.Error("failed-to-perform-request", err)
-		return auctiontypes.RepState{}, err
+		return auctiontypes.CellState{}, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		logger.Error("invalid-status-code", fmt.Errorf("%d", resp.StatusCode))
-		return auctiontypes.RepState{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return auctiontypes.CellState{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	var state auctiontypes.RepState
+	var state auctiontypes.CellState
 	err = json.NewDecoder(resp.Body).Decode(&state)
 	if err != nil {
 		logger.Error("failed-to-decode-rep-state", err)
-		return auctiontypes.RepState{}, err
+		return auctiontypes.CellState{}, err
 	}
 
 	logger.Debug("done")

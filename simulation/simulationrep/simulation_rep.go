@@ -14,7 +14,7 @@ type SimulationRep struct {
 	lock *sync.Mutex
 }
 
-func New(stack string, totalResources auctiontypes.Resources) auctiontypes.SimulationAuctionRep {
+func New(stack string, totalResources auctiontypes.Resources) auctiontypes.SimulationCellRep {
 	return &SimulationRep{
 		stack:          stack,
 		totalResources: totalResources,
@@ -24,7 +24,7 @@ func New(stack string, totalResources auctiontypes.Resources) auctiontypes.Simul
 	}
 }
 
-func (rep *SimulationRep) State() (auctiontypes.RepState, error) {
+func (rep *SimulationRep) State() (auctiontypes.CellState, error) {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
@@ -37,7 +37,7 @@ func (rep *SimulationRep) State() (auctiontypes.RepState, error) {
 
 	// util.RandomSleep(800, 900)
 
-	return auctiontypes.RepState{
+	return auctiontypes.CellState{
 		Stack:              rep.stack,
 		AvailableResources: availableResources,
 		TotalResources:     rep.totalResources,

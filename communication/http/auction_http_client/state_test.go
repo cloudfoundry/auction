@@ -10,10 +10,10 @@ import (
 )
 
 var _ = Describe("State", func() {
-	var state auctiontypes.RepState
+	var state auctiontypes.CellState
 
 	BeforeEach(func() {
-		state = auctiontypes.RepState{
+		state = auctiontypes.CellState{
 			Stack: "lucid64",
 		}
 	})

@@ -6,13 +6,13 @@ import (
 )
 
 type Cell struct {
-	client auctiontypes.AuctionRep
-	state  auctiontypes.RepState
+	client auctiontypes.CellRep
+	state  auctiontypes.CellState
 
 	workToCommit auctiontypes.Work
 }
 
-func NewCell(client auctiontypes.AuctionRep, state auctiontypes.RepState) *Cell {
+func NewCell(client auctiontypes.CellRep, state auctiontypes.CellState) *Cell {
 	return &Cell{
 		client: client,
 		state:  state,

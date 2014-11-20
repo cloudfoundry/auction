@@ -23,7 +23,7 @@ There are a number of subpackages to the auction:
 
 ### Subpackages Related to the Algorithm
 
-- `auctionrep`: Provides an implementation of `auctiontypes.AuctionRep`.  This package implements the role of the Rep in an auction and can do things like compute a bid.  In order to do its work, the `AuctionRep` must be provided an implementation of `auctiontypes.AuctionRepDelegate`.  Diego's Rep implements this interface, passing in the delegate to the `AuctionRep`.  In this way the Rep has a clear and simple contract that it must satisfy and knows very little about the details of the auction.
+- `auctionrep`: Provides an implementation of `auctiontypes.CellRep`.  This package implements the role of the Rep in an auction and can do things like compute a bid.  In order to do its work, the `CellRep` must be provided an implementation of `auctiontypes.CellRepDelegate`.  Diego's Rep implements this interface, passing in the delegate to the `CellRep`.  In this way the Rep has a clear and simple contract that it must satisfy and knows very little about the details of the auction.
 
 - `auctionrunner`: Knows how to run auctions using a variety of different algorithms.  The AuctionRunner package must be passed an `auctiontypes.RepPoolClient` in order to communicate with the Reps.   The Auctioneer uses the `auctionrunner` package to actually run an auction and, therefore, knows very little about the details of the auction.
 
@@ -55,9 +55,9 @@ In order to hold an auction, the Auctioneer must:
 
 In order to participate in auctions, the Rep must:
 
-- Provide a delegate satisfying `auctiontypes.AuctionRepDelegate`
-- Pass said delegate to an instance of `auctionrep.AuctionRep`
-- Spin up a server, passing in the constructed `auctionrep.AuctionRep`.  This will be either an http server with the `communication/http/auction_http_handlers` handlers, or the nats "server" provided by `communication/nats/auction_nats_server`.
+- Provide a delegate satisfying `auctiontypes.CellRepDelegate`
+- Pass said delegate to an instance of `auctionrep.CellRep`
+- Spin up a server, passing in the constructed `auctionrep.CellRep`.  This will be either an http server with the `communication/http/auction_http_handlers` handlers, or the nats "server" provided by `communication/nats/auction_nats_server`.
 
 ## The Simulation
 
@@ -65,9 +65,9 @@ The `simulation` package contains a Ginkgo test suite that describes a number of
 
 ### In-Process Communication
 
-By default, the simulation runs with an "in-process" communication model.  In this mode, the simulation spins up a number of in-process `AuctionReps` and `AuctionRunners`.  The `AuctionReps` are provided a `simulationrepdelegate` that provides a minimal, simple, in-memory implementation of the `auctiontypes.AuctionRepDelegate` interface.
+By default, the simulation runs with an "in-process" communication model.  In this mode, the simulation spins up a number of in-process `CellReps` and `AuctionRunners`.  The `CellReps` are provided a `simulationrepdelegate` that provides a minimal, simple, in-memory implementation of the `auctiontypes.CellRepDelegate` interface.
 
-These in-process `AuctionRunners` "communicate" with the in-process `AuctionReps` via the `auctiontypes.RepPoolClient` provided by the `simulation/communication/inprocess` subpackage.
+These in-process `AuctionRunners` "communicate" with the in-process `CellReps` via the `auctiontypes.RepPoolClient` provided by the `simulation/communication/inprocess` subpackage.
 
 This in-process communication mode allows us to isolate the algorithmic details from the communication details.  It allows us to iterate on the scoring math and scheduling details quickly and efficiently.
 
@@ -75,7 +75,7 @@ This in-process communication mode allows us to isolate the algorithmic details 
 
 The in-process model outlined above provides us with a starting point for analyzing the auction.  The introduction of a latent communication medium adds new, complex, behavior to the auction.  We can explore this behavior by running the simulation with `ginkgo -- --communicationMode=MODE` where `MODE` is one of `inprocess` (the default), `nats`, and `http`.
 
-When `communicationMode` is set to `nats` or `http`, the simulation will spin up 100 `simulation/local/repnode` external processes.  These processes run an `AuctionRep` with a `simulationrepdelegate` that listens on NATS fro the `nats` case and HTTP for the `http` case.  The simulation then runs in-process auctions that communicate with these external processes via the communication medium chosen.
+When `communicationMode` is set to `nats` or `http`, the simulation will spin up 100 `simulation/local/repnode` external processes.  These processes run an `CellRep` with a `simulationrepdelegate` that listens on NATS fro the `nats` case and HTTP for the `http` case.  The simulation then runs in-process auctions that communicate with these external processes via the communication medium chosen.
 
 It is difficult to reason about the performance implications of these communication schemes on a single computer -- the NATS and HTTP simulations are primarily intended to ensure the correctness of the communication implementation, not to measure its performance.  For that, one should run the simulation on a cluster (next section).
 

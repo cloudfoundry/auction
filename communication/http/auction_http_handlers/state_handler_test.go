@@ -13,9 +13,9 @@ import (
 
 var _ = Describe("State", func() {
 	Context("when the state call succeeds", func() {
-		var repState auctiontypes.RepState
+		var repState auctiontypes.CellState
 		BeforeEach(func() {
-			repState = auctiontypes.RepState{
+			repState = auctiontypes.CellState{
 				Stack: "lucid64",
 			}
 			auctionRep.StateReturns(repState, nil)
@@ -34,7 +34,7 @@ var _ = Describe("State", func() {
 
 	Context("when the state call fails", func() {
 		It("fails", func() {
-			auctionRep.StateReturns(auctiontypes.RepState{}, errors.New("boom"))
+			auctionRep.StateReturns(auctiontypes.CellState{}, errors.New("boom"))
 			Ω(auctionRep.StateCallCount()).Should(Equal(0))
 
 			status, body := Request(routes.State, nil, nil)

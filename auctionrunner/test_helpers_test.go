@@ -42,7 +42,7 @@ func BuildStopAuction(stop models.LRPStopAuction, queueTime time.Time) auctionty
 	}
 }
 
-func BuildRepState(memoryMB int, diskMB int, containers int, lrps []auctiontypes.LRP) auctiontypes.RepState {
+func BuildCellState(memoryMB int, diskMB int, containers int, lrps []auctiontypes.LRP) auctiontypes.CellState {
 	totalResources := auctiontypes.Resources{
 		MemoryMB:   memoryMB,
 		DiskMB:     diskMB,
@@ -60,7 +60,7 @@ func BuildRepState(memoryMB int, diskMB int, containers int, lrps []auctiontypes
 	Ω(availableResources.DiskMB).Should(BeNumerically(">=", 0), "Check your math!")
 	Ω(availableResources.Containers).Should(BeNumerically(">=", 0), "Check your math!")
 
-	return auctiontypes.RepState{
+	return auctiontypes.CellState{
 		Stack:              "lucid64",
 		AvailableResources: availableResources,
 		TotalResources:     totalResources,

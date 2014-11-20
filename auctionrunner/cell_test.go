@@ -510,12 +510,9 @@ var _ = Describe("Cell", func() {
 			})
 
 			Context("when the client returns an error", func() {
-				It("returns all work as failed work", func() {
+				It("does not return any failed work", func() {
 					client.PerformReturns(auctiontypes.Work{}, errors.New("boom"))
-					Ω(cell.Commit()).Should(Equal(auctiontypes.Work{
-						Starts: []models.LRPStartAuction{instanceToStart},
-						Stops:  []models.StopLRPInstance{instanceToStop},
-					}))
+					Ω(cell.Commit()).Should(BeZero())
 				})
 			})
 		})

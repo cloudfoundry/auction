@@ -107,7 +107,7 @@ var _ = Describe("Scheudler", func() {
 
 		Context("when the cell rejects the start auction", func() {
 			BeforeEach(func() {
-				clients["B"].PerformReturns(auctiontypes.Work{}, errors.New("boom"))
+				clients["B"].PerformReturns(auctiontypes.Work{Starts: []models.LRPStartAuction{startAuction.LRPStartAuction}}, nil)
 				results = Schedule(workPool, cells, timeProvider, []auctiontypes.StartAuction{startAuction}, nil)
 			})
 

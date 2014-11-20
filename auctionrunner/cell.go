@@ -134,7 +134,10 @@ func (c *Cell) Commit() auctiontypes.Work {
 
 	failedWork, err := c.client.Perform(c.workToCommit)
 	if err != nil {
-		return c.workToCommit
+		//an error may indicate partial failure
+		//in this case we don't reschedule work in order to make sure we don't
+		//create duplicates of things -- we'll let the converger figure things out for us later
+		return auctiontypes.Work{}
 	}
 	return failedWork
 }

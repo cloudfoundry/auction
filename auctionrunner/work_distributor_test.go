@@ -303,4 +303,78 @@ var _ = Describe("WorkDistributor", func() {
 			})
 		})
 	})
+
+	Describe("a comprehensive scenario", func() {
+		BeforeEach(func() {
+			clients["A"] = &fakes.FakeSimulationAuctionRep{}
+			cells["A"] = NewCell(clients["A"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+				{"pg-1", "ig-1", 0, 10, 10},
+				{"pg-2", "ig-2", 0, 10, 10},
+				{"pg-dupe", "ig-3", 0, 80, 80},
+			}))
+
+			clients["B"] = &fakes.FakeSimulationAuctionRep{}
+			cells["B"] = NewCell(clients["B"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+				{"pg-3", "ig-4", 0, 10, 10},
+				{"pg-dupe", "ig-5", 0, 80, 80},
+			}))
+		})
+
+		It("should optimize the distribution", func() {
+			stopAuctions := []auctiontypes.StopAuction{
+				BuildStopAuction(
+					BuildLRPStopAuction("pg-dupe", 0),
+					timeProvider.Time(),
+				),
+			}
+
+			startAuctions := []auctiontypes.StartAuction{
+				BuildStartAuction(
+					BuildLRPStartAuction("pg-3", "ig-new-1", 1, "lucid64", 40, 40),
+					timeProvider.Time(),
+				),
+				BuildStartAuction(
+					BuildLRPStartAuction("pg-2", "ig-new-2", 1, "lucid64", 10, 10),
+					timeProvider.Time(),
+				),
+				BuildStartAuction(
+					BuildLRPStartAuction("pg-nope", "ig-nope", 1, ".net", 10, 10),
+					timeProvider.Time(),
+				),
+			}
+
+			results = DistributeWork(workPool, cells, timeProvider, startAuctions, stopAuctions)
+
+			Ω(clients["A"].PerformCallCount()).Should(Equal(1))
+			Ω(clients["B"].PerformCallCount()).Should(Equal(1))
+
+			Ω(clients["A"].PerformArgsForCall(0).Stops).Should(ConsistOf(models.StopLRPInstance{
+				ProcessGuid:  "pg-dupe",
+				InstanceGuid: "ig-3",
+				Index:        0,
+			}))
+			Ω(clients["B"].PerformArgsForCall(0).Stops).Should(BeEmpty())
+
+			Ω(clients["A"].PerformArgsForCall(0).Starts).Should(ConsistOf(startAuctions[0].LRPStartAuction))
+			Ω(clients["B"].PerformArgsForCall(0).Starts).Should(ConsistOf(startAuctions[1].LRPStartAuction))
+
+			successfulStop := stopAuctions[0]
+			successfulStop.Winner = "B"
+			successfulStop.Attempts = 1
+			Ω(results.SuccessfulStops).Should(ConsistOf(successfulStop))
+
+			successfulStart1 := startAuctions[0]
+			successfulStart1.Winner = "A"
+			successfulStart1.Attempts = 1
+			successfulStart2 := startAuctions[1]
+			successfulStart2.Winner = "B"
+			successfulStart2.Attempts = 1
+			Ω(results.SuccessfulStarts).Should(ConsistOf(successfulStart1, successfulStart2))
+
+			Ω(results.FailedStops).Should(BeEmpty())
+			failedStartAuction := startAuctions[2]
+			failedStartAuction.Attempts = 1
+			Ω(results.FailedStarts).Should(ConsistOf(failedStartAuction))
+		})
+	})
 })

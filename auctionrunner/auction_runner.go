@@ -65,12 +65,13 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			hasWork = a.batch.HasWork
 			cells := FetchStateAndBuildCells(a.workPool, clients)
 			startAuctions, stopAuctions := a.batch.DedupeAndDrain()
+			if len(startAuctions) == 0 && len(stopAuctions) == 0 {
+				break
+			}
 			workResults := DistributeWork(a.workPool, cells, a.timeProvider, startAuctions, stopAuctions)
 			workResults = ResubmitFailedWork(a.batch, workResults, a.maxRetries)
 
 			go a.delegate.DistributedBatch(workResults)
-			//emit successfulStartAuctions and sucessfulStopAuctions to delegate
-			//add failedStartAuctions to batch
 		case <-signals:
 			return nil
 		}

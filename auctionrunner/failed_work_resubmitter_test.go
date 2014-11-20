@@ -41,6 +41,11 @@ var _ = Describe("FailedWorkResubmitter", func() {
 		Ω(out).Should(Equal(results))
 	})
 
+	It("should not resubmit if there is nothing to resubmit", func() {
+		ResubmitFailedWork(batch, auctiontypes.AuctionResults{}, maxRetries)
+		Ω(batch.HasWork).ShouldNot(Receive())
+	})
+
 	Context("if there is failed work", func() {
 		var retryableStartAuction, failedStartAuction auctiontypes.StartAuction
 		var retryableStopAuction, failedStopAuction auctiontypes.StopAuction

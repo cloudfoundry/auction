@@ -152,5 +152,16 @@ var _ = Describe("Batch", func() {
 			Ω(startAuctions).Should(BeEmpty())
 			Ω(stopAuctions).Should(BeEmpty())
 		})
+
+		It("should no longer have work after draining", func() {
+			batch.DedupeAndDrain()
+			Ω(batch.HasWork).ShouldNot(Receive())
+		})
+
+		It("should not hang forever if the work channel was already drained", func() {
+			Ω(batch.HasWork).Should(Receive())
+			batch.DedupeAndDrain()
+			Ω(batch.HasWork).ShouldNot(Receive())
+		})
 	})
 })

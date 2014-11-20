@@ -42,13 +42,6 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 		select {
 		case <-hasWork:
 			logger := a.logger.Session("auction")
-			logger.Info("fetching-work")
-			startAuctions, stopAuctions := a.batch.DedupeAndDrain()
-			logger.Info("fetched-work", lager.Data{"start-auctions": len(startAuctions), "stop-auctions": len(stopAuctions)})
-			if len(startAuctions) == 0 && len(stopAuctions) == 0 {
-				logger.Info("no-work-to-auction")
-				break
-			}
 
 			logger.Info("fetching-cell-reps")
 			clients, err := a.delegate.FetchCellReps()
@@ -67,11 +60,13 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			cells := FetchStateAndBuildCells(a.workPool, clients)
 			logger.Info("fetched-cell-state", lager.Data{"cell-state-count": len(cells), "num-failed-requests": len(clients) - len(cells)})
 
-			logger.Info("updating-work")
-			startAuctionsUpdate, stopAuctionsUpdate := a.batch.DedupeAndDrain()
-			startAuctions = append(startAuctions, startAuctionsUpdate...)
-			stopAuctions = append(stopAuctions, stopAuctionsUpdate...)
-			logger.Info("updated-work", lager.Data{"start-auctions": len(startAuctions), "stop-auctions": len(stopAuctions)})
+			logger.Info("fetching-work")
+			startAuctions, stopAuctions := a.batch.DedupeAndDrain()
+			logger.Info("fetched-work", lager.Data{"start-auctions": len(startAuctions), "stop-auctions": len(stopAuctions)})
+			if len(startAuctions) == 0 && len(stopAuctions) == 0 {
+				logger.Info("no-work-to-auction")
+				break
+			}
 
 			logger.Info("distributing-work")
 			workResults := DistributeWork(a.workPool, cells, a.timeProvider, startAuctions, stopAuctions)

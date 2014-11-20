@@ -27,8 +27,12 @@ func ResubmitFailedWork(batch *Batch, results auctiontypes.AuctionResults, maxRe
 	results.FailedStarts = failedStarts
 	results.FailedStops = failedStops
 
-	batch.ResubmitStartAuctions(retryableStarts)
-	batch.ResubmitStopAuctions(retryableStops)
+	if len(retryableStarts) > 0 {
+		batch.ResubmitStartAuctions(retryableStarts)
+	}
+	if len(retryableStops) > 0 {
+		batch.ResubmitStopAuctions(retryableStops)
+	}
 
 	return results
 }

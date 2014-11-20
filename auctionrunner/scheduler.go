@@ -13,7 +13,7 @@ import (
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
-func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider timeprovider.TimeProvider, startAuctions []auctiontypes.StartAuction, stopAuctions []auctiontypes.StopAuction) auctiontypes.AuctionResults {
+func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider timeprovider.TimeProvider, startAuctions []auctiontypes.StartAuction, stopAuctions []auctiontypes.StopAuction) auctiontypes.AuctionResults {
 	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	results := auctiontypes.AuctionResults{}
@@ -24,7 +24,7 @@ func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timePro
 	}
 
 	for _, stopAuction := range stopAuctions {
-		succesfulStop := processStopAuction(cells, stopAuction)
+		succesfulStop := scheduleStopAuction(cells, stopAuction)
 		results.SuccessfulStops = append(results.SuccessfulStops, succesfulStop)
 	}
 	var successfulStarts = map[string]auctiontypes.StartAuction{}
@@ -35,7 +35,7 @@ func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timePro
 	for _, startAuction := range startAuctions {
 		startAuctionLookup[startAuction.Identifier()] = startAuction
 
-		successfulStart, err := processStartAuction(cells, startAuction, randomizer)
+		successfulStart, err := scheduleStartAuction(cells, startAuction, randomizer)
 		if err != nil {
 			results.FailedStarts = append(results.FailedStarts, startAuction)
 			continue
@@ -103,7 +103,7 @@ func commitCells(workPool *workpool.WorkPool, cells map[string]*Cell) []auctiont
 	return failedWorks
 }
 
-func processStartAuction(cells map[string]*Cell, startAuction auctiontypes.StartAuction, randomizer *rand.Rand) (auctiontypes.StartAuction, error) {
+func scheduleStartAuction(cells map[string]*Cell, startAuction auctiontypes.StartAuction, randomizer *rand.Rand) (auctiontypes.StartAuction, error) {
 	winnerGuids := []string{}
 	winnerScore := 1e20
 
@@ -137,7 +137,7 @@ func processStartAuction(cells map[string]*Cell, startAuction auctiontypes.Start
 	return startAuction, nil
 }
 
-func processStopAuction(cells map[string]*Cell, stopAuction auctiontypes.StopAuction) auctiontypes.StopAuction {
+func scheduleStopAuction(cells map[string]*Cell, stopAuction auctiontypes.StopAuction) auctiontypes.StopAuction {
 	winnerGuid := ""
 	winnerScore := 1e20
 	instancesToStop := map[string][]string{}

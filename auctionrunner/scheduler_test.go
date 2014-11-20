@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("WorkDistributor", func() {
+var _ = Describe("Scheudler", func() {
 	var clients map[string]*fakes.FakeSimulationCellRep
 	var cells map[string]*Cell
 	var timeProvider *faketimeprovider.FakeTimeProvider
@@ -51,7 +51,7 @@ var _ = Describe("WorkDistributor", func() {
 
 			stopAuctions := []auctiontypes.StopAuction{stopAuction}
 
-			results := DistributeWork(workPool, map[string]*Cell{}, timeProvider, startAuctions, stopAuctions)
+			results := Schedule(workPool, map[string]*Cell{}, timeProvider, startAuctions, stopAuctions)
 			Ω(results.SuccessfulStarts).Should(BeEmpty())
 			Ω(results.SuccessfulStops).Should(BeEmpty())
 			startAuction.Attempts = 1
@@ -82,7 +82,7 @@ var _ = Describe("WorkDistributor", func() {
 
 		Context("when it picks a winner", func() {
 			BeforeEach(func() {
-				results = DistributeWork(workPool, cells, timeProvider, []auctiontypes.StartAuction{startAuction}, nil)
+				results = Schedule(workPool, cells, timeProvider, []auctiontypes.StartAuction{startAuction}, nil)
 			})
 
 			It("picks the best cell for the job", func() {
@@ -108,7 +108,7 @@ var _ = Describe("WorkDistributor", func() {
 		Context("when the cell rejects the start auction", func() {
 			BeforeEach(func() {
 				clients["B"].PerformReturns(auctiontypes.Work{}, errors.New("boom"))
-				results = DistributeWork(workPool, cells, timeProvider, []auctiontypes.StartAuction{startAuction}, nil)
+				results = Schedule(workPool, cells, timeProvider, []auctiontypes.StartAuction{startAuction}, nil)
 			})
 
 			It("marks the start auction as failed", func() {
@@ -122,7 +122,7 @@ var _ = Describe("WorkDistributor", func() {
 			BeforeEach(func() {
 				startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", "ig-4", 0, "lucid64", 1000, 1000), timeProvider.Time())
 				timeProvider.Increment(time.Minute)
-				results = DistributeWork(workPool, cells, timeProvider, []auctiontypes.StartAuction{startAuction}, nil)
+				results = Schedule(workPool, cells, timeProvider, []auctiontypes.StartAuction{startAuction}, nil)
 			})
 
 			It("should not attempt to start the LRP", func() {
@@ -178,7 +178,7 @@ var _ = Describe("WorkDistributor", func() {
 			})
 
 			It("tells the appropriate cells to stop", func() {
-				results = DistributeWork(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
+				results = Schedule(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
 
 				Ω(clients["A"].PerformCallCount()).Should(Equal(1))
 				Ω(clients["B"].PerformCallCount()).Should(Equal(0))
@@ -208,7 +208,7 @@ var _ = Describe("WorkDistributor", func() {
 			})
 
 			It("marks the stop auction a success", func() {
-				results = DistributeWork(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
+				results = Schedule(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
 
 				stopAuction.Winner = "B"
 				stopAuction.Attempts = 1
@@ -220,7 +220,7 @@ var _ = Describe("WorkDistributor", func() {
 			Context("if a cell fails to stop", func() {
 				It("nonetheless markes the stop auction as a success -- if this is really an issue it will come up again later", func() {
 					clients["C"].PerformReturns(auctiontypes.Work{}, errors.New("boom"))
-					results = DistributeWork(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
+					results = Schedule(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
 
 					stopAuction.Winner = "B"
 					stopAuction.Attempts = 1
@@ -241,7 +241,7 @@ var _ = Describe("WorkDistributor", func() {
 			})
 
 			It("stops all but one of the instances (doesn't matter which)", func() {
-				results = DistributeWork(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
+				results = Schedule(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
 
 				Ω(clients["A"].PerformCallCount()).Should(Equal(0))
 				Ω(clients["B"].PerformCallCount()).Should(Equal(0))
@@ -269,7 +269,7 @@ var _ = Describe("WorkDistributor", func() {
 			})
 
 			It("succeeds without taking any actions on any cells", func() {
-				results = DistributeWork(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
+				results = Schedule(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
 
 				Ω(clients["A"].PerformCallCount()).Should(Equal(0))
 				Ω(clients["B"].PerformCallCount()).Should(Equal(0))
@@ -293,7 +293,7 @@ var _ = Describe("WorkDistributor", func() {
 			})
 
 			It("fails silently -- if this is really an issue it will come up again later", func() {
-				results = DistributeWork(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
+				results = Schedule(workPool, cells, timeProvider, nil, []auctiontypes.StopAuction{stopAuction})
 
 				Ω(clients["A"].PerformCallCount()).Should(Equal(0))
 				Ω(clients["B"].PerformCallCount()).Should(Equal(0))
@@ -346,7 +346,7 @@ var _ = Describe("WorkDistributor", func() {
 			)
 			startAuctions := []auctiontypes.StartAuction{startPG3, startPG2, startPGNope}
 
-			results = DistributeWork(workPool, cells, timeProvider, startAuctions, stopAuctions)
+			results = Schedule(workPool, cells, timeProvider, startAuctions, stopAuctions)
 
 			Ω(clients["A"].PerformCallCount()).Should(Equal(1))
 			Ω(clients["B"].PerformCallCount()).Should(Equal(1))
@@ -400,7 +400,7 @@ var _ = Describe("WorkDistributor", func() {
 			)
 			startAuctions := []auctiontypes.StartAuction{startLarge, startMedium} //note we're submitting the smaller one first
 
-			results = DistributeWork(workPool, cells, timeProvider, startAuctions, nil)
+			results = Schedule(workPool, cells, timeProvider, startAuctions, nil)
 
 			Ω(results.FailedStarts).Should(BeEmpty())
 

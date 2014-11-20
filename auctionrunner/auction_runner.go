@@ -60,37 +60,37 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			cells := FetchStateAndBuildCells(a.workPool, clients)
 			logger.Info("fetched-cell-state", lager.Data{"cell-state-count": len(cells), "num-failed-requests": len(clients) - len(cells)})
 
-			logger.Info("fetching-work")
+			logger.Info("fetching-auctions")
 			startAuctions, stopAuctions := a.batch.DedupeAndDrain()
-			logger.Info("fetched-work", lager.Data{"start-auctions": len(startAuctions), "stop-auctions": len(stopAuctions)})
+			logger.Info("fetched-auctions", lager.Data{"start-auctions": len(startAuctions), "stop-auctions": len(stopAuctions)})
 			if len(startAuctions) == 0 && len(stopAuctions) == 0 {
-				logger.Info("no-work-to-auction")
+				logger.Info("nothing-to-auction")
 				break
 			}
 
-			logger.Info("distributing-work")
-			workResults := DistributeWork(a.workPool, cells, a.timeProvider, startAuctions, stopAuctions)
-			logger.Info("distributed-work", lager.Data{
-				"successful-start-auctions": len(workResults.SuccessfulStarts),
-				"successful-stop-auctions":  len(workResults.SuccessfulStops),
-				"failed-start-auctions":     len(workResults.FailedStarts),
-				"failed-stop-auctions":      len(workResults.FailedStops),
+			logger.Info("scheduling")
+			auctionResults := Schedule(a.workPool, cells, a.timeProvider, startAuctions, stopAuctions)
+			logger.Info("scheduled", lager.Data{
+				"successful-start-auctions": len(auctionResults.SuccessfulStarts),
+				"successful-stop-auctions":  len(auctionResults.SuccessfulStops),
+				"failed-start-auctions":     len(auctionResults.FailedStarts),
+				"failed-stop-auctions":      len(auctionResults.FailedStops),
 			})
-			numStartsFailed := len(workResults.FailedStarts)
-			numStopsFailed := len(workResults.FailedStops)
+			numStartsFailed := len(auctionResults.FailedStarts)
+			numStopsFailed := len(auctionResults.FailedStops)
 
 			logger.Info("resubmitting-failures")
-			workResults = ResubmitFailedWork(a.batch, workResults, a.maxRetries)
+			auctionResults = ResubmitFailedAuctions(a.batch, auctionResults, a.maxRetries)
 			logger.Info("resubmitted-failures", lager.Data{
-				"successful-start-auctions":     len(workResults.SuccessfulStarts),
-				"successful-stop-auctions":      len(workResults.SuccessfulStops),
-				"will-not-retry-start-auctions": len(workResults.FailedStarts),
-				"will-not-retry-stop-auctions":  len(workResults.FailedStops),
-				"will-retry-start-auctions":     numStartsFailed - len(workResults.FailedStarts),
-				"will-retry-stop-auctions":      numStopsFailed - len(workResults.FailedStops),
+				"successful-start-auctions":     len(auctionResults.SuccessfulStarts),
+				"successful-stop-auctions":      len(auctionResults.SuccessfulStops),
+				"will-not-retry-start-auctions": len(auctionResults.FailedStarts),
+				"will-not-retry-stop-auctions":  len(auctionResults.FailedStops),
+				"will-retry-start-auctions":     numStartsFailed - len(auctionResults.FailedStarts),
+				"will-retry-stop-auctions":      numStopsFailed - len(auctionResults.FailedStops),
 			})
 
-			a.delegate.DistributedBatch(workResults)
+			a.delegate.DistributedBatch(auctionResults)
 		case <-signals:
 			return nil
 		}

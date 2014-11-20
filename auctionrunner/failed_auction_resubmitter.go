@@ -2,7 +2,7 @@ package auctionrunner
 
 import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
-func ResubmitFailedWork(batch *Batch, results auctiontypes.AuctionResults, maxRetries int) auctiontypes.AuctionResults {
+func ResubmitFailedAuctions(batch *Batch, results auctiontypes.AuctionResults, maxRetries int) auctiontypes.AuctionResults {
 	retryableStarts := []auctiontypes.StartAuction{}
 	retryableStops := []auctiontypes.StopAuction{}
 	failedStarts := []auctiontypes.StartAuction{}

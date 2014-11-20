@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("FailedWorkResubmitter", func() {
+var _ = Describe("ResubmitFailedAuctions", func() {
 	var batch *Batch
 	var timeProvider *faketimeprovider.FakeTimeProvider
 	var results auctiontypes.AuctionResults
@@ -37,12 +37,12 @@ var _ = Describe("FailedWorkResubmitter", func() {
 			FailedStops:  []auctiontypes.StopAuction{},
 		}
 
-		out := ResubmitFailedWork(batch, results, maxRetries)
+		out := ResubmitFailedAuctions(batch, results, maxRetries)
 		Ω(out).Should(Equal(results))
 	})
 
 	It("should not resubmit if there is nothing to resubmit", func() {
-		ResubmitFailedWork(batch, auctiontypes.AuctionResults{}, maxRetries)
+		ResubmitFailedAuctions(batch, auctiontypes.AuctionResults{}, maxRetries)
 		Ω(batch.HasWork).ShouldNot(Receive())
 	})
 
@@ -68,7 +68,7 @@ var _ = Describe("FailedWorkResubmitter", func() {
 		})
 
 		It("should resubmit work that can be retried and does not return it, but returns work that has exceeded maxretries without resubmitting it", func() {
-			out := ResubmitFailedWork(batch, results, maxRetries)
+			out := ResubmitFailedAuctions(batch, results, maxRetries)
 			Ω(out.FailedStarts).Should(ConsistOf(failedStartAuction))
 			Ω(out.FailedStops).Should(ConsistOf(failedStopAuction))
 

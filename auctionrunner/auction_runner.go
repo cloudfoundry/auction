@@ -90,7 +90,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				"will-retry-stop-auctions":      numStopsFailed - len(auctionResults.FailedStops),
 			})
 
-			a.delegate.DistributedBatch(auctionResults)
+			go a.delegate.DistributedBatch(auctionResults)
 		case <-signals:
 			return nil
 		}

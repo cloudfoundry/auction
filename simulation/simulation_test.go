@@ -143,24 +143,14 @@ var _ = Describe("Auction", func() {
 
 	Describe("Experiments", func() {
 		Context("Small Cold Starts", func() {
-			for repeat := 0; repeat < 4; repeat++ {
-				repeat := repeat
-				It("should distribute evenly for a very small distribution", func() {
-					napps := 8
-					ncells := 4
+			napps := []int{8, 40, 200, 800}
+			ncells := []int{4, 10, 20, 40}
+			for i := range ncells {
+				i := i
+				It("should distribute evenly", func() {
+					instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
-					instances := generateUniqueLRPStartAuctions(napps, 1)
-
-					runStartAuction(instances, ncells, repeat, 0)
-				})
-
-				It("should distribute evenly for a small distribution", func() {
-					napps := 40
-					ncells := 10
-
-					instances := generateUniqueLRPStartAuctions(napps, 1)
-
-					runStartAuction(instances, ncells, repeat, 1)
+					runStartAuction(instances, ncells[i], i, 0)
 				})
 			}
 		})
@@ -189,7 +179,7 @@ var _ = Describe("Auction", func() {
 							permutedInstances[i] = instances[index]
 						}
 
-						runStartAuction(permutedInstances, ncells[i], i, 2)
+						runStartAuction(permutedInstances, ncells[i], i, 1)
 					})
 				})
 			}
@@ -212,7 +202,7 @@ var _ = Describe("Auction", func() {
 					It("should distribute evenly", func() {
 						instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
-						runStartAuction(instances, ncells[i], i+2, 2)
+						runStartAuction(instances, ncells[i], i+2, 1)
 					})
 				})
 			}
@@ -235,7 +225,7 @@ var _ = Describe("Auction", func() {
 					It("should distribute evenly", func() {
 						instances := generateLRPStartAuctionsForProcessGuid(napps[i], "red", 1)
 
-						runStartAuction(instances, ncells[i], i, 3)
+						runStartAuction(instances, ncells[i], i, 2)
 					})
 				})
 			}

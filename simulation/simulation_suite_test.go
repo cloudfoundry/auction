@@ -182,7 +182,7 @@ func launchExternalHTTPReps() map[string]auctiontypes.SimulationCellRep {
 }
 
 func startReport() {
-	svgReport = visualization.StartSVGReport("./"+reportName+".svg", 4, 4, numCells)
+	svgReport = visualization.StartSVGReport("./"+reportName+".svg", 4, 3, numCells)
 	svgReport.DrawHeader(communicationMode)
 }
 

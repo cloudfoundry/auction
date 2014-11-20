@@ -120,11 +120,13 @@ func (r *Report) WaitTimeStats() Stat {
 }
 
 func fetchStates(cells map[string]auctiontypes.AuctionRep) map[string]auctiontypes.RepState {
-	workPool := workpool.NewWorkPool(50)
+	workPool := workpool.NewWorkPool(500)
+
 	wg := &sync.WaitGroup{}
 	wg.Add(len(cells))
 	lock := &sync.Mutex{}
 	states := map[string]auctiontypes.RepState{}
+
 	for repGuid, cell := range cells {
 		repGuid := repGuid
 		cell := cell

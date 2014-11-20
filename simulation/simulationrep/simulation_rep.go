@@ -63,9 +63,9 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 	availableResources := rep.availableResources()
 
 	for _, start := range work.Starts {
-		hasRoom := availableResources.Containers > 0
-		hasRoom = hasRoom && availableResources.MemoryMB > start.DesiredLRP.MemoryMB
-		hasRoom = hasRoom && availableResources.DiskMB > start.DesiredLRP.DiskMB
+		hasRoom := availableResources.Containers >= 0
+		hasRoom = hasRoom && availableResources.MemoryMB >= start.DesiredLRP.MemoryMB
+		hasRoom = hasRoom && availableResources.DiskMB >= start.DesiredLRP.DiskMB
 
 		if hasRoom {
 			rep.instances[start.InstanceGuid] = auctiontypes.LRP{

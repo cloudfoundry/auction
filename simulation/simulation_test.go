@@ -2,6 +2,7 @@ package simulation_test
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
@@ -103,7 +104,6 @@ var _ = Describe("Auction", func() {
 	}
 
 	runStartAuction := func(startAuctions []models.LRPStartAuction, numCells int, i int, j int) {
-		fmt.Println("Starting...")
 		t := time.Now()
 		auctionRunnerDelegate.SetCellLimit(numCells)
 		for _, startAuction := range startAuctions {
@@ -129,9 +129,17 @@ var _ = Describe("Auction", func() {
 	})
 
 	JustBeforeEach(func() {
+		wg := &sync.WaitGroup{}
+		wg.Add(len(initialDistributions))
 		for index, instances := range initialDistributions {
-			cells[cellGuid(index)].Perform(workForInstances(instances))
+			guid := cellGuid(index)
+			instances := instances
+			auctionWorkPool.Submit(func() {
+				cells[guid].Perform(workForInstances(instances))
+				wg.Done()
+			})
 		}
+		wg.Wait()
 	})
 
 	Describe("Experiments", func() {

@@ -57,6 +57,7 @@ var auctionRunnerProcess ifrit.Process
 var auctionRunnerDelegate *AuctionRunnerDelegate
 var auctionWorkPool *workpool.WorkPool
 var auctionRunner auctionrunner.AuctionRunner
+var logger lager.Logger
 
 func init() {
 	flag.StringVar(&communicationMode, "communicationMode", "inprocess", "one of inprocess, nats, or http")
@@ -78,7 +79,7 @@ var _ = BeforeSuite(func() {
 
 	startReport()
 
-	logger := lager.NewLogger("auction-sim")
+	logger = lager.NewLogger("sim")
 	logger.RegisterSink(lager.NewWriterSink(GinkgoWriter, lager.DEBUG))
 
 	sessionsToTerminate = []*gexec.Session{}
@@ -93,25 +94,23 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	workPool := workpool.NewWorkPool(50)
+	auctionWorkPool = workpool.NewWorkPool(workers)
+
 	wg := &sync.WaitGroup{}
 	wg.Add(len(cells))
 	for _, cell := range cells {
 		cell := cell
-		workPool.Submit(func() {
+		auctionWorkPool.Submit(func() {
 			cell.Reset()
 			wg.Done()
 		})
 	}
-
 	wg.Wait()
-	workPool.Stop()
 
 	util.ResetGuids()
 
 	auctionRunnerDelegate = NewAuctionRunnerDelegate(cells)
-	auctionWorkPool = workpool.NewWorkPool(workers)
-	auctionRunner = auctionrunner.New(auctionRunnerDelegate, timeprovider.NewTimeProvider(), 10, auctionWorkPool)
+	auctionRunner = auctionrunner.New(auctionRunnerDelegate, timeprovider.NewTimeProvider(), 10, auctionWorkPool, logger)
 	auctionRunnerProcess = ifrit.Invoke(auctionRunner)
 })
 

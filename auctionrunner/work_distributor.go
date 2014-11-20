@@ -2,6 +2,7 @@ package auctionrunner
 
 import (
 	"math/rand"
+	"sort"
 	"sync"
 	"time"
 
@@ -29,6 +30,9 @@ func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timePro
 
 	var successfulStarts = map[string]auctiontypes.StartAuction{}
 	var startAuctionLookup = map[string]auctiontypes.StartAuction{}
+
+	sort.Sort(SortableAuctions(startAuctions))
+	sort.Reverse(SortableAuctions(startAuctions))
 
 	for _, startAuction := range startAuctions {
 		startAuctionLookup[startAuction.Identifier()] = startAuction
@@ -184,4 +188,12 @@ func processStopAuction(cells map[string]*Cell, stopAuction auctiontypes.StopAuc
 	}
 
 	return stopAuction
+}
+
+type SortableAuctions []auctiontypes.StartAuction
+
+func (a SortableAuctions) Len() int      { return len(a) }
+func (a SortableAuctions) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a SortableAuctions) Less(i, j int) bool {
+	return a[i].LRPStartAuction.DesiredLRP.MemoryMB < a[j].LRPStartAuction.DesiredLRP.MemoryMB
 }

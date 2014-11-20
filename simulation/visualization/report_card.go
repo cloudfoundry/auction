@@ -31,12 +31,13 @@ var ReportCardWidth = border*3 + instanceBoxWidth + graphWidth
 var ReportCardHeight = border*3 + instanceBoxHeight
 
 type SVGReport struct {
-	SVG       *svg.SVG
-	f         *os.File
-	attempts  []float64
-	waitTimes []float64
-	width     int
-	height    int
+	SVG                *svg.SVG
+	f                  *os.File
+	attempts           []float64
+	waitTimes          []float64
+	distributionScores []float64
+	width              int
+	height             int
 }
 
 func StartSVGReport(path string, width, height int, numCells int) *SVGReport {
@@ -66,7 +67,7 @@ func (r *SVGReport) DrawHeader(communicationMode string) {
 }
 
 func (r *SVGReport) drawResults() {
-	r.SVG.Text(border, 70, fmt.Sprintf("Wait Time: %.2fs", stats.StatsSum(r.waitTimes)), `text-anchor:start;font-size:20px;font-family:Helvetica Neue`)
+	r.SVG.Text(border, 70, fmt.Sprintf("Distribution Scores: %.2f, Wait Time: %.2fs", stats.StatsSum(r.distributionScores), stats.StatsSum(r.waitTimes)), `text-anchor:start;font-size:20px;font-family:Helvetica Neue`)
 }
 
 func (r *SVGReport) DrawReportCard(x, y int, report *Report) {
@@ -78,6 +79,7 @@ func (r *SVGReport) DrawReportCard(x, y int, report *Report) {
 	r.drawText(report, y+binSpacing*4)
 
 	r.waitTimes = append(r.waitTimes, report.AuctionDuration.Seconds())
+	r.distributionScores = append(r.distributionScores, report.DistributionScore())
 
 	r.SVG.Gend()
 }

@@ -12,17 +12,10 @@ import (
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
-type DistributeWorkResults struct {
-	SuccessfulStarts []auctiontypes.StartAuction
-	SuccessfulStops  []auctiontypes.StopAuction
-	FailedStarts     []auctiontypes.StartAuction
-	FailedStops      []auctiontypes.StopAuction
-}
-
-func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider timeprovider.TimeProvider, startAuctions []auctiontypes.StartAuction, stopAuctions []auctiontypes.StopAuction) DistributeWorkResults {
+func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider timeprovider.TimeProvider, startAuctions []auctiontypes.StartAuction, stopAuctions []auctiontypes.StopAuction) WorkResults {
 	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	results := DistributeWorkResults{}
+	results := WorkResults{}
 	if len(cells) == 0 {
 		results.FailedStarts = startAuctions
 		results.FailedStops = stopAuctions
@@ -64,7 +57,7 @@ func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timePro
 	return markResults(results, timeProvider)
 }
 
-func markResults(results DistributeWorkResults, timeProvider timeprovider.TimeProvider) DistributeWorkResults {
+func markResults(results WorkResults, timeProvider timeprovider.TimeProvider) WorkResults {
 	now := timeProvider.Time()
 	for i := range results.FailedStarts {
 		results.FailedStarts[i].Attempts++

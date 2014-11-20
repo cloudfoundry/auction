@@ -21,7 +21,7 @@ var _ = Describe("WorkDistributor", func() {
 	var cells map[string]*Cell
 	var timeProvider *faketimeprovider.FakeTimeProvider
 	var workPool *workpool.WorkPool
-	var results DistributeWorkResults
+	var results WorkResults
 
 	BeforeEach(func() {
 		timeProvider = faketimeprovider.New(time.Now())

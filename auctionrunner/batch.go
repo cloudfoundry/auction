@@ -47,6 +47,20 @@ func (b *Batch) AddLRPStopAuction(stop models.LRPStopAuction) {
 	b.claimToHaveWork()
 }
 
+func (b *Batch) ResubmitStartAuctions(starts []auctiontypes.StartAuction) {
+	b.lock.Lock()
+	b.startAuctions = append(starts, b.startAuctions...)
+	b.lock.Unlock()
+	b.claimToHaveWork()
+}
+
+func (b *Batch) ResubmitStopAuctions(stops []auctiontypes.StopAuction) {
+	b.lock.Lock()
+	b.stopAuctions = append(stops, b.stopAuctions...)
+	b.lock.Unlock()
+	b.claimToHaveWork()
+}
+
 func (b *Batch) DedupeAndDrain() ([]auctiontypes.StartAuction, []auctiontypes.StopAuction) {
 	b.lock.Lock()
 	startAuctions := b.startAuctions

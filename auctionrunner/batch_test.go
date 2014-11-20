@@ -4,6 +4,7 @@ import (
 	"time"
 
 	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/cloudfoundry/gunk/timeprovider/faketimeprovider"
 
@@ -63,6 +64,52 @@ var _ = Describe("Batch", func() {
 		})
 	})
 
+	Describe("resubmitting work", func() {
+		Context("resubmitting starts", func() {
+			It("adds the work, and ensures it has priority when deduping", func() {
+				lrpStartAuction := BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10)
+				startAuction := BuildStartAuction(lrpStartAuction, time.Unix(0, 0))
+				startAuction.Attempts = 3
+				batch.AddLRPStartAuction(lrpStartAuction)
+				batch.ResubmitStartAuctions([]auctiontypes.StartAuction{startAuction})
+				batch.AddLRPStartAuction(lrpStartAuction)
+
+				startAuctions, _ := batch.DedupeAndDrain()
+				Ω(startAuctions).Should(ConsistOf(startAuction))
+			})
+
+			It("should have work", func() {
+				lrpStartAuction := BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10)
+				startAuction := BuildStartAuction(lrpStartAuction, time.Unix(0, 0))
+				batch.ResubmitStartAuctions([]auctiontypes.StartAuction{startAuction})
+
+				Ω(batch.HasWork).Should(Receive())
+			})
+		})
+
+		Context("resubmitting stops", func() {
+			It("adds the work, and ensures it has priority when deduping", func() {
+				lrpStopAuction := BuildLRPStopAuction("pg-1", 1)
+				stopAuction := BuildStopAuction(lrpStopAuction, time.Unix(0, 0))
+				stopAuction.Attempts = 3
+				batch.AddLRPStopAuction(lrpStopAuction)
+				batch.ResubmitStopAuctions([]auctiontypes.StopAuction{stopAuction})
+				batch.AddLRPStopAuction(lrpStopAuction)
+
+				_, stopAuctions := batch.DedupeAndDrain()
+				Ω(stopAuctions).Should(ConsistOf(stopAuction))
+			})
+
+			It("should have work", func() {
+				lrpStopAuction := BuildLRPStopAuction("pg-1", 1)
+				stopAuction := BuildStopAuction(lrpStopAuction, time.Unix(0, 0))
+				batch.ResubmitStopAuctions([]auctiontypes.StopAuction{stopAuction})
+
+				Ω(batch.HasWork).Should(Receive())
+			})
+		})
+	})
+
 	Describe("DedupeAndDrain", func() {
 		BeforeEach(func() {
 			batch.AddLRPStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10))
@@ -76,7 +123,7 @@ var _ = Describe("Batch", func() {
 
 		It("should dedupe any duplicate start auctions and stop auctions", func() {
 			startAuctions, stopAuctions := batch.DedupeAndDrain()
-			Ω(startAuctions).Should(ConsistOf(
+			Ω(startAuctions).Should(Equal([]auctiontypes.StartAuction{
 				BuildStartAuction(
 					BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10),
 					timeProvider.Time(),
@@ -85,9 +132,9 @@ var _ = Describe("Batch", func() {
 					BuildLRPStartAuction("pg-2", "ig-2", 2, "lucid64", 10, 10),
 					timeProvider.Time(),
 				),
-			))
+			}))
 
-			Ω(stopAuctions).Should(ConsistOf(
+			Ω(stopAuctions).Should(Equal([]auctiontypes.StopAuction{
 				BuildStopAuction(
 					BuildLRPStopAuction("pg-1", 1),
 					timeProvider.Time(),
@@ -96,7 +143,7 @@ var _ = Describe("Batch", func() {
 					BuildLRPStopAuction("pg-2", 3),
 					timeProvider.Time(),
 				),
-			))
+			}))
 		})
 
 		It("should clear out its cache, so a subsequent call shouldn't fetch anything", func() {

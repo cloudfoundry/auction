@@ -1,7 +1,6 @@
 package auctionrunner
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -19,6 +18,14 @@ type AuctionRunner interface {
 
 type AuctionRunnerDelegate interface {
 	FetchAuctionRepClients() (map[string]auctiontypes.AuctionRep, error)
+	DistributedBatch(WorkResults)
+}
+
+type WorkResults struct {
+	SuccessfulStarts []auctiontypes.StartAuction
+	SuccessfulStops  []auctiontypes.StopAuction
+	FailedStarts     []auctiontypes.StartAuction
+	FailedStops      []auctiontypes.StopAuction
 }
 
 type auctionRunner struct {
@@ -26,14 +33,16 @@ type auctionRunner struct {
 	batch        *Batch
 	timeProvider timeprovider.TimeProvider
 	workPool     *workpool.WorkPool
+	maxRetries   int
 }
 
-func New(delegate AuctionRunnerDelegate, timeProvider timeprovider.TimeProvider, workPool *workpool.WorkPool) *auctionRunner {
+func New(delegate AuctionRunnerDelegate, timeProvider timeprovider.TimeProvider, maxRetries int, workPool *workpool.WorkPool) *auctionRunner {
 	return &auctionRunner{
 		delegate:     delegate,
 		batch:        NewBatch(timeProvider),
 		timeProvider: timeProvider,
 		workPool:     workPool,
+		maxRetries:   maxRetries,
 	}
 }
 
@@ -57,7 +66,9 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			cells := FetchStateAndBuildCells(a.workPool, clients)
 			startAuctions, stopAuctions := a.batch.DedupeAndDrain()
 			workResults := DistributeWork(a.workPool, cells, a.timeProvider, startAuctions, stopAuctions)
-			fmt.Println(workResults)
+			workResults = ResubmitFailedWork(a.batch, workResults, a.maxRetries)
+
+			go a.delegate.DistributedBatch(workResults)
 			//emit successfulStartAuctions and sucessfulStopAuctions to delegate
 			//add failedStartAuctions to batch
 		case <-signals:

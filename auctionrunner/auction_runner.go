@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/gunk/timeprovider"
+	"github.com/tedsuo/ifrit"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
@@ -12,6 +13,7 @@ import (
 )
 
 type AuctionRunner interface {
+	ifrit.Runner
 	AddLRPStartAuction(models.LRPStartAuction)
 	AddLRPStopAuction(models.LRPStopAuction)
 }

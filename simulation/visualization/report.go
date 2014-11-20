@@ -71,7 +71,7 @@ func (r *Report) NReps() int {
 }
 
 func (r *Report) NMissingInstances() int {
-	return len(r.AuctionResults.FailedStarts)
+	return r.NumAuctions - len(r.AuctionResults.SuccessfulStarts)
 }
 
 func (r *Report) InitialDistributionScore() float64 {

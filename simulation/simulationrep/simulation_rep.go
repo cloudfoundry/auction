@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auction/util"
 )
 
 type SimulationRep struct {
@@ -36,7 +35,7 @@ func (rep *SimulationRep) State() (auctiontypes.RepState, error) {
 
 	availableResources := rep.availableResources()
 
-	util.RandomSleep(800, 900)
+	// util.RandomSleep(800, 900)
 
 	return auctiontypes.RepState{
 		Stack:              rep.stack,
@@ -84,7 +83,7 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 		}
 	}
 
-	util.RandomSleep(800, 900)
+	// util.RandomSleep(800, 900)
 
 	return failedWork, nil
 }

@@ -1,6 +1,7 @@
 package simulation_test
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
@@ -34,13 +35,13 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	generateLRPsForProcessGuid := func(processGuid string, numInstances int, index int, memoryMB int) []auctiontypes.LRP {
-		instances := []auctiontypes.LRP{}
-		for i := 0; i < numInstances; i++ {
-			instances = append(instances, newLRP(processGuid, index, memoryMB))
-		}
-		return instances
-	}
+	// generateLRPsForProcessGuid := func(processGuid string, numInstances int, index int, memoryMB int) []auctiontypes.LRP {
+	// 	instances := []auctiontypes.LRP{}
+	// 	for i := 0; i < numInstances; i++ {
+	// 		instances = append(instances, newLRP(processGuid, index, memoryMB))
+	// 	}
+	// 	return instances
+	// }
 
 	newLRPStartAuction := func(processGuid string, memoryMB int) models.LRPStartAuction {
 		return models.LRPStartAuction{
@@ -101,7 +102,8 @@ var _ = Describe("Auction", func() {
 		return work
 	}
 
-	runStartAuction := func(startAuctions []models.LRPStartAuction, nCells int, i int, j int) {
+	runStartAuction := func(startAuctions []models.LRPStartAuction, numCells int, i int, j int) {
+		fmt.Println("Starting...")
 		t := time.Now()
 		auctionRunnerDelegate.SetCellLimit(numCells)
 		for _, startAuction := range startAuctions {
@@ -112,11 +114,13 @@ var _ = Describe("Auction", func() {
 		Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(startAuctions)))
 		duration := time.Since(t)
 
-		report := visualization.NewReport(len(startAuctions), auctionRunnerDelegate.FetchAuctionRepClients(), auctionRunnerDelegate.Results(), duration)
+		cells, _ := auctionRunnerDelegate.FetchAuctionRepClients()
+		report := visualization.NewReport(len(startAuctions), cells, auctionRunnerDelegate.Results(), duration)
 
 		visualization.PrintReport(report)
 		svgReport.DrawReportCard(i, j, report)
 		reports = append(reports, report)
+		fmt.Println("Done...")
 	}
 
 	BeforeEach(func() {

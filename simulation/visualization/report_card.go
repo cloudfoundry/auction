@@ -5,13 +5,11 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/GaryBoone/GoStats/stats"
 	. "github.com/onsi/gomega"
 
 	"github.com/ajstarks/svgo"
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 )
 
 var border = 5
@@ -33,13 +31,12 @@ var ReportCardWidth = border*3 + instanceBoxWidth + graphWidth
 var ReportCardHeight = border*3 + instanceBoxHeight
 
 type SVGReport struct {
-	SVG            *svg.SVG
-	f              *os.File
-	bids           []float64
-	communications []float64
-	waitTimes      []float64
-	width          int
-	height         int
+	SVG       *svg.SVG
+	f         *os.File
+	attempts  []float64
+	waitTimes []float64
+	width     int
+	height    int
 }
 
 func StartSVGReport(path string, width, height int, numCells int) *SVGReport {
@@ -64,14 +61,12 @@ func (r *SVGReport) Done() {
 	r.f.Close()
 }
 
-func (r *SVGReport) DrawHeader(communicationMode string, rules auctiontypes.StartAuctionRules, maxConcurrentPerExecutor int) {
-	rulesString := fmt.Sprintf("%#v", rules)
-	header := fmt.Sprintf("%s - MaxConcurrent/Executor:%d - %s ", communicationMode, maxConcurrentPerExecutor, rulesString[18:len(rulesString)-1])
-	r.SVG.Text(border, 30, header, `text-anchor:start;font-size:20px;font-family:Helvetica Neue`)
+func (r *SVGReport) DrawHeader(communicationMode string) {
+	r.SVG.Text(border, 30, communicationMode, `text-anchor:start;font-size:20px;font-family:Helvetica Neue`)
 }
 
 func (r *SVGReport) drawResults() {
-	r.SVG.Text(border, 70, fmt.Sprintf("Bid: %.2f | Wait Time: %.2fs | Communications: %.0f", stats.StatsSum(r.bids), stats.StatsSum(r.waitTimes), stats.StatsSum(r.communications)), `text-anchor:start;font-size:20px;font-family:Helvetica Neue`)
+	r.SVG.Text(border, 70, fmt.Sprintf("Wait Time: %.2fs", stats.StatsSum(r.waitTimes)), `text-anchor:start;font-size:20px;font-family:Helvetica Neue`)
 }
 
 func (r *SVGReport) DrawReportCard(x, y int, report *Report) {
@@ -79,11 +74,9 @@ func (r *SVGReport) DrawReportCard(x, y int, report *Report) {
 
 	r.drawInstances(report)
 	y = r.drawDurationsHistogram(report)
-	y = r.drawRoundsHistogram(report, y+binSpacing*4)
+	y = r.drawAttemptsHistogram(report, y+binSpacing*4)
 	r.drawText(report, y+binSpacing*4)
 
-	r.bids = append(r.bids, report.DistributionScore())
-	r.communications = append(r.communications, report.CommStats().Total)
 	r.waitTimes = append(r.waitTimes, report.AuctionDuration.Seconds())
 
 	r.SVG.Gend()
@@ -91,10 +84,11 @@ func (r *SVGReport) DrawReportCard(x, y int, report *Report) {
 
 func (r *SVGReport) drawInstances(report *Report) {
 	y := border
-	for _, repAddress := range report.RepAddresses {
+	for i := 0; i < len(report.Cells); i++ {
+		guid := cellID(i)
 		x := border
 		r.SVG.Rect(x, y, instanceBoxWidth, instanceSize, "fill:#f7f7f7")
-		instances := report.InstancesByRep[repAddress.RepGuid]
+		instances := report.InstancesByRep[guid]
 		for _, instance := range instances {
 			instanceWidth := instanceSize*instance.MemoryMB + instanceSpacing*(instance.MemoryMB-1)
 			style := instanceStyle(instance.ProcessGuid)
@@ -111,8 +105,8 @@ func (r *SVGReport) drawInstances(report *Report) {
 
 func (r *SVGReport) drawDurationsHistogram(report *Report) int {
 	waitTimes := []float64{}
-	for _, result := range report.AuctionResults {
-		waitTimes = append(waitTimes, result.Duration.Seconds())
+	for _, start := range report.AuctionResults.SuccessfulStarts {
+		waitTimes = append(waitTimes, start.WaitDuration.Seconds())
 	}
 	sort.Sort(sort.Float64Slice(waitTimes))
 
@@ -128,15 +122,18 @@ func (r *SVGReport) drawDurationsHistogram(report *Report) int {
 	return yBottom + border //'cause of the translate
 }
 
-func (r *SVGReport) drawRoundsHistogram(report *Report, y int) int {
-	rounds := []float64{}
-	for _, result := range report.AuctionResults {
-		rounds = append(rounds, float64(result.NumRounds))
+func (r *SVGReport) drawAttemptsHistogram(report *Report, y int) int {
+	attempts := []float64{}
+	for _, start := range report.AuctionResults.SuccessfulStarts {
+		attempts = append(attempts, float64(start.Attempts))
 	}
-	sort.Sort(sort.Float64Slice(rounds))
+	for _, start := range report.AuctionResults.FailedStarts {
+		attempts = append(attempts, float64(start.Attempts))
+	}
+	sort.Sort(sort.Float64Slice(attempts))
 
-	bins := binUp([]float64{0, 1, 2, 3, 4, 5, 10, 20, 40, 1e9}, rounds)
-	labels := []string{"1 round", "2 rounds", "3 rounds", "4 rounds", "5 rounds", "5-10", "10-20", "20-40", ">40"}
+	bins := binUp([]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, attempts)
+	labels := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"}
 
 	r.SVG.Translate(border*2+instanceBoxWidth, y)
 
@@ -148,29 +145,23 @@ func (r *SVGReport) drawRoundsHistogram(report *Report, y int) int {
 }
 
 func (r *SVGReport) drawText(report *Report, y int) {
-	commStats := report.CommStats()
-	bidStats := report.BiddingTimeStats()
 	waitStats := report.WaitTimeStats()
 
 	missing := ""
 	missingInstances := report.NMissingInstances()
 	if missingInstances > 0 {
-		missing = fmt.Sprintf("MISSING %d (%.2f%%)", missingInstances, float64(missingInstances)/float64(report.NAuctions())*100)
+		missing = fmt.Sprintf("MISSING %d (%.2f%%)", missingInstances, float64(missingInstances)/float64(report.NumAuctions)*100)
 	}
 
 	lines := []string{
-		fmt.Sprintf("%d over %d Reps %s", report.NAuctions(), report.NReps(), missing),
+		fmt.Sprintf("%d over %d Reps %s", report.NumAuctions, report.NReps(), missing),
 		fmt.Sprintf("%.2fs (%.2f a/s)", report.AuctionDuration.Seconds(), report.AuctionsPerSecond()),
 		fmt.Sprintf("Dist: %.3f => %.3f", report.InitialDistributionScore(), report.DistributionScore()),
-		fmt.Sprintf("%.0f Comm | %.1f ± %.1f | %.0f - %.0f", commStats.Total, commStats.Mean, commStats.StdDev, commStats.Min, commStats.Max),
 	}
 	statLines := []string{
 		"Wait Times",
 		fmt.Sprintf("...%.2fs | %.2f ± %.2f", report.AuctionDuration.Seconds(), waitStats.Mean, waitStats.StdDev),
 		fmt.Sprintf("...%.3f - %.3f", waitStats.Min, waitStats.Max),
-		"Bidding Times",
-		fmt.Sprintf("...%s | %.2f ± %.2f", time.Duration(bidStats.Total*float64(time.Second)), bidStats.Mean, bidStats.StdDev),
-		fmt.Sprintf("...%.3f - %.2f", bidStats.Min, bidStats.Max),
 	}
 
 	r.SVG.Translate(border*2+instanceBoxWidth, y)

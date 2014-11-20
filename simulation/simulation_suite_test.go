@@ -111,8 +111,8 @@ var _ = BeforeEach(func() {
 
 	auctionRunnerDelegate = NewAuctionRunnerDelegate(cells)
 	auctionWorkPool = workpool.NewWorkPool(workers)
-	auctionRunner = auctionrunner.New(auctionRunnerDelegate, timeprovider.NewTimeProvider(), 5, auctionWorkPool)
-	auctionRunnerProcess = ifrit.Invoke(r)
+	auctionRunner = auctionrunner.New(auctionRunnerDelegate, timeprovider.NewTimeProvider(), 10, auctionWorkPool)
+	auctionRunnerProcess = ifrit.Invoke(auctionRunner)
 })
 
 var _ = AfterEach(func() {

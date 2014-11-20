@@ -377,4 +377,44 @@ var _ = Describe("WorkDistributor", func() {
 			Ω(results.FailedStarts).Should(ConsistOf(startPGNope))
 		})
 	})
+
+	Describe("ordering work", func() {
+		BeforeEach(func() {
+			clients["A"] = &fakes.FakeSimulationAuctionRep{}
+			cells["A"] = NewCell(clients["A"], BuildRepState(100, 100, 100, []auctiontypes.LRP{
+				{"pg-1", "ig-1", 0, 30, 30},
+			}))
+
+			clients["B"] = &fakes.FakeSimulationAuctionRep{}
+			cells["B"] = NewCell(clients["B"], BuildRepState(100, 100, 100, []auctiontypes.LRP{}))
+		})
+
+		It("orders work such that large start auctions occur first", func() {
+			startMedium := BuildStartAuction(
+				BuildLRPStartAuction("pg-medium", "ig-medium", 1, "lucid64", 40, 40),
+				timeProvider.Time(),
+			)
+			startLarge := BuildStartAuction(
+				BuildLRPStartAuction("pg-large", "ig-large", 1, "lucid64", 80, 80),
+				timeProvider.Time(),
+			)
+			startAuctions := []auctiontypes.StartAuction{startLarge, startMedium} //note we're submitting the smaller one first
+
+			results = DistributeWork(workPool, cells, timeProvider, startAuctions, nil)
+
+			Ω(results.FailedStarts).Should(BeEmpty())
+
+			startMedium.Winner = "A"
+			startMedium.Attempts = 1
+			startLarge.Winner = "B"
+			startLarge.Attempts = 1
+			Ω(results.SuccessfulStarts).Should(ConsistOf(startMedium, startLarge))
+
+			Ω(clients["A"].PerformCallCount()).Should(Equal(1))
+			Ω(clients["B"].PerformCallCount()).Should(Equal(1))
+
+			Ω(clients["A"].PerformArgsForCall(0).Starts).Should(ConsistOf(startMedium.LRPStartAuction))
+			Ω(clients["B"].PerformArgsForCall(0).Starts).Should(ConsistOf(startLarge.LRPStartAuction))
+		})
+	})
 })

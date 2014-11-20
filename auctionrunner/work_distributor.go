@@ -27,12 +27,10 @@ func DistributeWork(workPool *workpool.WorkPool, cells map[string]*Cell, timePro
 		succesfulStop := processStopAuction(cells, stopAuction)
 		results.SuccessfulStops = append(results.SuccessfulStops, succesfulStop)
 	}
-
 	var successfulStarts = map[string]auctiontypes.StartAuction{}
 	var startAuctionLookup = map[string]auctiontypes.StartAuction{}
 
-	sort.Sort(SortableAuctions(startAuctions))
-	sort.Reverse(SortableAuctions(startAuctions))
+	sort.Sort(sort.Reverse(SortableAuctions(startAuctions)))
 
 	for _, startAuction := range startAuctions {
 		startAuctionLookup[startAuction.Identifier()] = startAuction

@@ -14,5 +14,4 @@ before_script:
   - export PATH=$HOME/gopath/bin:$PATH
 
 script:
-  - ginkgo -failOnPending -randomizeAllSpecs -race -trace communication/nats/nats_muxer/
-  - ginkgo -failOnPending -randomizeAllSpecs -trace simulation/ -- -disableSVGReport
+  - ginkgo -r -failOnPending -randomizeAllSpecs -race -trace 

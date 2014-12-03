@@ -31,7 +31,7 @@ func (b *Batch) AddLRPStartAuction(start models.LRPStartAuction) {
 	b.lock.Lock()
 	b.startAuctions = append(b.startAuctions, auctiontypes.StartAuction{
 		LRPStartAuction: start,
-		QueueTime:       b.timeProvider.Time(),
+		QueueTime:       b.timeProvider.Now(),
 	})
 	b.claimToHaveWork()
 	b.lock.Unlock()
@@ -41,7 +41,7 @@ func (b *Batch) AddLRPStopAuction(stop models.LRPStopAuction) {
 	b.lock.Lock()
 	b.stopAuctions = append(b.stopAuctions, auctiontypes.StopAuction{
 		LRPStopAuction: stop,
-		QueueTime:      b.timeProvider.Time(),
+		QueueTime:      b.timeProvider.Now(),
 	})
 	b.claimToHaveWork()
 	b.lock.Unlock()

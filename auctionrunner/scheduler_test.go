@@ -39,14 +39,14 @@ var _ = Describe("Scheudler", func() {
 		It("immediately returns everything as having failed, incrementing the attempt number", func() {
 			startAuction := BuildStartAuction(
 				BuildLRPStartAuction("pg-7", "ig-7", 0, "lucid64", 10, 10),
-				timeProvider.Time(),
+				timeProvider.Now(),
 			)
 
 			startAuctions := []auctiontypes.StartAuction{startAuction}
 
 			stopAuction := BuildStopAuction(
 				BuildLRPStopAuction("pg-1", 1),
-				timeProvider.Time(),
+				timeProvider.Now(),
 			)
 
 			stopAuctions := []auctiontypes.StopAuction{stopAuction}
@@ -76,7 +76,7 @@ var _ = Describe("Scheudler", func() {
 				{"pg-3", "ig-3", 0, 10, 10},
 			}))
 
-			startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", "ig-4", 0, "lucid64", 10, 10), timeProvider.Time())
+			startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", "ig-4", 0, "lucid64", 10, 10), timeProvider.Now())
 			timeProvider.Increment(time.Minute)
 		})
 
@@ -120,7 +120,7 @@ var _ = Describe("Scheudler", func() {
 
 		Context("when there is no room", func() {
 			BeforeEach(func() {
-				startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", "ig-4", 0, "lucid64", 1000, 1000), timeProvider.Time())
+				startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", "ig-4", 0, "lucid64", 1000, 1000), timeProvider.Now())
 				timeProvider.Increment(time.Minute)
 				results = Schedule(workPool, cells, timeProvider, []auctiontypes.StartAuction{startAuction}, nil)
 			})
@@ -172,7 +172,7 @@ var _ = Describe("Scheudler", func() {
 			BeforeEach(func() {
 				stopAuction = BuildStopAuction(
 					BuildLRPStopAuction("pg", 1),
-					timeProvider.Time(),
+					timeProvider.Now(),
 				)
 				timeProvider.Increment(time.Minute)
 			})
@@ -235,7 +235,7 @@ var _ = Describe("Scheudler", func() {
 			BeforeEach(func() {
 				stopAuction = BuildStopAuction(
 					BuildLRPStopAuction("pg-three", 2),
-					timeProvider.Time(),
+					timeProvider.Now(),
 				)
 				timeProvider.Increment(time.Minute)
 			})
@@ -263,7 +263,7 @@ var _ = Describe("Scheudler", func() {
 			BeforeEach(func() {
 				stopAuction = BuildStopAuction(
 					BuildLRPStopAuction("pg-one", 0),
-					timeProvider.Time(),
+					timeProvider.Now(),
 				)
 				timeProvider.Increment(time.Minute)
 			})
@@ -287,7 +287,7 @@ var _ = Describe("Scheudler", func() {
 			BeforeEach(func() {
 				stopAuction = BuildStopAuction(
 					BuildLRPStopAuction("pg", 17),
-					timeProvider.Time(),
+					timeProvider.Now(),
 				)
 				timeProvider.Increment(time.Minute)
 			})
@@ -328,21 +328,21 @@ var _ = Describe("Scheudler", func() {
 			stopAuctions := []auctiontypes.StopAuction{
 				BuildStopAuction(
 					BuildLRPStopAuction("pg-dupe", 0),
-					timeProvider.Time(),
+					timeProvider.Now(),
 				),
 			}
 
 			startPG3 := BuildStartAuction(
 				BuildLRPStartAuction("pg-3", "ig-new-1", 1, "lucid64", 40, 40),
-				timeProvider.Time(),
+				timeProvider.Now(),
 			)
 			startPG2 := BuildStartAuction(
 				BuildLRPStartAuction("pg-2", "ig-new-2", 1, "lucid64", 10, 10),
-				timeProvider.Time(),
+				timeProvider.Now(),
 			)
 			startPGNope := BuildStartAuction(
 				BuildLRPStartAuction("pg-nope", "ig-nope", 1, ".net", 10, 10),
-				timeProvider.Time(),
+				timeProvider.Now(),
 			)
 			startAuctions := []auctiontypes.StartAuction{startPG3, startPG2, startPGNope}
 
@@ -392,11 +392,11 @@ var _ = Describe("Scheudler", func() {
 		It("orders work such that large start auctions occur first", func() {
 			startMedium := BuildStartAuction(
 				BuildLRPStartAuction("pg-medium", "ig-medium", 1, "lucid64", 40, 40),
-				timeProvider.Time(),
+				timeProvider.Now(),
 			)
 			startLarge := BuildStartAuction(
 				BuildLRPStartAuction("pg-large", "ig-large", 1, "lucid64", 80, 80),
-				timeProvider.Time(),
+				timeProvider.Now(),
 			)
 			startAuctions := []auctiontypes.StartAuction{startLarge, startMedium} //note we're submitting the smaller one first
 

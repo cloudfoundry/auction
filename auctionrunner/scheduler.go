@@ -60,7 +60,7 @@ func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider 
 }
 
 func markResults(results auctiontypes.AuctionResults, timeProvider timeprovider.TimeProvider) auctiontypes.AuctionResults {
-	now := timeProvider.Time()
+	now := timeProvider.Now()
 	for i := range results.FailedStarts {
 		results.FailedStarts[i].Attempts++
 	}

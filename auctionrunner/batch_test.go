@@ -39,7 +39,7 @@ var _ = Describe("Batch", func() {
 
 			It("makes the start auction available when drained", func() {
 				startAuctions, _ := batch.DedupeAndDrain()
-				Ω(startAuctions).Should(ConsistOf(BuildStartAuction(startAuction, timeProvider.Time())))
+				Ω(startAuctions).Should(ConsistOf(BuildStartAuction(startAuction, timeProvider.Now())))
 			})
 
 			It("should have work", func() {
@@ -55,7 +55,7 @@ var _ = Describe("Batch", func() {
 
 			It("makes the stop auction available when drained", func() {
 				_, stopAuctions := batch.DedupeAndDrain()
-				Ω(stopAuctions).Should(ConsistOf(BuildStopAuction(stopAuction, timeProvider.Time())))
+				Ω(stopAuctions).Should(ConsistOf(BuildStopAuction(stopAuction, timeProvider.Now())))
 			})
 
 			It("should have work", func() {
@@ -126,22 +126,22 @@ var _ = Describe("Batch", func() {
 			Ω(startAuctions).Should(Equal([]auctiontypes.StartAuction{
 				BuildStartAuction(
 					BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10),
-					timeProvider.Time(),
+					timeProvider.Now(),
 				),
 				BuildStartAuction(
 					BuildLRPStartAuction("pg-2", "ig-2", 2, "lucid64", 10, 10),
-					timeProvider.Time(),
+					timeProvider.Now(),
 				),
 			}))
 
 			Ω(stopAuctions).Should(Equal([]auctiontypes.StopAuction{
 				BuildStopAuction(
 					BuildLRPStopAuction("pg-1", 1),
-					timeProvider.Time(),
+					timeProvider.Now(),
 				),
 				BuildStopAuction(
 					BuildLRPStopAuction("pg-2", 3),
-					timeProvider.Time(),
+					timeProvider.Now(),
 				),
 			}))
 		})

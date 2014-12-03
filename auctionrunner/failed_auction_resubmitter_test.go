@@ -26,12 +26,12 @@ var _ = Describe("ResubmitFailedAuctions", func() {
 	It("always returns succesful work untouched", func() {
 		results = auctiontypes.AuctionResults{
 			SuccessfulStarts: []auctiontypes.StartAuction{
-				BuildStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10), timeProvider.Time()),
-				BuildStartAuction(BuildLRPStartAuction("pg-2", "ig-2", 1, "lucid64", 10, 10), timeProvider.Time()),
+				BuildStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10), timeProvider.Now()),
+				BuildStartAuction(BuildLRPStartAuction("pg-2", "ig-2", 1, "lucid64", 10, 10), timeProvider.Now()),
 			},
 			SuccessfulStops: []auctiontypes.StopAuction{
-				BuildStopAuction(BuildLRPStopAuction("pg-1", 2), timeProvider.Time()),
-				BuildStopAuction(BuildLRPStopAuction("pg-2", 2), timeProvider.Time()),
+				BuildStopAuction(BuildLRPStopAuction("pg-1", 2), timeProvider.Now()),
+				BuildStopAuction(BuildLRPStopAuction("pg-2", 2), timeProvider.Now()),
 			},
 			FailedStarts: []auctiontypes.StartAuction{},
 			FailedStops:  []auctiontypes.StopAuction{},
@@ -51,14 +51,14 @@ var _ = Describe("ResubmitFailedAuctions", func() {
 		var retryableStopAuction, failedStopAuction auctiontypes.StopAuction
 
 		BeforeEach(func() {
-			retryableStartAuction = BuildStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10), timeProvider.Time())
+			retryableStartAuction = BuildStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10), timeProvider.Now())
 			retryableStartAuction.Attempts = maxRetries
-			failedStartAuction = BuildStartAuction(BuildLRPStartAuction("pg-2", "ig-2", 1, "lucid64", 10, 10), timeProvider.Time())
+			failedStartAuction = BuildStartAuction(BuildLRPStartAuction("pg-2", "ig-2", 1, "lucid64", 10, 10), timeProvider.Now())
 			failedStartAuction.Attempts = maxRetries + 1
 
-			retryableStopAuction = BuildStopAuction(BuildLRPStopAuction("pg-1", 2), timeProvider.Time())
+			retryableStopAuction = BuildStopAuction(BuildLRPStopAuction("pg-1", 2), timeProvider.Now())
 			retryableStopAuction.Attempts = maxRetries
-			failedStopAuction = BuildStopAuction(BuildLRPStopAuction("pg-2", 2), timeProvider.Time())
+			failedStopAuction = BuildStopAuction(BuildLRPStopAuction("pg-2", 2), timeProvider.Now())
 			failedStopAuction.Attempts = maxRetries + 1
 
 			results = auctiontypes.AuctionResults{

@@ -25,16 +25,16 @@ var _ = Describe("ResubmitFailedAuctions", func() {
 
 	It("always returns succesful work untouched", func() {
 		results = auctiontypes.AuctionResults{
-			SuccessfulStarts: []auctiontypes.StartAuction{
+			SuccessfulLRPStarts: []auctiontypes.LRPStartAuction{
 				BuildStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10), timeProvider.Now()),
 				BuildStartAuction(BuildLRPStartAuction("pg-2", "ig-2", 1, "lucid64", 10, 10), timeProvider.Now()),
 			},
-			SuccessfulStops: []auctiontypes.StopAuction{
+			SuccessfulLRPStops: []auctiontypes.LRPStopAuction{
 				BuildStopAuction(BuildLRPStopAuction("pg-1", 2), timeProvider.Now()),
 				BuildStopAuction(BuildLRPStopAuction("pg-2", 2), timeProvider.Now()),
 			},
-			FailedStarts: []auctiontypes.StartAuction{},
-			FailedStops:  []auctiontypes.StopAuction{},
+			FailedLRPStarts: []auctiontypes.LRPStartAuction{},
+			FailedLRPStops:  []auctiontypes.LRPStopAuction{},
 		}
 
 		out := ResubmitFailedAuctions(batch, results, maxRetries)
@@ -47,8 +47,8 @@ var _ = Describe("ResubmitFailedAuctions", func() {
 	})
 
 	Context("if there is failed work", func() {
-		var retryableStartAuction, failedStartAuction auctiontypes.StartAuction
-		var retryableStopAuction, failedStopAuction auctiontypes.StopAuction
+		var retryableStartAuction, failedStartAuction auctiontypes.LRPStartAuction
+		var retryableStopAuction, failedStopAuction auctiontypes.LRPStopAuction
 
 		BeforeEach(func() {
 			retryableStartAuction = BuildStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10), timeProvider.Now())
@@ -62,15 +62,15 @@ var _ = Describe("ResubmitFailedAuctions", func() {
 			failedStopAuction.Attempts = maxRetries + 1
 
 			results = auctiontypes.AuctionResults{
-				FailedStarts: []auctiontypes.StartAuction{retryableStartAuction, failedStartAuction},
-				FailedStops:  []auctiontypes.StopAuction{retryableStopAuction, failedStopAuction},
+				FailedLRPStarts: []auctiontypes.LRPStartAuction{retryableStartAuction, failedStartAuction},
+				FailedLRPStops:  []auctiontypes.LRPStopAuction{retryableStopAuction, failedStopAuction},
 			}
 		})
 
 		It("should resubmit work that can be retried and does not return it, but returns work that has exceeded maxretries without resubmitting it", func() {
 			out := ResubmitFailedAuctions(batch, results, maxRetries)
-			Ω(out.FailedStarts).Should(ConsistOf(failedStartAuction))
-			Ω(out.FailedStops).Should(ConsistOf(failedStopAuction))
+			Ω(out.FailedLRPStarts).Should(ConsistOf(failedStartAuction))
+			Ω(out.FailedLRPStops).Should(ConsistOf(failedStopAuction))
 
 			resubmittedStarts, resubmittedStops := batch.DedupeAndDrain()
 			Ω(resubmittedStarts).Should(ConsistOf(retryableStartAuction))

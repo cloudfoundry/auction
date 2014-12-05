@@ -40,20 +40,20 @@ func (a *AuctionRunnerDelegate) FetchCellReps() (map[string]auctiontypes.CellRep
 func (a *AuctionRunnerDelegate) DistributedBatch(work auctiontypes.AuctionResults) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
-	a.workResults.FailedStarts = append(a.workResults.FailedStarts, work.FailedStarts...)
-	a.workResults.FailedStops = append(a.workResults.FailedStops, work.FailedStops...)
-	a.workResults.SuccessfulStarts = append(a.workResults.SuccessfulStarts, work.SuccessfulStarts...)
-	a.workResults.SuccessfulStops = append(a.workResults.SuccessfulStops, work.SuccessfulStops...)
+	a.workResults.FailedLRPStarts = append(a.workResults.FailedLRPStarts, work.FailedLRPStarts...)
+	a.workResults.FailedLRPStops = append(a.workResults.FailedLRPStops, work.FailedLRPStops...)
+	a.workResults.SuccessfulLRPStarts = append(a.workResults.SuccessfulLRPStarts, work.SuccessfulLRPStarts...)
+	a.workResults.SuccessfulLRPStops = append(a.workResults.SuccessfulLRPStops, work.SuccessfulLRPStops...)
 }
 
 func (a *AuctionRunnerDelegate) ResultSize() int {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
-	return len(a.workResults.FailedStarts) +
-		len(a.workResults.FailedStops) +
-		len(a.workResults.SuccessfulStarts) +
-		len(a.workResults.SuccessfulStops)
+	return len(a.workResults.FailedLRPStarts) +
+		len(a.workResults.FailedLRPStops) +
+		len(a.workResults.SuccessfulLRPStarts) +
+		len(a.workResults.SuccessfulLRPStops)
 }
 
 func (a *AuctionRunnerDelegate) Results() auctiontypes.AuctionResults {

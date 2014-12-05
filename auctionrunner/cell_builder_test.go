@@ -42,10 +42,10 @@ var _ = Describe("CellBuilder", func() {
 		Ω(cells).Should(HaveKey("B"))
 
 		instance := BuildLRPStartAuction("pg-1", "ig-1", 0, "lucid64", 20, 20)
-		_, err := cells["A"].ScoreForStartAuction(instance)
+		_, err := cells["A"].ScoreForLRPStartAuction(instance)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		_, err = cells["B"].ScoreForStartAuction(instance)
+		_, err = cells["B"].ScoreForLRPStartAuction(instance)
 		Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 	})
 

@@ -3,35 +3,35 @@ package auctionrunner
 import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
 func ResubmitFailedAuctions(batch *Batch, results auctiontypes.AuctionResults, maxRetries int) auctiontypes.AuctionResults {
-	retryableStarts := []auctiontypes.StartAuction{}
-	retryableStops := []auctiontypes.StopAuction{}
-	failedStarts := []auctiontypes.StartAuction{}
-	failedStops := []auctiontypes.StopAuction{}
+	retryableLRPStarts := []auctiontypes.LRPStartAuction{}
+	retryableLRPStops := []auctiontypes.LRPStopAuction{}
+	failedLRPStarts := []auctiontypes.LRPStartAuction{}
+	failedLRPStops := []auctiontypes.LRPStopAuction{}
 
-	for _, start := range results.FailedStarts {
+	for _, start := range results.FailedLRPStarts {
 		if start.Attempts <= maxRetries {
-			retryableStarts = append(retryableStarts, start)
+			retryableLRPStarts = append(retryableLRPStarts, start)
 		} else {
-			failedStarts = append(failedStarts, start)
+			failedLRPStarts = append(failedLRPStarts, start)
 		}
 	}
 
-	for _, stop := range results.FailedStops {
+	for _, stop := range results.FailedLRPStops {
 		if stop.Attempts <= maxRetries {
-			retryableStops = append(retryableStops, stop)
+			retryableLRPStops = append(retryableLRPStops, stop)
 		} else {
-			failedStops = append(failedStops, stop)
+			failedLRPStops = append(failedLRPStops, stop)
 		}
 	}
 
-	results.FailedStarts = failedStarts
-	results.FailedStops = failedStops
+	results.FailedLRPStarts = failedLRPStarts
+	results.FailedLRPStops = failedLRPStops
 
-	if len(retryableStarts) > 0 {
-		batch.ResubmitStartAuctions(retryableStarts)
+	if len(retryableLRPStarts) > 0 {
+		batch.ResubmitStartAuctions(retryableLRPStarts)
 	}
-	if len(retryableStops) > 0 {
-		batch.ResubmitStopAuctions(retryableStops)
+	if len(retryableLRPStops) > 0 {
+		batch.ResubmitStopAuctions(retryableLRPStops)
 	}
 
 	return results

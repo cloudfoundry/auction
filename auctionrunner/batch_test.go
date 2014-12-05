@@ -71,7 +71,7 @@ var _ = Describe("Batch", func() {
 				startAuction := BuildStartAuction(lrpStartAuction, time.Unix(0, 0))
 				startAuction.Attempts = 3
 				batch.AddLRPStartAuction(lrpStartAuction)
-				batch.ResubmitStartAuctions([]auctiontypes.StartAuction{startAuction})
+				batch.ResubmitStartAuctions([]auctiontypes.LRPStartAuction{startAuction})
 				batch.AddLRPStartAuction(lrpStartAuction)
 
 				startAuctions, _ := batch.DedupeAndDrain()
@@ -81,7 +81,7 @@ var _ = Describe("Batch", func() {
 			It("should have work", func() {
 				lrpStartAuction := BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10)
 				startAuction := BuildStartAuction(lrpStartAuction, time.Unix(0, 0))
-				batch.ResubmitStartAuctions([]auctiontypes.StartAuction{startAuction})
+				batch.ResubmitStartAuctions([]auctiontypes.LRPStartAuction{startAuction})
 
 				Ω(batch.HasWork).Should(Receive())
 			})
@@ -93,7 +93,7 @@ var _ = Describe("Batch", func() {
 				stopAuction := BuildStopAuction(lrpStopAuction, time.Unix(0, 0))
 				stopAuction.Attempts = 3
 				batch.AddLRPStopAuction(lrpStopAuction)
-				batch.ResubmitStopAuctions([]auctiontypes.StopAuction{stopAuction})
+				batch.ResubmitStopAuctions([]auctiontypes.LRPStopAuction{stopAuction})
 				batch.AddLRPStopAuction(lrpStopAuction)
 
 				_, stopAuctions := batch.DedupeAndDrain()
@@ -103,7 +103,7 @@ var _ = Describe("Batch", func() {
 			It("should have work", func() {
 				lrpStopAuction := BuildLRPStopAuction("pg-1", 1)
 				stopAuction := BuildStopAuction(lrpStopAuction, time.Unix(0, 0))
-				batch.ResubmitStopAuctions([]auctiontypes.StopAuction{stopAuction})
+				batch.ResubmitStopAuctions([]auctiontypes.LRPStopAuction{stopAuction})
 
 				Ω(batch.HasWork).Should(Receive())
 			})
@@ -123,7 +123,7 @@ var _ = Describe("Batch", func() {
 
 		It("should dedupe any duplicate start auctions and stop auctions", func() {
 			startAuctions, stopAuctions := batch.DedupeAndDrain()
-			Ω(startAuctions).Should(Equal([]auctiontypes.StartAuction{
+			Ω(startAuctions).Should(Equal([]auctiontypes.LRPStartAuction{
 				BuildStartAuction(
 					BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10),
 					timeProvider.Now(),
@@ -134,7 +134,7 @@ var _ = Describe("Batch", func() {
 				),
 			}))
 
-			Ω(stopAuctions).Should(Equal([]auctiontypes.StopAuction{
+			Ω(stopAuctions).Should(Equal([]auctiontypes.LRPStopAuction{
 				BuildStopAuction(
 					BuildLRPStopAuction("pg-1", 1),
 					timeProvider.Now(),

@@ -10,26 +10,26 @@ import (
 )
 
 type Batch struct {
-	startAuctions []auctiontypes.StartAuction
-	stopAuctions  []auctiontypes.StopAuction
-	lock          *sync.Mutex
-	HasWork       chan struct{}
-	timeProvider  timeprovider.TimeProvider
+	lrpStartAuctions []auctiontypes.LRPStartAuction
+	lrpStopAuctions  []auctiontypes.LRPStopAuction
+	lock             *sync.Mutex
+	HasWork          chan struct{}
+	timeProvider     timeprovider.TimeProvider
 }
 
 func NewBatch(timeProvider timeprovider.TimeProvider) *Batch {
 	return &Batch{
-		startAuctions: []auctiontypes.StartAuction{},
-		stopAuctions:  []auctiontypes.StopAuction{},
-		lock:          &sync.Mutex{},
-		timeProvider:  timeProvider,
-		HasWork:       make(chan struct{}, 1),
+		lrpStartAuctions: []auctiontypes.LRPStartAuction{},
+		lrpStopAuctions:  []auctiontypes.LRPStopAuction{},
+		lock:             &sync.Mutex{},
+		timeProvider:     timeProvider,
+		HasWork:          make(chan struct{}, 1),
 	}
 }
 
 func (b *Batch) AddLRPStartAuction(start models.LRPStartAuction) {
 	b.lock.Lock()
-	b.startAuctions = append(b.startAuctions, auctiontypes.StartAuction{
+	b.lrpStartAuctions = append(b.lrpStartAuctions, auctiontypes.LRPStartAuction{
 		LRPStartAuction: start,
 		QueueTime:       b.timeProvider.Now(),
 	})
@@ -39,7 +39,7 @@ func (b *Batch) AddLRPStartAuction(start models.LRPStartAuction) {
 
 func (b *Batch) AddLRPStopAuction(stop models.LRPStopAuction) {
 	b.lock.Lock()
-	b.stopAuctions = append(b.stopAuctions, auctiontypes.StopAuction{
+	b.lrpStopAuctions = append(b.lrpStopAuctions, auctiontypes.LRPStopAuction{
 		LRPStopAuction: stop,
 		QueueTime:      b.timeProvider.Now(),
 	})
@@ -47,55 +47,55 @@ func (b *Batch) AddLRPStopAuction(stop models.LRPStopAuction) {
 	b.lock.Unlock()
 }
 
-func (b *Batch) ResubmitStartAuctions(starts []auctiontypes.StartAuction) {
+func (b *Batch) ResubmitStartAuctions(starts []auctiontypes.LRPStartAuction) {
 	b.lock.Lock()
-	b.startAuctions = append(starts, b.startAuctions...)
+	b.lrpStartAuctions = append(starts, b.lrpStartAuctions...)
 	b.claimToHaveWork()
 	b.lock.Unlock()
 }
 
-func (b *Batch) ResubmitStopAuctions(stops []auctiontypes.StopAuction) {
+func (b *Batch) ResubmitStopAuctions(stops []auctiontypes.LRPStopAuction) {
 	b.lock.Lock()
-	b.stopAuctions = append(stops, b.stopAuctions...)
+	b.lrpStopAuctions = append(stops, b.lrpStopAuctions...)
 	b.claimToHaveWork()
 	b.lock.Unlock()
 }
 
-func (b *Batch) DedupeAndDrain() ([]auctiontypes.StartAuction, []auctiontypes.StopAuction) {
+func (b *Batch) DedupeAndDrain() ([]auctiontypes.LRPStartAuction, []auctiontypes.LRPStopAuction) {
 	b.lock.Lock()
-	startAuctions := b.startAuctions
-	stopAuctions := b.stopAuctions
-	b.startAuctions = []auctiontypes.StartAuction{}
-	b.stopAuctions = []auctiontypes.StopAuction{}
+	lrpStartAuctions := b.lrpStartAuctions
+	lrpStopAuctions := b.lrpStopAuctions
+	b.lrpStartAuctions = []auctiontypes.LRPStartAuction{}
+	b.lrpStopAuctions = []auctiontypes.LRPStopAuction{}
 	select {
 	case <-b.HasWork:
 	default:
 	}
 	b.lock.Unlock()
 
-	dedupedStartAuctions := []auctiontypes.StartAuction{}
-	presentStartAuctions := map[string]bool{}
-	for _, startAuction := range startAuctions {
+	dedupedLRPStartAuctions := []auctiontypes.LRPStartAuction{}
+	presentLRPStartAuctions := map[string]bool{}
+	for _, startAuction := range lrpStartAuctions {
 		id := startAuction.Identifier()
-		if presentStartAuctions[id] {
+		if presentLRPStartAuctions[id] {
 			continue
 		}
-		presentStartAuctions[id] = true
-		dedupedStartAuctions = append(dedupedStartAuctions, startAuction)
+		presentLRPStartAuctions[id] = true
+		dedupedLRPStartAuctions = append(dedupedLRPStartAuctions, startAuction)
 	}
 
-	dedupedStopAuctions := []auctiontypes.StopAuction{}
-	presentStopAuctions := map[string]bool{}
-	for _, stopAuction := range stopAuctions {
+	dedupedLRPStopAuctions := []auctiontypes.LRPStopAuction{}
+	presentLRPStopAuctions := map[string]bool{}
+	for _, stopAuction := range lrpStopAuctions {
 		id := stopAuction.Identifier()
-		if presentStopAuctions[id] {
+		if presentLRPStopAuctions[id] {
 			continue
 		}
-		presentStopAuctions[id] = true
-		dedupedStopAuctions = append(dedupedStopAuctions, stopAuction)
+		presentLRPStopAuctions[id] = true
+		dedupedLRPStopAuctions = append(dedupedLRPStopAuctions, stopAuction)
 	}
 
-	return dedupedStartAuctions, dedupedStopAuctions
+	return dedupedLRPStartAuctions, dedupedLRPStopAuctions
 }
 
 func (b *Batch) claimToHaveWork() {

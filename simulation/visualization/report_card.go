@@ -107,7 +107,7 @@ func (r *SVGReport) drawInstances(report *Report) {
 
 func (r *SVGReport) drawDurationsHistogram(report *Report) int {
 	waitTimes := []float64{}
-	for _, start := range report.AuctionResults.SuccessfulStarts {
+	for _, start := range report.AuctionResults.SuccessfulLRPStarts {
 		waitTimes = append(waitTimes, start.WaitDuration.Seconds())
 	}
 	sort.Sort(sort.Float64Slice(waitTimes))
@@ -126,10 +126,10 @@ func (r *SVGReport) drawDurationsHistogram(report *Report) int {
 
 func (r *SVGReport) drawAttemptsHistogram(report *Report, y int) int {
 	attempts := []float64{}
-	for _, start := range report.AuctionResults.SuccessfulStarts {
+	for _, start := range report.AuctionResults.SuccessfulLRPStarts {
 		attempts = append(attempts, float64(start.Attempts))
 	}
-	for _, start := range report.AuctionResults.FailedStarts {
+	for _, start := range report.AuctionResults.FailedLRPStarts {
 		attempts = append(attempts, float64(start.Attempts))
 	}
 	sort.Sort(sort.Float64Slice(attempts))

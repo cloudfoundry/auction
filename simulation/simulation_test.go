@@ -87,7 +87,7 @@ var _ = Describe("Auction", func() {
 	workForInstances := func(lrps []auctiontypes.LRP) auctiontypes.Work {
 		work := auctiontypes.Work{}
 		for _, lrp := range lrps {
-			work.Starts = append(work.Starts, models.LRPStartAuction{
+			work.LRPStarts = append(work.LRPStarts, models.LRPStartAuction{
 				DesiredLRP: models.DesiredLRP{
 					ProcessGuid: lrp.ProcessGuid,
 					MemoryMB:    lrp.MemoryMB,
@@ -103,18 +103,18 @@ var _ = Describe("Auction", func() {
 		return work
 	}
 
-	runStartAuction := func(startAuctions []models.LRPStartAuction, numCells int, i int, j int) {
+	runStartAuction := func(lrpStartAuctions []models.LRPStartAuction, numCells int, i int, j int) {
 		t := time.Now()
 		auctionRunnerDelegate.SetCellLimit(numCells)
-		for _, startAuction := range startAuctions {
+		for _, startAuction := range lrpStartAuctions {
 			auctionRunner.AddLRPStartAuction(startAuction)
 		}
 
-		Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(startAuctions)))
+		Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStartAuctions)))
 		duration := time.Since(t)
 
 		cells, _ := auctionRunnerDelegate.FetchCellReps()
-		report := visualization.NewReport(len(startAuctions), cells, auctionRunnerDelegate.Results(), duration)
+		report := visualization.NewReport(len(lrpStartAuctions), cells, auctionRunnerDelegate.Results(), duration)
 
 		visualization.PrintReport(report)
 		svgReport.DrawReportCard(i, j, report)
@@ -142,7 +142,7 @@ var _ = Describe("Auction", func() {
 	})
 
 	Describe("Experiments", func() {
-		Context("Small Cold Starts", func() {
+		Context("Small Cold LRPStarts", func() {
 			napps := []int{8, 40, 200, 800}
 			ncells := []int{4, 10, 20, 40}
 			for i := range ncells {
@@ -155,7 +155,7 @@ var _ = Describe("Auction", func() {
 			}
 		})
 
-		Context("Large Cold Starts", func() {
+		Context("Large Cold LRPStarts", func() {
 			ncells := []int{25, 4 * 25}
 			n1apps := []int{1800, 4 * 1800}
 			n2apps := []int{200, 4 * 200}
@@ -234,12 +234,12 @@ var _ = Describe("Auction", func() {
 		Context("Stop Auctions", func() {
 			processGuid := util.NewGrayscaleGuid("AAA")
 
-			performStopAuctions := func(stopAuctions []models.LRPStopAuction) auctiontypes.AuctionResults {
-				for _, stopAuction := range stopAuctions {
+			performStopAuctions := func(lrpStopAuctions []models.LRPStopAuction) auctiontypes.AuctionResults {
+				for _, stopAuction := range lrpStopAuctions {
 					auctionRunner.AddLRPStopAuction(stopAuction)
 				}
 
-				Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(stopAuctions)))
+				Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStopAuctions)))
 
 				return auctionRunnerDelegate.Results()
 			}
@@ -254,16 +254,16 @@ var _ = Describe("Auction", func() {
 				})
 
 				It("should favor removing the instance from the heavy-laden executor", func() {
-					stopAuctions := []models.LRPStopAuction{
+					lrpStopAuctions := []models.LRPStopAuction{
 						{
 							ProcessGuid: processGuid,
 							Index:       0,
 						},
 					}
 
-					results := performStopAuctions(stopAuctions)
-					Ω(results.SuccessfulStops).Should(HaveLen(1))
-					Ω(results.SuccessfulStops[0].Winner).Should(Equal(cellGuid(1)))
+					results := performStopAuctions(lrpStopAuctions)
+					Ω(results.SuccessfulLRPStops).Should(HaveLen(1))
+					Ω(results.SuccessfulLRPStops[0].Winner).Should(Equal(cellGuid(1)))
 
 					state, err := cells[cellGuid(0)].State()
 					Ω(err).ShouldNot(HaveOccurred())
@@ -286,16 +286,16 @@ var _ = Describe("Auction", func() {
 				})
 
 				It("should favor leaving the instance on the more heavy-laden executor", func() {
-					stopAuctions := []models.LRPStopAuction{
+					lrpStopAuctions := []models.LRPStopAuction{
 						{
 							ProcessGuid: processGuid,
 							Index:       0,
 						},
 					}
 
-					results := performStopAuctions(stopAuctions)
-					Ω(results.SuccessfulStops).Should(HaveLen(1))
-					Ω(results.SuccessfulStops[0].Winner).Should(Equal(cellGuid(0)))
+					results := performStopAuctions(lrpStopAuctions)
+					Ω(results.SuccessfulLRPStops).Should(HaveLen(1))
+					Ω(results.SuccessfulLRPStops[0].Winner).Should(Equal(cellGuid(0)))
 
 					state, err := cells[cellGuid(0)].State()
 					Ω(err).ShouldNot(HaveOccurred())
@@ -317,16 +317,16 @@ var _ = Describe("Auction", func() {
 				})
 
 				It("should favor removing the instance from the heavy-laden executor", func() {
-					stopAuctions := []models.LRPStopAuction{
+					lrpStopAuctions := []models.LRPStopAuction{
 						{
 							ProcessGuid: processGuid,
 							Index:       0,
 						},
 					}
 
-					results := performStopAuctions(stopAuctions)
-					Ω(results.SuccessfulStops).Should(HaveLen(1))
-					Ω(results.SuccessfulStops[0].Winner).Should(Equal(cellGuid(1)))
+					results := performStopAuctions(lrpStopAuctions)
+					Ω(results.SuccessfulLRPStops).Should(HaveLen(1))
+					Ω(results.SuccessfulLRPStops[0].Winner).Should(Equal(cellGuid(1)))
 
 					state, err := cells[cellGuid(0)].State()
 					Ω(err).ShouldNot(HaveOccurred())
@@ -351,16 +351,16 @@ var _ = Describe("Auction", func() {
 				})
 
 				It("should stop all but 1", func() {
-					stopAuctions := []models.LRPStopAuction{
+					lrpStopAuctions := []models.LRPStopAuction{
 						{
 							ProcessGuid: processGuid,
 							Index:       1,
 						},
 					}
 
-					results := performStopAuctions(stopAuctions)
-					Ω(results.SuccessfulStops).Should(HaveLen(1))
-					Ω(results.SuccessfulStops[0].Winner).Should(Equal(cellGuid(1)))
+					results := performStopAuctions(lrpStopAuctions)
+					Ω(results.SuccessfulLRPStops).Should(HaveLen(1))
+					Ω(results.SuccessfulLRPStops[0].Winner).Should(Equal(cellGuid(1)))
 
 					state, err := cells[cellGuid(0)].State()
 					Ω(err).ShouldNot(HaveOccurred())

@@ -31,23 +31,23 @@ var _ = Describe("Cell", func() {
 		cell = NewCell(client, state)
 	})
 
-	Describe("ScoreForStartAuction", func() {
+	Describe("ScoreForLRPStartAuction", func() {
 		It("factors in memory usage", func() {
 			bigInstance := BuildLRPStartAuction("pg-big", "ig-big", 0, "lucid64", 20, 10)
 			smallInstance := BuildLRPStartAuction("pg-small", "ig-small", 0, "lucid64", 10, 10)
 
 			By("factoring in the amount of memory taken up by the instance")
-			bigScore, err := emptyCell.ScoreForStartAuction(bigInstance)
+			bigScore, err := emptyCell.ScoreForLRPStartAuction(bigInstance)
 			Ω(err).ShouldNot(HaveOccurred())
-			smallScore, err := emptyCell.ScoreForStartAuction(smallInstance)
+			smallScore, err := emptyCell.ScoreForLRPStartAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(smallScore).Should(BeNumerically("<", bigScore))
 
 			By("factoring in the relative emptiness of Cells")
-			emptyScore, err := emptyCell.ScoreForStartAuction(smallInstance)
+			emptyScore, err := emptyCell.ScoreForLRPStartAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
-			score, err := cell.ScoreForStartAuction(smallInstance)
+			score, err := cell.ScoreForLRPStartAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(emptyScore).Should(BeNumerically("<", score))
 		})
@@ -57,17 +57,17 @@ var _ = Describe("Cell", func() {
 			smallInstance := BuildLRPStartAuction("pg-small", "ig-small", 0, "lucid64", 10, 10)
 
 			By("factoring in the amount of memory taken up by the instance")
-			bigScore, err := emptyCell.ScoreForStartAuction(bigInstance)
+			bigScore, err := emptyCell.ScoreForLRPStartAuction(bigInstance)
 			Ω(err).ShouldNot(HaveOccurred())
-			smallScore, err := emptyCell.ScoreForStartAuction(smallInstance)
+			smallScore, err := emptyCell.ScoreForLRPStartAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(smallScore).Should(BeNumerically("<", bigScore))
 
 			By("factoring in the relative emptiness of Cells")
-			emptyScore, err := emptyCell.ScoreForStartAuction(smallInstance)
+			emptyScore, err := emptyCell.ScoreForLRPStartAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
-			score, err := cell.ScoreForStartAuction(smallInstance)
+			score, err := cell.ScoreForLRPStartAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(emptyScore).Should(BeNumerically("<", score))
 		})
@@ -81,9 +81,9 @@ var _ = Describe("Cell", func() {
 			smallState := BuildCellState(100, 200, 20, nil)
 			smallCell := NewCell(client, smallState)
 
-			bigScore, err := bigCell.ScoreForStartAuction(instance)
+			bigScore, err := bigCell.ScoreForLRPStartAuction(instance)
 			Ω(err).ShouldNot(HaveOccurred())
-			smallScore, err := smallCell.ScoreForStartAuction(instance)
+			smallScore, err := smallCell.ScoreForLRPStartAuction(instance)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(bigScore).Should(BeNumerically("<", smallScore), "prefer Cells with more resources")
 		})
@@ -93,11 +93,11 @@ var _ = Describe("Cell", func() {
 			instanceWithOneMatch := BuildLRPStartAuction("pg-2", "ig-new", 1, "lucid64", 10, 10)
 			instanceWithNoMatches := BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 10, 10)
 
-			twoMatchesScore, err := cell.ScoreForStartAuction(instanceWithTwoMatches)
+			twoMatchesScore, err := cell.ScoreForLRPStartAuction(instanceWithTwoMatches)
 			Ω(err).ShouldNot(HaveOccurred())
-			oneMatchesScore, err := cell.ScoreForStartAuction(instanceWithOneMatch)
+			oneMatchesScore, err := cell.ScoreForLRPStartAuction(instanceWithOneMatch)
 			Ω(err).ShouldNot(HaveOccurred())
-			noMatchesScore, err := cell.ScoreForStartAuction(instanceWithNoMatches)
+			noMatchesScore, err := cell.ScoreForLRPStartAuction(instanceWithNoMatches)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(noMatchesScore).Should(BeNumerically("<", oneMatchesScore))
@@ -108,7 +108,7 @@ var _ = Describe("Cell", func() {
 			Context("because of memory constraints", func() {
 				It("should error", func() {
 					massiveMemoryInstance := BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 10000, 10)
-					score, err := cell.ScoreForStartAuction(massiveMemoryInstance)
+					score, err := cell.ScoreForLRPStartAuction(massiveMemoryInstance)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
@@ -117,7 +117,7 @@ var _ = Describe("Cell", func() {
 			Context("because of disk constraints", func() {
 				It("should error", func() {
 					massiveDiskInstance := BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 10, 10000)
-					score, err := cell.ScoreForStartAuction(massiveDiskInstance)
+					score, err := cell.ScoreForLRPStartAuction(massiveDiskInstance)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
@@ -128,7 +128,7 @@ var _ = Describe("Cell", func() {
 					instance := BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 10, 10)
 					zeroState := BuildCellState(100, 100, 0, nil)
 					zeroCell := NewCell(client, zeroState)
-					score, err := zeroCell.ScoreForStartAuction(instance)
+					score, err := zeroCell.ScoreForLRPStartAuction(instance)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
@@ -138,14 +138,14 @@ var _ = Describe("Cell", func() {
 		Context("when the LRP doesn't match the stack", func() {
 			It("should error", func() {
 				nonMatchingInstance := BuildLRPStartAuction("pg-new", "ig-new", 0, ".net", 10, 10)
-				score, err := cell.ScoreForStartAuction(nonMatchingInstance)
+				score, err := cell.ScoreForLRPStartAuction(nonMatchingInstance)
 				Ω(score).Should(BeZero())
 				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
 			})
 		})
 	})
 
-	Describe("ScoreForStopAuction", func() {
+	Describe("ScoreForLRPStopAuction", func() {
 		var stopAuction models.LRPStopAuction
 		BeforeEach(func() {
 			stopAuction = BuildLRPStopAuction("pg-1", 1)
@@ -162,10 +162,10 @@ var _ = Describe("Cell", func() {
 				{"pg-other", "ig-other", 0, 10, 20},
 			}))
 
-			scoreA, instancesA, err := cellA.ScoreForStopAuction(stopAuction)
+			scoreA, instancesA, err := cellA.ScoreForLRPStopAuction(stopAuction)
 			Ω(err).ShouldNot(HaveOccurred())
 
-			scoreB, instancesB, err := cellB.ScoreForStopAuction(stopAuction)
+			scoreB, instancesB, err := cellB.ScoreForLRPStopAuction(stopAuction)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
@@ -184,10 +184,10 @@ var _ = Describe("Cell", func() {
 				{"pg-other", "ig-other", 0, 10, 20},
 			}))
 
-			scoreA, instancesA, err := cellA.ScoreForStopAuction(stopAuction)
+			scoreA, instancesA, err := cellA.ScoreForLRPStopAuction(stopAuction)
 			Ω(err).ShouldNot(HaveOccurred())
 
-			scoreB, instancesB, err := cellB.ScoreForStopAuction(stopAuction)
+			scoreB, instancesB, err := cellB.ScoreForLRPStopAuction(stopAuction)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
@@ -205,10 +205,10 @@ var _ = Describe("Cell", func() {
 				{"pg-other", "ig-other", 0, 10, 20},
 			}))
 
-			scoreA, instancesA, err := cellA.ScoreForStopAuction(stopAuction)
+			scoreA, instancesA, err := cellA.ScoreForLRPStopAuction(stopAuction)
 			Ω(err).ShouldNot(HaveOccurred())
 
-			scoreB, instancesB, err := cellB.ScoreForStopAuction(stopAuction)
+			scoreB, instancesB, err := cellB.ScoreForLRPStopAuction(stopAuction)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
@@ -227,10 +227,10 @@ var _ = Describe("Cell", func() {
 				{"pg-1", "ig-3", 2, 10, 20},
 			}))
 
-			scoreA, instancesA, err := cellA.ScoreForStopAuction(stopAuction)
+			scoreA, instancesA, err := cellA.ScoreForLRPStopAuction(stopAuction)
 			Ω(err).ShouldNot(HaveOccurred())
 
-			scoreB, instancesB, err := cellB.ScoreForStopAuction(stopAuction)
+			scoreB, instancesB, err := cellB.ScoreForLRPStopAuction(stopAuction)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
@@ -245,7 +245,7 @@ var _ = Describe("Cell", func() {
 					{"pg-1", "ig-2", 1, 10, 20},
 				}))
 
-				_, instances, err := cell.ScoreForStopAuction(stopAuction)
+				_, instances, err := cell.ScoreForLRPStopAuction(stopAuction)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(instances).Should(ConsistOf("ig-1", "ig-2"))
 			})
@@ -263,10 +263,10 @@ var _ = Describe("Cell", func() {
 						{"pg-yet-another", "ig-yet-another", 1, 10, 20},
 					}))
 
-					scoreA, _, err := cellA.ScoreForStopAuction(stopAuction)
+					scoreA, _, err := cellA.ScoreForLRPStopAuction(stopAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
-					scoreB, _, err := cellB.ScoreForStopAuction(stopAuction)
+					scoreB, _, err := cellB.ScoreForLRPStopAuction(stopAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
@@ -285,10 +285,10 @@ var _ = Describe("Cell", func() {
 						{"pg-yet-another", "ig-yet-another", 1, 10, 20},
 					}))
 
-					scoreA, _, err := cellA.ScoreForStopAuction(stopAuction)
+					scoreA, _, err := cellA.ScoreForLRPStopAuction(stopAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
-					scoreB, _, err := cellB.ScoreForStopAuction(stopAuction)
+					scoreB, _, err := cellB.ScoreForLRPStopAuction(stopAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
@@ -308,10 +308,10 @@ var _ = Describe("Cell", func() {
 						{"pg-yet-another", "ig-yet-another", 1, 10, 20},
 					}))
 
-					scoreA, _, err := cellA.ScoreForStopAuction(stopAuction)
+					scoreA, _, err := cellA.ScoreForLRPStopAuction(stopAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
-					scoreB, _, err := cellB.ScoreForStopAuction(stopAuction)
+					scoreB, _, err := cellB.ScoreForLRPStopAuction(stopAuction)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					Ω(scoreA).Should(BeNumerically("==", scoreB))
@@ -322,7 +322,7 @@ var _ = Describe("Cell", func() {
 		Context("when there are no matching process guids", func() {
 			It("should return an error", func() {
 				noneMatchingAuction := BuildLRPStopAuction("pg-none", 0)
-				score, instanceGuids, err := cell.ScoreForStopAuction(noneMatchingAuction)
+				score, instanceGuids, err := cell.ScoreForLRPStopAuction(noneMatchingAuction)
 				Ω(score).Should(BeZero())
 				Ω(instanceGuids).Should(BeEmpty())
 				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
@@ -332,7 +332,7 @@ var _ = Describe("Cell", func() {
 		Context("when there are no matching indices", func() {
 			It("should return an error", func() {
 				noneMatchingAuction := BuildLRPStopAuction("pg-1", 17)
-				score, instanceGuids, err := cell.ScoreForStopAuction(noneMatchingAuction)
+				score, instanceGuids, err := cell.ScoreForLRPStopAuction(noneMatchingAuction)
 				Ω(score).Should(BeZero())
 				Ω(instanceGuids).Should(BeEmpty())
 				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
@@ -346,12 +346,12 @@ var _ = Describe("Cell", func() {
 				instance := BuildLRPStartAuction("pg-test", "ig-test", 0, "lucid64", 10, 10)
 				instanceToAdd := BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 10, 10)
 
-				initialScore, err := cell.ScoreForStartAuction(instance)
+				initialScore, err := cell.ScoreForLRPStartAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(cell.StartLRP(instanceToAdd)).Should(Succeed())
 
-				subsequentScore, err := cell.ScoreForStartAuction(instance)
+				subsequentScore, err := cell.ScoreForLRPStartAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(initialScore).Should(BeNumerically("<", subsequentScore), "the score should have gotten worse")
 			})
@@ -361,20 +361,20 @@ var _ = Describe("Cell", func() {
 				instanceWithMatchingProcessGuid := BuildLRPStartAuction("pg-new", "ig-new-2", 1, "lucid64", 10, 10)
 				instanceToAdd := BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 10, 10)
 
-				initialScore, err := cell.ScoreForStartAuction(instance)
+				initialScore, err := cell.ScoreForLRPStartAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				initialScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForStartAuction(instanceWithMatchingProcessGuid)
+				initialScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRPStartAuction(instanceWithMatchingProcessGuid)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(initialScore).Should(BeNumerically("==", initialScoreForInstanceWithMatchingProcessGuid))
 
 				Ω(cell.StartLRP(instanceToAdd)).Should(Succeed())
 
-				subsequentScore, err := cell.ScoreForStartAuction(instance)
+				subsequentScore, err := cell.ScoreForLRPStartAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				subsequentScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForStartAuction(instanceWithMatchingProcessGuid)
+				subsequentScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRPStartAuction(instanceWithMatchingProcessGuid)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(initialScore).Should(BeNumerically("<", subsequentScore), "the score should have gotten worse")
@@ -410,12 +410,12 @@ var _ = Describe("Cell", func() {
 				Index:        1,
 			}
 
-			initialScore, err := cell.ScoreForStartAuction(instance)
+			initialScore, err := cell.ScoreForLRPStartAuction(instance)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(cell.StopLRP(instanceToStop)).Should(Succeed())
 
-			subsequentScore, err := cell.ScoreForStartAuction(instance)
+			subsequentScore, err := cell.ScoreForLRPStartAuction(instance)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(initialScore).Should(BeNumerically(">", subsequentScore), "the score should have gotten better")
 		})
@@ -494,15 +494,15 @@ var _ = Describe("Cell", func() {
 				cell.Commit()
 				Ω(client.PerformCallCount()).Should(Equal(1))
 				Ω(client.PerformArgsForCall(0)).Should(Equal(auctiontypes.Work{
-					Starts: []models.LRPStartAuction{instanceToStart},
-					Stops:  []models.ActualLRP{instanceToStop},
+					LRPStarts: []models.LRPStartAuction{instanceToStart},
+					LRPStops:  []models.ActualLRP{instanceToStop},
 				}))
 			})
 
 			Context("when the client returns some failed work", func() {
 				It("forwards the failed work", func() {
 					failedWork := auctiontypes.Work{
-						Stops: []models.ActualLRP{instanceToStop},
+						LRPStops: []models.ActualLRP{instanceToStop},
 					}
 					client.PerformReturns(failedWork, nil)
 					Ω(cell.Commit()).Should(Equal(failedWork))

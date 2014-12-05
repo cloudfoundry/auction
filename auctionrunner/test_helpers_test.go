@@ -28,15 +28,15 @@ func BuildLRPStopAuction(processGuid string, index int) models.LRPStopAuction {
 	}
 }
 
-func BuildStartAuction(start models.LRPStartAuction, queueTime time.Time) auctiontypes.StartAuction {
-	return auctiontypes.StartAuction{
+func BuildStartAuction(start models.LRPStartAuction, queueTime time.Time) auctiontypes.LRPStartAuction {
+	return auctiontypes.LRPStartAuction{
 		LRPStartAuction: start,
 		QueueTime:       queueTime,
 	}
 }
 
-func BuildStopAuction(stop models.LRPStopAuction, queueTime time.Time) auctiontypes.StopAuction {
-	return auctiontypes.StopAuction{
+func BuildStopAuction(stop models.LRPStopAuction, queueTime time.Time) auctiontypes.LRPStopAuction {
+	return auctiontypes.LRPStopAuction{
 		LRPStopAuction: stop,
 		QueueTime:      queueTime,
 	}

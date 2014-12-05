@@ -53,7 +53,7 @@ func NewReport(numAuctions int, cells map[string]auctiontypes.CellRep, results a
 func (r *Report) IsAuctionedInstance(inst auctiontypes.LRP) bool {
 	if r.auctionedInstancesByInstGuid == nil {
 		r.auctionedInstancesByInstGuid = map[string]bool{}
-		for _, result := range r.AuctionResults.SuccessfulStarts {
+		for _, result := range r.AuctionResults.SuccessfulLRPStarts {
 			r.auctionedInstancesByInstGuid[result.LRPStartAuction.InstanceGuid] = true
 		}
 	}
@@ -62,7 +62,7 @@ func (r *Report) IsAuctionedInstance(inst auctiontypes.LRP) bool {
 }
 
 func (r *Report) AuctionsPerformed() int {
-	return len(r.AuctionResults.SuccessfulStarts) + len(r.AuctionResults.FailedStarts)
+	return len(r.AuctionResults.SuccessfulLRPStarts) + len(r.AuctionResults.FailedLRPStarts)
 }
 
 func (r *Report) NReps() int {
@@ -70,7 +70,7 @@ func (r *Report) NReps() int {
 }
 
 func (r *Report) NMissingInstances() int {
-	return r.NumAuctions - len(r.AuctionResults.SuccessfulStarts)
+	return r.NumAuctions - len(r.AuctionResults.SuccessfulLRPStarts)
 }
 
 func (r *Report) InitialDistributionScore() float64 {
@@ -111,7 +111,7 @@ func (r *Report) AuctionsPerSecond() float64 {
 
 func (r *Report) WaitTimeStats() Stat {
 	waitTimes := []float64{}
-	for _, result := range r.AuctionResults.SuccessfulStarts {
+	for _, result := range r.AuctionResults.SuccessfulLRPStarts {
 		waitTimes = append(waitTimes, result.WaitDuration.Seconds())
 	}
 

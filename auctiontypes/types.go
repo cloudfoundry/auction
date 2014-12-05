@@ -27,15 +27,15 @@ type AuctionRunnerDelegate interface {
 }
 
 type AuctionResults struct {
-	SuccessfulStarts []StartAuction
-	SuccessfulStops  []StopAuction
-	FailedStarts     []StartAuction
-	FailedStops      []StopAuction
+	SuccessfulLRPStarts []LRPStartAuction
+	SuccessfulLRPStops  []LRPStopAuction
+	FailedLRPStarts     []LRPStartAuction
+	FailedLRPStops      []LRPStopAuction
 }
 
 // Start and Stop Auctions
 
-type StartAuction struct {
+type LRPStartAuction struct {
 	LRPStartAuction models.LRPStartAuction
 	Winner          string
 	Attempts        int
@@ -44,7 +44,7 @@ type StartAuction struct {
 	WaitDuration time.Duration
 }
 
-func (s StartAuction) Identifier() string {
+func (s LRPStartAuction) Identifier() string {
 	return IdentifierForLRPStartAuction(s.LRPStartAuction)
 }
 
@@ -52,7 +52,7 @@ func IdentifierForLRPStartAuction(start models.LRPStartAuction) string {
 	return fmt.Sprintf("%s.%d.%s", start.DesiredLRP.ProcessGuid, start.Index, start.InstanceGuid)
 }
 
-type StopAuction struct {
+type LRPStopAuction struct {
 	LRPStopAuction models.LRPStopAuction
 	Winner         string
 	Attempts       int
@@ -61,7 +61,7 @@ type StopAuction struct {
 	WaitDuration time.Duration
 }
 
-func (s StopAuction) Identifier() string {
+func (s LRPStopAuction) Identifier() string {
 	return fmt.Sprintf("%s.%d", s.LRPStopAuction.ProcessGuid, s.LRPStopAuction.Index)
 }
 
@@ -79,8 +79,8 @@ type SimulationCellRep interface {
 }
 
 type Work struct {
-	Starts []models.LRPStartAuction
-	Stops  []models.ActualLRP
+	LRPStarts []models.LRPStartAuction
+	LRPStops  []models.ActualLRP
 }
 
 type CellState struct {

@@ -97,7 +97,7 @@ func (c *Cell) StartLRP(startAuction models.LRPStartAuction) error {
 	return nil
 }
 
-func (c *Cell) StopLRP(stop models.StopLRPInstance) error {
+func (c *Cell) StopLRP(stop models.ActualLRP) error {
 	indexToDelete := -1
 	for i, lrp := range c.state.LRPs {
 		if lrp.ProcessGuid != stop.ProcessGuid {

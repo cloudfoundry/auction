@@ -80,7 +80,7 @@ type SimulationCellRep interface {
 
 type Work struct {
 	Starts []models.LRPStartAuction
-	Stops  []models.StopLRPInstance
+	Stops  []models.ActualLRP
 }
 
 type CellState struct {

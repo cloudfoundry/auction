@@ -165,10 +165,11 @@ func scheduleStopAuction(cells map[string]*Cell, stopAuction auctiontypes.StopAu
 
 	if len(instancesToStop[winnerGuid]) > 1 {
 		for _, instance := range instancesToStop[winnerGuid][1:] {
-			cells[winnerGuid].StopLRP(models.StopLRPInstance{
+			cells[winnerGuid].StopLRP(models.ActualLRP{
 				ProcessGuid:  stopAuction.LRPStopAuction.ProcessGuid,
 				InstanceGuid: instance,
 				Index:        stopAuction.LRPStopAuction.Index,
+				CellID:       winnerGuid,
 			})
 		}
 	}
@@ -177,10 +178,11 @@ func scheduleStopAuction(cells map[string]*Cell, stopAuction auctiontypes.StopAu
 
 	for guid, instances := range instancesToStop {
 		for _, instance := range instances {
-			cells[guid].StopLRP(models.StopLRPInstance{
+			cells[guid].StopLRP(models.ActualLRP{
 				ProcessGuid:  stopAuction.LRPStopAuction.ProcessGuid,
 				InstanceGuid: instance,
 				Index:        stopAuction.LRPStopAuction.Index,
+				CellID:       guid,
 			})
 		}
 	}

@@ -18,26 +18,29 @@ var _ = Describe("Perform", func() {
 		var requestedWork, failedWork auctiontypes.Work
 		BeforeEach(func() {
 			requestedWork = auctiontypes.Work{
-				Stops: []models.StopLRPInstance{
+				Stops: []models.ActualLRP{
 					{
 						ProcessGuid:  "pg-a",
 						InstanceGuid: "ig-a",
 						Index:        1,
+						CellID:       "A",
 					},
 					{
 						ProcessGuid:  "pg-b",
 						InstanceGuid: "ig-b",
 						Index:        2,
+						CellID:       "B",
 					},
 				},
 			}
 
 			failedWork = auctiontypes.Work{
-				Stops: []models.StopLRPInstance{
+				Stops: []models.ActualLRP{
 					{
 						ProcessGuid:  "pg-a",
 						InstanceGuid: "ig-a",
 						Index:        1,
+						CellID:       "A",
 					},
 				},
 			}

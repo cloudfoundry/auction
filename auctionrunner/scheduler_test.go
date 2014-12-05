@@ -188,22 +188,25 @@ var _ = Describe("Scheudler", func() {
 				stopsToC := clients["C"].PerformArgsForCall(0).Stops
 
 				Ω(stopsToA).Should(ConsistOf(
-					models.StopLRPInstance{
+					models.ActualLRP{
 						ProcessGuid:  "pg",
 						InstanceGuid: "ig-2",
 						Index:        1,
+						CellID:       "A",
 					},
-					models.StopLRPInstance{
+					models.ActualLRP{
 						ProcessGuid:  "pg",
 						InstanceGuid: "ig-3",
 						Index:        1,
+						CellID:       "A",
 					},
 				))
 
-				Ω(stopsToC).Should(ConsistOf(models.StopLRPInstance{
+				Ω(stopsToC).Should(ConsistOf(models.ActualLRP{
 					ProcessGuid:  "pg",
 					InstanceGuid: "ig-8",
 					Index:        1,
+					CellID:       "C",
 				}))
 			})
 
@@ -351,10 +354,11 @@ var _ = Describe("Scheudler", func() {
 			Ω(clients["A"].PerformCallCount()).Should(Equal(1))
 			Ω(clients["B"].PerformCallCount()).Should(Equal(1))
 
-			Ω(clients["A"].PerformArgsForCall(0).Stops).Should(ConsistOf(models.StopLRPInstance{
+			Ω(clients["A"].PerformArgsForCall(0).Stops).Should(ConsistOf(models.ActualLRP{
 				ProcessGuid:  "pg-dupe",
 				InstanceGuid: "ig-3",
 				Index:        0,
+				CellID:       "A",
 			}))
 			Ω(clients["B"].PerformArgsForCall(0).Stops).Should(BeEmpty())
 

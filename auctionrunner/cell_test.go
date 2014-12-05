@@ -404,7 +404,7 @@ var _ = Describe("Cell", func() {
 	Describe("StopLRP", func() {
 		It("removes the LRP and keep the fact in mind when handling future requests", func() {
 			instance := BuildLRPStartAuction("pg-test", "ig-test", 0, "lucid64", 10, 10)
-			instanceToStop := models.StopLRPInstance{
+			instanceToStop := models.ActualLRP{
 				ProcessGuid:  "pg-1",
 				InstanceGuid: "ig-2",
 				Index:        1,
@@ -421,7 +421,7 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("removes the LRP, making it impossible to remove again", func() {
-			instanceToStop := models.StopLRPInstance{
+			instanceToStop := models.ActualLRP{
 				ProcessGuid:  "pg-1",
 				InstanceGuid: "ig-2",
 				Index:        1,
@@ -436,7 +436,7 @@ var _ = Describe("Cell", func() {
 				Because := By
 
 				Because("of a mismatched process guid")
-				instanceToStop := models.StopLRPInstance{
+				instanceToStop := models.ActualLRP{
 					ProcessGuid:  "pg-0",
 					InstanceGuid: "ig-2",
 					Index:        1,
@@ -445,7 +445,7 @@ var _ = Describe("Cell", func() {
 				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
 
 				Because("of a mismatched instance guid")
-				instanceToStop = models.StopLRPInstance{
+				instanceToStop = models.ActualLRP{
 					ProcessGuid:  "pg-1",
 					InstanceGuid: "ig-3",
 					Index:        1,
@@ -454,7 +454,7 @@ var _ = Describe("Cell", func() {
 				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
 
 				Because("of a mismatched index")
-				instanceToStop = models.StopLRPInstance{
+				instanceToStop = models.ActualLRP{
 					ProcessGuid:  "pg-1",
 					InstanceGuid: "ig-2",
 					Index:        0,
@@ -476,11 +476,11 @@ var _ = Describe("Cell", func() {
 
 		Context("with work to commit", func() {
 			var instanceToStart models.LRPStartAuction
-			var instanceToStop models.StopLRPInstance
+			var instanceToStop models.ActualLRP
 
 			BeforeEach(func() {
 				instanceToStart = BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 20, 10)
-				instanceToStop = models.StopLRPInstance{
+				instanceToStop = models.ActualLRP{
 					ProcessGuid:  "pg-1",
 					InstanceGuid: "ig-2",
 					Index:        1,
@@ -495,14 +495,14 @@ var _ = Describe("Cell", func() {
 				Ω(client.PerformCallCount()).Should(Equal(1))
 				Ω(client.PerformArgsForCall(0)).Should(Equal(auctiontypes.Work{
 					Starts: []models.LRPStartAuction{instanceToStart},
-					Stops:  []models.StopLRPInstance{instanceToStop},
+					Stops:  []models.ActualLRP{instanceToStop},
 				}))
 			})
 
 			Context("when the client returns some failed work", func() {
 				It("forwards the failed work", func() {
 					failedWork := auctiontypes.Work{
-						Stops: []models.StopLRPInstance{instanceToStop},
+						Stops: []models.ActualLRP{instanceToStop},
 					}
 					client.PerformReturns(failedWork, nil)
 					Ω(cell.Commit()).Should(Equal(failedWork))

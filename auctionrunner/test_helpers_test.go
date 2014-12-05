@@ -28,6 +28,12 @@ func BuildLRPStopAuction(processGuid string, index int) models.LRPStopAuction {
 	}
 }
 
+func BuildTask(taskGuid string) models.Task {
+	return models.Task{
+		TaskGuid: taskGuid,
+	}
+}
+
 func BuildStartAuction(start models.LRPStartAuction, queueTime time.Time) auctiontypes.LRPStartAuction {
 	return auctiontypes.LRPStartAuction{
 		LRPStartAuction: start,
@@ -39,6 +45,13 @@ func BuildStopAuction(stop models.LRPStopAuction, queueTime time.Time) auctionty
 	return auctiontypes.LRPStopAuction{
 		LRPStopAuction: stop,
 		QueueTime:      queueTime,
+	}
+}
+
+func BuildTaskAuction(task models.Task, queueTime time.Time) auctiontypes.TaskAuction {
+	return auctiontypes.TaskAuction{
+		Task:      task,
+		QueueTime: queueTime,
 	}
 }
 

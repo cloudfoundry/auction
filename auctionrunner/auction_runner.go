@@ -61,7 +61,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			logger.Info("fetched-cell-state", lager.Data{"cell-state-count": len(cells), "num-failed-requests": len(clients) - len(cells)})
 
 			logger.Info("fetching-auctions")
-			lrpStartAuctions, lrpStopAuctions := a.batch.DedupeAndDrain()
+			lrpStartAuctions, lrpStopAuctions, _ := a.batch.DedupeAndDrain()
 			logger.Info("fetched-auctions", lager.Data{"lrp-start-auctions": len(lrpStartAuctions), "lrp-stop-auctions": len(lrpStopAuctions)})
 			if len(lrpStartAuctions) == 0 && len(lrpStopAuctions) == 0 {
 				logger.Info("nothing-to-auction")

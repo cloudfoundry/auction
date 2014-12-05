@@ -13,8 +13,9 @@ import (
 )
 
 var _ = Describe("Batch", func() {
-	var startAuction models.LRPStartAuction
-	var stopAuction models.LRPStopAuction
+	var lrpStartAuction models.LRPStartAuction
+	var lrpStopAuction models.LRPStopAuction
+	var task models.Task
 	var batch *Batch
 	var timeProvider *faketimeprovider.FakeTimeProvider
 
@@ -25,21 +26,22 @@ var _ = Describe("Batch", func() {
 
 	It("should start off empty", func() {
 		Ω(batch.HasWork).ShouldNot(Receive())
-		starts, stops := batch.DedupeAndDrain()
+		starts, stops, tasks := batch.DedupeAndDrain()
 		Ω(starts).Should(BeEmpty())
 		Ω(stops).Should(BeEmpty())
+		Ω(tasks).Should(BeEmpty())
 	})
 
 	Describe("adding work", func() {
 		Context("when adding start auctions", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10)
-				batch.AddLRPStartAuction(startAuction)
+				lrpStartAuction = BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10)
+				batch.AddLRPStartAuction(lrpStartAuction)
 			})
 
 			It("makes the start auction available when drained", func() {
-				startAuctions, _ := batch.DedupeAndDrain()
-				Ω(startAuctions).Should(ConsistOf(BuildStartAuction(startAuction, timeProvider.Now())))
+				lrpStartAuctions, _, _ := batch.DedupeAndDrain()
+				Ω(lrpStartAuctions).Should(ConsistOf(BuildStartAuction(lrpStartAuction, timeProvider.Now())))
 			})
 
 			It("should have work", func() {
@@ -49,13 +51,29 @@ var _ = Describe("Batch", func() {
 
 		Context("when adding stop auctions", func() {
 			BeforeEach(func() {
-				stopAuction = BuildLRPStopAuction("pg-1", 1)
-				batch.AddLRPStopAuction(stopAuction)
+				lrpStopAuction = BuildLRPStopAuction("pg-1", 1)
+				batch.AddLRPStopAuction(lrpStopAuction)
 			})
 
 			It("makes the stop auction available when drained", func() {
-				_, stopAuctions := batch.DedupeAndDrain()
-				Ω(stopAuctions).Should(ConsistOf(BuildStopAuction(stopAuction, timeProvider.Now())))
+				_, lrpStopAuctions, _ := batch.DedupeAndDrain()
+				Ω(lrpStopAuctions).Should(ConsistOf(BuildStopAuction(lrpStopAuction, timeProvider.Now())))
+			})
+
+			It("should have work", func() {
+				Ω(batch.HasWork).Should(Receive())
+			})
+		})
+
+		Context("when adding tasks", func() {
+			BeforeEach(func() {
+				task = BuildTask("tg-1")
+				batch.AddTask(task)
+			})
+
+			It("makes the stop auction available when drained", func() {
+				_, _, taskAuctions := batch.DedupeAndDrain()
+				Ω(taskAuctions).Should(ConsistOf(BuildTaskAuction(task, timeProvider.Now())))
 			})
 
 			It("should have work", func() {
@@ -67,20 +85,29 @@ var _ = Describe("Batch", func() {
 	Describe("resubmitting work", func() {
 		Context("resubmitting starts", func() {
 			It("adds the work, and ensures it has priority when deduping", func() {
-				lrpStartAuction := BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10)
-				startAuction := BuildStartAuction(lrpStartAuction, time.Unix(0, 0))
-				startAuction.Attempts = 3
-				batch.AddLRPStartAuction(lrpStartAuction)
-				batch.ResubmitStartAuctions([]auctiontypes.LRPStartAuction{startAuction})
-				batch.AddLRPStartAuction(lrpStartAuction)
+				lrpStartAuction1 := BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10)
+				startAuction1 := BuildStartAuction(lrpStartAuction1, timeProvider.Now())
 
-				startAuctions, _ := batch.DedupeAndDrain()
-				Ω(startAuctions).Should(ConsistOf(startAuction))
+				lrpStartAuction2 := BuildLRPStartAuction("pg-2", "ig-2", 1, "lucid64", 10, 10)
+				startAuction2 := BuildStartAuction(lrpStartAuction2, timeProvider.Now())
+
+				batch.AddLRPStartAuction(lrpStartAuction1)
+				batch.AddLRPStartAuction(lrpStartAuction2)
+
+				lrpStartAuctions, _, _ := batch.DedupeAndDrain()
+				Ω(lrpStartAuctions).Should(Equal([]auctiontypes.LRPStartAuction{startAuction1, startAuction2}))
+
+				batch.AddLRPStartAuction(lrpStartAuction1)
+				batch.AddLRPStartAuction(lrpStartAuction2)
+				batch.ResubmitStartAuctions([]auctiontypes.LRPStartAuction{startAuction2})
+
+				lrpStartAuctions, _, _ = batch.DedupeAndDrain()
+				Ω(lrpStartAuctions).Should(Equal([]auctiontypes.LRPStartAuction{startAuction2, startAuction1}))
 			})
 
 			It("should have work", func() {
 				lrpStartAuction := BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10)
-				startAuction := BuildStartAuction(lrpStartAuction, time.Unix(0, 0))
+				startAuction := BuildStartAuction(lrpStartAuction, timeProvider.Now())
 				batch.ResubmitStartAuctions([]auctiontypes.LRPStartAuction{startAuction})
 
 				Ω(batch.HasWork).Should(Receive())
@@ -89,21 +116,61 @@ var _ = Describe("Batch", func() {
 
 		Context("resubmitting stops", func() {
 			It("adds the work, and ensures it has priority when deduping", func() {
-				lrpStopAuction := BuildLRPStopAuction("pg-1", 1)
-				stopAuction := BuildStopAuction(lrpStopAuction, time.Unix(0, 0))
-				stopAuction.Attempts = 3
-				batch.AddLRPStopAuction(lrpStopAuction)
-				batch.ResubmitStopAuctions([]auctiontypes.LRPStopAuction{stopAuction})
-				batch.AddLRPStopAuction(lrpStopAuction)
+				lrpStopAuction1 := BuildLRPStopAuction("pg-1", 1)
+				stopAuction1 := BuildStopAuction(lrpStopAuction1, timeProvider.Now())
 
-				_, stopAuctions := batch.DedupeAndDrain()
-				Ω(stopAuctions).Should(ConsistOf(stopAuction))
+				lrpStopAuction2 := BuildLRPStopAuction("pg-2", 1)
+				stopAuction2 := BuildStopAuction(lrpStopAuction2, timeProvider.Now())
+
+				batch.AddLRPStopAuction(lrpStopAuction1)
+				batch.AddLRPStopAuction(lrpStopAuction2)
+
+				_, lrpStopAuctions, _ := batch.DedupeAndDrain()
+				Ω(lrpStopAuctions).Should(Equal([]auctiontypes.LRPStopAuction{stopAuction1, stopAuction2}))
+
+				batch.AddLRPStopAuction(lrpStopAuction1)
+				batch.AddLRPStopAuction(lrpStopAuction2)
+				batch.ResubmitStopAuctions([]auctiontypes.LRPStopAuction{stopAuction2})
+
+				_, lrpStopAuctions, _ = batch.DedupeAndDrain()
+				Ω(lrpStopAuctions).Should(Equal([]auctiontypes.LRPStopAuction{stopAuction2, stopAuction1}))
 			})
 
 			It("should have work", func() {
 				lrpStopAuction := BuildLRPStopAuction("pg-1", 1)
-				stopAuction := BuildStopAuction(lrpStopAuction, time.Unix(0, 0))
+				stopAuction := BuildStopAuction(lrpStopAuction, timeProvider.Now())
 				batch.ResubmitStopAuctions([]auctiontypes.LRPStopAuction{stopAuction})
+
+				Ω(batch.HasWork).Should(Receive())
+			})
+		})
+
+		Context("resubmitting tasks", func() {
+			It("adds the work, and ensures it has priority when deduping", func() {
+				task1 := BuildTask("tg-1")
+				taskAuction1 := BuildTaskAuction(task1, timeProvider.Now())
+
+				task2 := BuildTask("tg-2")
+				taskAuction2 := BuildTaskAuction(task2, timeProvider.Now())
+
+				batch.AddTask(task1)
+				batch.AddTask(task2)
+
+				_, _, taskAuctions := batch.DedupeAndDrain()
+				Ω(taskAuctions).Should(Equal([]auctiontypes.TaskAuction{taskAuction1, taskAuction2}))
+
+				batch.AddTask(task1)
+				batch.AddTask(task2)
+				batch.ResubmitTaskAuctions([]auctiontypes.TaskAuction{taskAuction2})
+
+				_, _, taskAuctions = batch.DedupeAndDrain()
+				Ω(taskAuctions).Should(Equal([]auctiontypes.TaskAuction{taskAuction2, taskAuction1}))
+			})
+
+			It("should have work", func() {
+				task := BuildTask("tg-1")
+				taskAuction := BuildTaskAuction(task, timeProvider.Now())
+				batch.ResubmitTaskAuctions([]auctiontypes.TaskAuction{taskAuction})
 
 				Ω(batch.HasWork).Should(Receive())
 			})
@@ -119,11 +186,15 @@ var _ = Describe("Batch", func() {
 			batch.AddLRPStopAuction(BuildLRPStopAuction("pg-1", 1))
 			batch.AddLRPStopAuction(BuildLRPStopAuction("pg-1", 1))
 			batch.AddLRPStopAuction(BuildLRPStopAuction("pg-2", 3))
+
+			batch.AddTask(BuildTask("tg-1"))
+			batch.AddTask(BuildTask("tg-1"))
+			batch.AddTask(BuildTask("tg-2"))
 		})
 
 		It("should dedupe any duplicate start auctions and stop auctions", func() {
-			startAuctions, stopAuctions := batch.DedupeAndDrain()
-			Ω(startAuctions).Should(Equal([]auctiontypes.LRPStartAuction{
+			lrpStartAuctions, lrpStopAuctions, taskAuctions := batch.DedupeAndDrain()
+			Ω(lrpStartAuctions).Should(Equal([]auctiontypes.LRPStartAuction{
 				BuildStartAuction(
 					BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10),
 					timeProvider.Now(),
@@ -134,7 +205,7 @@ var _ = Describe("Batch", func() {
 				),
 			}))
 
-			Ω(stopAuctions).Should(Equal([]auctiontypes.LRPStopAuction{
+			Ω(lrpStopAuctions).Should(Equal([]auctiontypes.LRPStopAuction{
 				BuildStopAuction(
 					BuildLRPStopAuction("pg-1", 1),
 					timeProvider.Now(),
@@ -144,13 +215,25 @@ var _ = Describe("Batch", func() {
 					timeProvider.Now(),
 				),
 			}))
+
+			Ω(taskAuctions).Should(Equal([]auctiontypes.TaskAuction{
+				BuildTaskAuction(
+					BuildTask("tg-1"),
+					timeProvider.Now(),
+				),
+				BuildTaskAuction(
+					BuildTask("tg-2"),
+					timeProvider.Now(),
+				),
+			}))
 		})
 
 		It("should clear out its cache, so a subsequent call shouldn't fetch anything", func() {
 			batch.DedupeAndDrain()
-			startAuctions, stopAuctions := batch.DedupeAndDrain()
-			Ω(startAuctions).Should(BeEmpty())
-			Ω(stopAuctions).Should(BeEmpty())
+			lrpStartAuctions, lrpStopAuctions, taskAuctions := batch.DedupeAndDrain()
+			Ω(lrpStartAuctions).Should(BeEmpty())
+			Ω(lrpStopAuctions).Should(BeEmpty())
+			Ω(taskAuctions).Should(BeEmpty())
 		})
 
 		It("should no longer have work after draining", func() {

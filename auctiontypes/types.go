@@ -29,11 +29,13 @@ type AuctionRunnerDelegate interface {
 type AuctionResults struct {
 	SuccessfulLRPStarts []LRPStartAuction
 	SuccessfulLRPStops  []LRPStopAuction
+	SuccessfulTasks     []TaskAuction
 	FailedLRPStarts     []LRPStartAuction
 	FailedLRPStops      []LRPStopAuction
+	FailedTasks         []TaskAuction
 }
 
-// Start and Stop Auctions
+// Start, Stop, and Task Auctions
 
 type LRPStartAuction struct {
 	LRPStartAuction models.LRPStartAuction
@@ -63,6 +65,19 @@ type LRPStopAuction struct {
 
 func (s LRPStopAuction) Identifier() string {
 	return fmt.Sprintf("%s.%d", s.LRPStopAuction.ProcessGuid, s.LRPStopAuction.Index)
+}
+
+type TaskAuction struct {
+	Task     models.Task
+	Winner   string
+	Attempts int
+
+	QueueTime    time.Time
+	WaitDuration time.Duration
+}
+
+func (t TaskAuction) Identifier() string {
+	return t.Task.TaskGuid
 }
 
 // Cell Representatives

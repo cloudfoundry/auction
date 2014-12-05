@@ -81,6 +81,7 @@ type SimulationCellRep interface {
 type Work struct {
 	LRPStarts []models.LRPStartAuction
 	LRPStops  []models.ActualLRP
+	Tasks     []models.Task
 }
 
 type CellState struct {

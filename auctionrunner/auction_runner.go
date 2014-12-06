@@ -69,7 +69,11 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			}
 
 			logger.Info("scheduling")
-			auctionResults := Schedule(a.workPool, cells, a.timeProvider, lrpStartAuctions, lrpStopAuctions)
+			auctionRequest := auctiontypes.AuctionRequest{
+				LRPStarts: lrpStartAuctions,
+				LRPStops:  lrpStopAuctions,
+			}
+			auctionResults := Schedule(a.workPool, cells, a.timeProvider, auctionRequest)
 			logger.Info("scheduled", lager.Data{
 				"successful-lrp-start-auctions": len(auctionResults.SuccessfulLRPStarts),
 				"successful-lrp-stop-auctions":  len(auctionResults.SuccessfulLRPStops),

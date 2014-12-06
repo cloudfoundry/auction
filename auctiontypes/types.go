@@ -26,6 +26,12 @@ type AuctionRunnerDelegate interface {
 	DistributedBatch(AuctionResults)
 }
 
+type AuctionRequest struct {
+	LRPStarts []LRPStartAuction
+	LRPStops  []LRPStopAuction
+	Tasks     []TaskAuction
+}
+
 type AuctionResults struct {
 	SuccessfulLRPStarts []LRPStartAuction
 	SuccessfulLRPStops  []LRPStopAuction

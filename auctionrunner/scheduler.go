@@ -13,26 +13,34 @@ import (
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
-func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider timeprovider.TimeProvider, lrpStartAuctions []auctiontypes.LRPStartAuction, lrpStopAuctions []auctiontypes.LRPStopAuction) auctiontypes.AuctionResults {
+/*
+Schedule takes in a set of job requests (tasks, starts, and stops) and assigns
+the work to available cells according to the diego scoring algorithm. The
+scheduler is single-threaded.  It determines scheduling of jobs one at a time so
+that each calculation reflects available resources correctly.  It commits the
+work in batches at the end, for better network performance.  Schedule returns
+AuctionResults, indicating the success or failure of each requested job.
+*/
+func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider timeprovider.TimeProvider, auctionRequest auctiontypes.AuctionRequest) auctiontypes.AuctionResults {
 	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	results := auctiontypes.AuctionResults{}
 	if len(cells) == 0 {
-		results.FailedLRPStarts = lrpStartAuctions
-		results.FailedLRPStops = lrpStopAuctions
+		results.FailedLRPStarts = auctionRequest.LRPStarts
+		results.FailedLRPStops = auctionRequest.LRPStops
 		return markResults(results, timeProvider)
 	}
 
-	for _, stopAuction := range lrpStopAuctions {
+	for _, stopAuction := range auctionRequest.LRPStops {
 		succesfulStop := scheduleLRPStopAuction(cells, stopAuction)
 		results.SuccessfulLRPStops = append(results.SuccessfulLRPStops, succesfulStop)
 	}
 	var successfulLRPStarts = map[string]auctiontypes.LRPStartAuction{}
 	var lrpStartAuctionLookup = map[string]auctiontypes.LRPStartAuction{}
 
-	sort.Sort(sort.Reverse(SortableAuctions(lrpStartAuctions)))
+	sort.Sort(sort.Reverse(SortableAuctions(auctionRequest.LRPStarts)))
 
-	for _, startAuction := range lrpStartAuctions {
+	for _, startAuction := range auctionRequest.LRPStarts {
 		lrpStartAuctionLookup[startAuction.Identifier()] = startAuction
 
 		successfulStart, err := scheduleLRPStartAuction(cells, startAuction, randomizer)

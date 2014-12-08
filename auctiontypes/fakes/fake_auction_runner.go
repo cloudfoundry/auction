@@ -29,6 +29,11 @@ type FakeAuctionRunner struct {
 	addLRPStopAuctionArgsForCall []struct {
 		arg1 models.LRPStopAuction
 	}
+	AddTaskForAuctionStub        func(models.Task)
+	addTaskForAuctionMutex       sync.RWMutex
+	addTaskForAuctionArgsForCall []struct {
+		arg1 models.Task
+	}
 }
 
 func (fake *FakeAuctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
@@ -108,6 +113,29 @@ func (fake *FakeAuctionRunner) AddLRPStopAuctionArgsForCall(i int) models.LRPSto
 	fake.addLRPStopAuctionMutex.RLock()
 	defer fake.addLRPStopAuctionMutex.RUnlock()
 	return fake.addLRPStopAuctionArgsForCall[i].arg1
+}
+
+func (fake *FakeAuctionRunner) AddTaskForAuction(arg1 models.Task) {
+	fake.addTaskForAuctionMutex.Lock()
+	fake.addTaskForAuctionArgsForCall = append(fake.addTaskForAuctionArgsForCall, struct {
+		arg1 models.Task
+	}{arg1})
+	fake.addTaskForAuctionMutex.Unlock()
+	if fake.AddTaskForAuctionStub != nil {
+		fake.AddTaskForAuctionStub(arg1)
+	}
+}
+
+func (fake *FakeAuctionRunner) AddTaskForAuctionCallCount() int {
+	fake.addTaskForAuctionMutex.RLock()
+	defer fake.addTaskForAuctionMutex.RUnlock()
+	return len(fake.addTaskForAuctionArgsForCall)
+}
+
+func (fake *FakeAuctionRunner) AddTaskForAuctionArgsForCall(i int) models.Task {
+	fake.addTaskForAuctionMutex.RLock()
+	defer fake.addTaskForAuctionMutex.RUnlock()
+	return fake.addTaskForAuctionArgsForCall[i].arg1
 }
 
 var _ auctiontypes.AuctionRunner = new(FakeAuctionRunner)

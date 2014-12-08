@@ -19,6 +19,7 @@ type AuctionRunner interface {
 	ifrit.Runner
 	AddLRPStartAuction(models.LRPStartAuction)
 	AddLRPStopAuction(models.LRPStopAuction)
+	AddTaskForAuction(models.Task)
 }
 
 type AuctionRunnerDelegate interface {

@@ -9,7 +9,8 @@ import (
 type SimulationRep struct {
 	stack          string
 	totalResources auctiontypes.Resources
-	instances      map[string]auctiontypes.LRP
+	lrps           map[string]auctiontypes.LRP
+	tasks          map[string]auctiontypes.Task
 
 	lock *sync.Mutex
 }
@@ -18,7 +19,8 @@ func New(stack string, totalResources auctiontypes.Resources) auctiontypes.Simul
 	return &SimulationRep{
 		stack:          stack,
 		totalResources: totalResources,
-		instances:      map[string]auctiontypes.LRP{},
+		lrps:           map[string]auctiontypes.LRP{},
+		tasks:          map[string]auctiontypes.Task{},
 
 		lock: &sync.Mutex{},
 	}
@@ -29,8 +31,13 @@ func (rep *SimulationRep) State() (auctiontypes.CellState, error) {
 	defer rep.lock.Unlock()
 
 	lrps := []auctiontypes.LRP{}
-	for _, lrp := range rep.instances {
+	for _, lrp := range rep.lrps {
 		lrps = append(lrps, lrp)
+	}
+
+	tasks := []auctiontypes.Task{}
+	for _, task := range rep.tasks {
+		tasks = append(tasks, task)
 	}
 
 	availableResources := rep.availableResources()
@@ -42,6 +49,7 @@ func (rep *SimulationRep) State() (auctiontypes.CellState, error) {
 		AvailableResources: availableResources,
 		TotalResources:     rep.totalResources,
 		LRPs:               lrps,
+		Tasks:              tasks,
 	}, nil
 }
 
@@ -52,12 +60,12 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 	failedWork := auctiontypes.Work{}
 
 	for _, stop := range work.LRPStops {
-		_, ok := rep.instances[stop.InstanceGuid]
+		_, ok := rep.lrps[stop.InstanceGuid]
 		if !ok {
 			failedWork.LRPStops = append(failedWork.LRPStops, stop)
 			continue
 		}
-		delete(rep.instances, stop.InstanceGuid)
+		delete(rep.lrps, stop.InstanceGuid)
 	}
 
 	availableResources := rep.availableResources()
@@ -68,7 +76,7 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 		hasRoom = hasRoom && availableResources.DiskMB >= start.DesiredLRP.DiskMB
 
 		if hasRoom {
-			rep.instances[start.InstanceGuid] = auctiontypes.LRP{
+			rep.lrps[start.InstanceGuid] = auctiontypes.LRP{
 				ProcessGuid:  start.DesiredLRP.ProcessGuid,
 				InstanceGuid: start.InstanceGuid,
 				Index:        start.Index,
@@ -83,7 +91,24 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 		}
 	}
 
-	// util.RandomSleep(800, 900)
+	for _, task := range work.Tasks {
+		hasRoom := availableResources.Containers >= 0
+		hasRoom = hasRoom && availableResources.MemoryMB >= task.MemoryMB
+		hasRoom = hasRoom && availableResources.DiskMB >= task.DiskMB
+
+		if hasRoom {
+			rep.tasks[task.TaskGuid] = auctiontypes.Task{
+				TaskGuid: task.TaskGuid,
+				MemoryMB: task.MemoryMB,
+				DiskMB:   task.DiskMB,
+			}
+			availableResources.Containers -= 1
+			availableResources.MemoryMB -= task.MemoryMB
+			availableResources.DiskMB -= task.DiskMB
+		} else {
+			failedWork.Tasks = append(failedWork.Tasks, task)
+		}
+	}
 
 	return failedWork, nil
 }
@@ -94,7 +119,8 @@ func (rep *SimulationRep) Reset() error {
 	rep.lock.Lock()
 	defer rep.lock.Unlock()
 
-	rep.instances = map[string]auctiontypes.LRP{}
+	rep.lrps = map[string]auctiontypes.LRP{}
+	rep.tasks = map[string]auctiontypes.Task{}
 	return nil
 }
 
@@ -102,9 +128,14 @@ func (rep *SimulationRep) Reset() error {
 
 func (rep *SimulationRep) availableResources() auctiontypes.Resources {
 	resources := rep.totalResources
-	for _, instance := range rep.instances {
-		resources.MemoryMB -= instance.MemoryMB
-		resources.DiskMB -= instance.DiskMB
+	for _, lrp := range rep.lrps {
+		resources.MemoryMB -= lrp.MemoryMB
+		resources.DiskMB -= lrp.DiskMB
+		resources.Containers -= 1
+	}
+	for _, task := range rep.tasks {
+		resources.MemoryMB -= task.MemoryMB
+		resources.DiskMB -= task.DiskMB
 		resources.Containers -= 1
 	}
 	return resources

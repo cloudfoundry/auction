@@ -42,6 +42,22 @@ func (c *Cell) ScoreForLRPStartAuction(lrpStartAuction models.LRPStartAuction) (
 	return resourceScore, nil
 }
 
+func (c *Cell) ScoreForTask(task models.Task) (float64, error) {
+	err := c.canHandleTask(task)
+	if err != nil {
+		return 0, err
+	}
+
+	remainingResources := c.state.AvailableResources
+	remainingResources.MemoryMB -= task.MemoryMB
+	remainingResources.DiskMB -= task.DiskMB
+	remainingResources.Containers -= 1
+
+	resourceScore := c.computeTaskScore(remainingResources)
+
+	return resourceScore, nil
+}
+
 func (c *Cell) ScoreForLRPStopAuction(lrpStopAuction models.LRPStopAuction) (float64, []string, error) {
 	matchingLRPs := []auctiontypes.LRP{}
 	numberOfInstancesWithMatchingProcessGuidButDifferentIndex := 0
@@ -97,6 +113,27 @@ func (c *Cell) StartLRP(lrpStartAuction models.LRPStartAuction) error {
 	return nil
 }
 
+func (c *Cell) StartTask(task models.Task) error {
+	err := c.canHandleTask(task)
+	if err != nil {
+		return err
+	}
+
+	c.state.Tasks = append(c.state.Tasks, auctiontypes.Task{
+		TaskGuid: task.TaskGuid,
+		MemoryMB: task.MemoryMB,
+		DiskMB:   task.DiskMB,
+	})
+
+	c.state.AvailableResources.MemoryMB -= task.MemoryMB
+	c.state.AvailableResources.DiskMB -= task.DiskMB
+	c.state.AvailableResources.Containers -= 1
+
+	c.workToCommit.Tasks = append(c.workToCommit.Tasks, task)
+
+	return nil
+}
+
 func (c *Cell) StopLRP(stop models.ActualLRP) error {
 	indexToDelete := -1
 	for i, lrp := range c.state.LRPs {
@@ -128,7 +165,7 @@ func (c *Cell) StopLRP(stop models.ActualLRP) error {
 }
 
 func (c *Cell) Commit() auctiontypes.Work {
-	if len(c.workToCommit.LRPStarts) == 0 && len(c.workToCommit.LRPStops) == 0 {
+	if len(c.workToCommit.LRPStarts) == 0 && len(c.workToCommit.LRPStops) == 0 && len(c.workToCommit.Tasks) == 0 {
 		return auctiontypes.Work{}
 	}
 
@@ -159,6 +196,23 @@ func (c *Cell) canHandleLRPStartAuction(lrpStartAuction models.LRPStartAuction) 
 	return nil
 }
 
+func (c *Cell) canHandleTask(task models.Task) error {
+	if c.state.Stack != task.Stack {
+		return auctiontypes.ErrorStackMismatch
+	}
+	if c.state.AvailableResources.MemoryMB < task.MemoryMB {
+		return auctiontypes.ErrorInsufficientResources
+	}
+	if c.state.AvailableResources.DiskMB < task.DiskMB {
+		return auctiontypes.ErrorInsufficientResources
+	}
+	if c.state.AvailableResources.Containers < 1 {
+		return auctiontypes.ErrorInsufficientResources
+	}
+
+	return nil
+}
+
 func (c *Cell) computeScore(remainingResources auctiontypes.Resources, numInstances int) float64 {
 	fractionUsedMemory := 1.0 - float64(remainingResources.MemoryMB)/float64(c.state.TotalResources.MemoryMB)
 	fractionUsedDisk := 1.0 - float64(remainingResources.DiskMB)/float64(c.state.TotalResources.DiskMB)
@@ -166,6 +220,16 @@ func (c *Cell) computeScore(remainingResources auctiontypes.Resources, numInstan
 
 	resourceScore := (fractionUsedMemory + fractionUsedDisk + fractionUsedContainers) / 3.0
 	resourceScore += float64(numInstances)
+
+	return resourceScore
+}
+
+func (c *Cell) computeTaskScore(remainingResources auctiontypes.Resources) float64 {
+	fractionUsedMemory := 1.0 - float64(remainingResources.MemoryMB)/float64(c.state.TotalResources.MemoryMB)
+	fractionUsedDisk := 1.0 - float64(remainingResources.DiskMB)/float64(c.state.TotalResources.DiskMB)
+	fractionUsedContainers := 1.0 - float64(remainingResources.Containers)/float64(c.state.TotalResources.Containers)
+
+	resourceScore := (fractionUsedMemory + fractionUsedDisk + fractionUsedContainers) / 3.0
 
 	return resourceScore
 }

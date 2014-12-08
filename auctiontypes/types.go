@@ -83,7 +83,11 @@ type TaskAuction struct {
 }
 
 func (t TaskAuction) Identifier() string {
-	return t.Task.TaskGuid
+	return IdentifierForTask(t.Task)
+}
+
+func IdentifierForTask(t models.Task) string {
+	return t.TaskGuid
 }
 
 // Cell Representatives
@@ -110,6 +114,7 @@ type CellState struct {
 	AvailableResources Resources
 	TotalResources     Resources
 	LRPs               []LRP
+	Tasks              []Task
 }
 
 type LRP struct {
@@ -118,6 +123,12 @@ type LRP struct {
 	Index        int
 	MemoryMB     int
 	DiskMB       int
+}
+
+type Task struct {
+	TaskGuid string
+	MemoryMB int
+	DiskMB   int
 }
 
 type Resources struct {

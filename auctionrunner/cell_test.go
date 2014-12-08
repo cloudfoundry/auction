@@ -145,6 +145,104 @@ var _ = Describe("Cell", func() {
 		})
 	})
 
+	Describe("ScoreForTask", func() {
+		It("factors in memory usage", func() {
+			bigTask := BuildTask("tg-big", "lucid64", 20, 10)
+			smallTask := BuildTask("tg-small", "lucid64", 10, 10)
+
+			By("factoring in the amount of memory taken up by the task")
+			bigScore, err := emptyCell.ScoreForTask(bigTask)
+			Ω(err).ShouldNot(HaveOccurred())
+			smallScore, err := emptyCell.ScoreForTask(smallTask)
+			Ω(err).ShouldNot(HaveOccurred())
+
+			Ω(smallScore).Should(BeNumerically("<", bigScore))
+
+			By("factoring in the relative emptiness of Cells")
+			emptyScore, err := emptyCell.ScoreForTask(smallTask)
+			Ω(err).ShouldNot(HaveOccurred())
+			score, err := cell.ScoreForTask(smallTask)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(emptyScore).Should(BeNumerically("<", score))
+		})
+
+		It("factors in disk usage", func() {
+			bigTask := BuildTask("tg-big", "lucid64", 10, 20)
+			smallTask := BuildTask("tg-small", "lucid64", 10, 10)
+
+			By("factoring in the amount of memory taken up by the task")
+			bigScore, err := emptyCell.ScoreForTask(bigTask)
+			Ω(err).ShouldNot(HaveOccurred())
+			smallScore, err := emptyCell.ScoreForTask(smallTask)
+			Ω(err).ShouldNot(HaveOccurred())
+
+			Ω(smallScore).Should(BeNumerically("<", bigScore))
+
+			By("factoring in the relative emptiness of Cells")
+			emptyScore, err := emptyCell.ScoreForTask(smallTask)
+			Ω(err).ShouldNot(HaveOccurred())
+			score, err := cell.ScoreForTask(smallTask)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(emptyScore).Should(BeNumerically("<", score))
+		})
+
+		It("factors in container usage", func() {
+			task := BuildTask("tg-big", "lucid64", 20, 20)
+
+			bigState := BuildCellState(100, 200, 50, nil)
+			bigCell := NewCell(client, bigState)
+
+			smallState := BuildCellState(100, 200, 20, nil)
+			smallCell := NewCell(client, smallState)
+
+			bigScore, err := bigCell.ScoreForTask(task)
+			Ω(err).ShouldNot(HaveOccurred())
+			smallScore, err := smallCell.ScoreForTask(task)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(bigScore).Should(BeNumerically("<", smallScore), "prefer Cells with more resources")
+		})
+
+		Context("when the task does not fit", func() {
+			Context("because of memory constraints", func() {
+				It("should error", func() {
+					massiveMemoryTask := BuildTask("pg-new", "lucid64", 10000, 10)
+					score, err := cell.ScoreForTask(massiveMemoryTask)
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+				})
+			})
+
+			Context("because of disk constraints", func() {
+				It("should error", func() {
+					massiveDiskTask := BuildTask("pg-new", "lucid64", 10, 10000)
+					score, err := cell.ScoreForTask(massiveDiskTask)
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+				})
+			})
+
+			Context("because of container constraints", func() {
+				It("should error", func() {
+					task := BuildTask("pg-new", "lucid64", 10, 10)
+					zeroState := BuildCellState(100, 100, 0, nil)
+					zeroCell := NewCell(client, zeroState)
+					score, err := zeroCell.ScoreForTask(task)
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+				})
+			})
+		})
+
+		Context("when the task doesn't match the stack", func() {
+			It("should error", func() {
+				nonMatchingTask := BuildTask("pg-new", ".net", 10, 10)
+				score, err := cell.ScoreForTask(nonMatchingTask)
+				Ω(score).Should(BeZero())
+				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
+			})
+		})
+	})
+
 	Describe("ScoreForLRPStopAuction", func() {
 		var stopAuction models.LRPStopAuction
 		BeforeEach(func() {
@@ -396,6 +494,40 @@ var _ = Describe("Cell", func() {
 			It("should error", func() {
 				instance := BuildLRPStartAuction("pg-test", "ig-test", 0, "lucid64", 10000, 10)
 				err := cell.StartLRP(instance)
+				Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+			})
+		})
+	})
+
+	Describe("StartTask", func() {
+		Context("when there is room for the task", func() {
+			It("should register its resources usage and keep it in mind when handling future requests", func() {
+				task := BuildTask("tg-test", "lucid64", 10, 10)
+				taskToAdd := BuildTask("tg-new", "lucid64", 10, 10)
+
+				initialScore, err := cell.ScoreForTask(task)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(cell.StartTask(taskToAdd)).Should(Succeed())
+
+				subsequentScore, err := cell.ScoreForTask(task)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(initialScore).Should(BeNumerically("<", subsequentScore), "the score should have gotten worse")
+			})
+		})
+
+		Context("when there is a stack mismatch", func() {
+			It("should error", func() {
+				task := BuildTask("tg-test", ".net", 10, 10)
+				err := cell.StartTask(task)
+				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
+			})
+		})
+
+		Context("when there is no room for the Task", func() {
+			It("should error", func() {
+				task := BuildTask("tg-test", "lucid64", 10000, 10)
+				err := cell.StartTask(task)
 				Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
 		})

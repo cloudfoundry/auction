@@ -67,7 +67,7 @@ var _ = Describe("Batch", func() {
 
 		Context("when adding tasks", func() {
 			BeforeEach(func() {
-				task = BuildTask("tg-1")
+				task = BuildTask("tg-1", "lucid64", 10, 10)
 				batch.AddTask(task)
 			})
 
@@ -147,10 +147,10 @@ var _ = Describe("Batch", func() {
 
 		Context("resubmitting tasks", func() {
 			It("adds the work, and ensures it has priority when deduping", func() {
-				task1 := BuildTask("tg-1")
+				task1 := BuildTask("tg-1", "lucid64", 10, 10)
 				taskAuction1 := BuildTaskAuction(task1, timeProvider.Now())
 
-				task2 := BuildTask("tg-2")
+				task2 := BuildTask("tg-2", "lucid64", 10, 10)
 				taskAuction2 := BuildTaskAuction(task2, timeProvider.Now())
 
 				batch.AddTask(task1)
@@ -168,7 +168,7 @@ var _ = Describe("Batch", func() {
 			})
 
 			It("should have work", func() {
-				task := BuildTask("tg-1")
+				task := BuildTask("tg-1", "lucid64", 10, 10)
 				taskAuction := BuildTaskAuction(task, timeProvider.Now())
 				batch.ResubmitTaskAuctions([]auctiontypes.TaskAuction{taskAuction})
 
@@ -187,9 +187,9 @@ var _ = Describe("Batch", func() {
 			batch.AddLRPStopAuction(BuildLRPStopAuction("pg-1", 1))
 			batch.AddLRPStopAuction(BuildLRPStopAuction("pg-2", 3))
 
-			batch.AddTask(BuildTask("tg-1"))
-			batch.AddTask(BuildTask("tg-1"))
-			batch.AddTask(BuildTask("tg-2"))
+			batch.AddTask(BuildTask("tg-1", "lucid64", 10, 10))
+			batch.AddTask(BuildTask("tg-1", "lucid64", 10, 10))
+			batch.AddTask(BuildTask("tg-2", "lucid64", 10, 10))
 		})
 
 		It("should dedupe any duplicate start auctions and stop auctions", func() {
@@ -218,11 +218,11 @@ var _ = Describe("Batch", func() {
 
 			Ω(taskAuctions).Should(Equal([]auctiontypes.TaskAuction{
 				BuildTaskAuction(
-					BuildTask("tg-1"),
+					BuildTask("tg-1", "lucid64", 10, 10),
 					timeProvider.Now(),
 				),
 				BuildTaskAuction(
-					BuildTask("tg-2"),
+					BuildTask("tg-2", "lucid64", 10, 10),
 					timeProvider.Now(),
 				),
 			}))

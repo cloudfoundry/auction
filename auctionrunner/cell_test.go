@@ -243,201 +243,6 @@ var _ = Describe("Cell", func() {
 		})
 	})
 
-	Describe("ScoreForLRPStopAuction", func() {
-		var stopAuction models.LRPStopAuction
-		BeforeEach(func() {
-			stopAuction = BuildLRPStopAuction("pg-1", 1)
-		})
-
-		It("factors in memory constraints", func() {
-			cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-				{"pg-1", "ig-1", 1, 10, 20},
-				{"pg-other", "ig-other", 0, 10, 20},
-			}))
-
-			cellB := NewCell(client, BuildCellState(50, 200, 50, []auctiontypes.LRP{
-				{"pg-1", "ig-2", 1, 10, 20},
-				{"pg-other", "ig-other", 0, 10, 20},
-			}))
-
-			scoreA, instancesA, err := cellA.ScoreForLRPStopAuction(stopAuction)
-			Ω(err).ShouldNot(HaveOccurred())
-
-			scoreB, instancesB, err := cellB.ScoreForLRPStopAuction(stopAuction)
-			Ω(err).ShouldNot(HaveOccurred())
-
-			Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
-			Ω(instancesA).Should(ConsistOf("ig-1"))
-			Ω(instancesB).Should(ConsistOf("ig-2"))
-		})
-
-		It("factors in disk constraints", func() {
-			cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-				{"pg-1", "ig-1", 1, 10, 20},
-				{"pg-other", "ig-other", 0, 10, 20},
-			}))
-
-			cellB := NewCell(client, BuildCellState(100, 100, 50, []auctiontypes.LRP{
-				{"pg-1", "ig-2", 1, 10, 20},
-				{"pg-other", "ig-other", 0, 10, 20},
-			}))
-
-			scoreA, instancesA, err := cellA.ScoreForLRPStopAuction(stopAuction)
-			Ω(err).ShouldNot(HaveOccurred())
-
-			scoreB, instancesB, err := cellB.ScoreForLRPStopAuction(stopAuction)
-			Ω(err).ShouldNot(HaveOccurred())
-
-			Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
-			Ω(instancesA).Should(ConsistOf("ig-1"))
-			Ω(instancesB).Should(ConsistOf("ig-2"))
-		})
-
-		It("factors in container constraints", func() {
-			cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-				{"pg-1", "ig-1", 1, 10, 20},
-			}))
-
-			cellB := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-				{"pg-1", "ig-2", 1, 10, 20},
-				{"pg-other", "ig-other", 0, 10, 20},
-			}))
-
-			scoreA, instancesA, err := cellA.ScoreForLRPStopAuction(stopAuction)
-			Ω(err).ShouldNot(HaveOccurred())
-
-			scoreB, instancesB, err := cellB.ScoreForLRPStopAuction(stopAuction)
-			Ω(err).ShouldNot(HaveOccurred())
-
-			Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
-			Ω(instancesA).Should(ConsistOf("ig-1"))
-			Ω(instancesB).Should(ConsistOf("ig-2"))
-		})
-
-		It("factors in colocated process guids", func() {
-			cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-				{"pg-1", "ig-1", 1, 10, 20},
-				{"pg-other", "ig-other", 0, 10, 20},
-			}))
-
-			cellB := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-				{"pg-1", "ig-2", 1, 10, 20},
-				{"pg-1", "ig-3", 2, 10, 20},
-			}))
-
-			scoreA, instancesA, err := cellA.ScoreForLRPStopAuction(stopAuction)
-			Ω(err).ShouldNot(HaveOccurred())
-
-			scoreB, instancesB, err := cellB.ScoreForLRPStopAuction(stopAuction)
-			Ω(err).ShouldNot(HaveOccurred())
-
-			Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
-			Ω(instancesA).Should(ConsistOf("ig-1"))
-			Ω(instancesB).Should(ConsistOf("ig-2"))
-		})
-
-		Context("with multiple instances on an individual cell", func() {
-			It("returns an array of instance guids that can be stopped", func() {
-				cell := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-					{"pg-1", "ig-1", 1, 10, 20},
-					{"pg-1", "ig-2", 1, 10, 20},
-				}))
-
-				_, instances, err := cell.ScoreForLRPStopAuction(stopAuction)
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(instances).Should(ConsistOf("ig-1", "ig-2"))
-			})
-
-			Context("when it makes sense to preserve an instance on a cell with multiple instances", func() {
-				It("should give that cell a lower score", func() {
-					cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-						{"pg-1", "ig-1", 1, 10, 20},
-						{"pg-1", "ig-2", 1, 10, 20},
-					}))
-
-					cellB := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-						{"pg-1", "ig-3", 1, 10, 20},
-						{"pg-other", "ig-other", 0, 10, 20},
-						{"pg-yet-another", "ig-yet-another", 1, 10, 20},
-					}))
-
-					scoreA, _, err := cellA.ScoreForLRPStopAuction(stopAuction)
-					Ω(err).ShouldNot(HaveOccurred())
-
-					scoreB, _, err := cellB.ScoreForLRPStopAuction(stopAuction)
-					Ω(err).ShouldNot(HaveOccurred())
-
-					Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
-				})
-			})
-
-			Context("when it makes sense to preserve an instance on a cell with just one instance", func() {
-				It("should give that cell a lower score", func() {
-					cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-						{"pg-1", "ig-1", 1, 10, 20},
-					}))
-
-					cellB := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-						{"pg-1", "ig-2", 1, 10, 20},
-						{"pg-1", "ig-3", 1, 10, 20},
-						{"pg-yet-another", "ig-yet-another", 1, 10, 20},
-					}))
-
-					scoreA, _, err := cellA.ScoreForLRPStopAuction(stopAuction)
-					Ω(err).ShouldNot(HaveOccurred())
-
-					scoreB, _, err := cellB.ScoreForLRPStopAuction(stopAuction)
-					Ω(err).ShouldNot(HaveOccurred())
-
-					Ω(scoreA).Should(BeNumerically("<", scoreB), "it's preferable to preserve the instance on A")
-				})
-			})
-
-			Context("when it's a crapshoot", func() {
-				It("should give both cells the same score", func() {
-					cellA := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-						{"pg-1", "ig-1", 1, 10, 20},
-						{"pg-yet-another", "ig-yet-another", 1, 10, 20},
-					}))
-
-					cellB := NewCell(client, BuildCellState(100, 200, 50, []auctiontypes.LRP{
-						{"pg-1", "ig-2", 1, 10, 20},
-						{"pg-1", "ig-3", 1, 10, 20},
-						{"pg-yet-another", "ig-yet-another", 1, 10, 20},
-					}))
-
-					scoreA, _, err := cellA.ScoreForLRPStopAuction(stopAuction)
-					Ω(err).ShouldNot(HaveOccurred())
-
-					scoreB, _, err := cellB.ScoreForLRPStopAuction(stopAuction)
-					Ω(err).ShouldNot(HaveOccurred())
-
-					Ω(scoreA).Should(BeNumerically("==", scoreB))
-				})
-			})
-		})
-
-		Context("when there are no matching process guids", func() {
-			It("should return an error", func() {
-				noneMatchingAuction := BuildLRPStopAuction("pg-none", 0)
-				score, instanceGuids, err := cell.ScoreForLRPStopAuction(noneMatchingAuction)
-				Ω(score).Should(BeZero())
-				Ω(instanceGuids).Should(BeEmpty())
-				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
-			})
-		})
-
-		Context("when there are no matching indices", func() {
-			It("should return an error", func() {
-				noneMatchingAuction := BuildLRPStopAuction("pg-1", 17)
-				score, instanceGuids, err := cell.ScoreForLRPStopAuction(noneMatchingAuction)
-				Ω(score).Should(BeZero())
-				Ω(instanceGuids).Should(BeEmpty())
-				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
-			})
-		})
-	})
-
 	Describe("StartLRP", func() {
 		Context("when there is room for the LRP", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
@@ -533,70 +338,6 @@ var _ = Describe("Cell", func() {
 		})
 	})
 
-	Describe("StopLRP", func() {
-		It("removes the LRP and keep the fact in mind when handling future requests", func() {
-			instance := BuildLRPStartAuction("pg-test", "ig-test", 0, "lucid64", 10, 10)
-			instanceToStop := models.ActualLRP{
-				ProcessGuid:  "pg-1",
-				InstanceGuid: "ig-2",
-				Index:        1,
-			}
-
-			initialScore, err := cell.ScoreForLRPStartAuction(instance)
-			Ω(err).ShouldNot(HaveOccurred())
-
-			Ω(cell.StopLRP(instanceToStop)).Should(Succeed())
-
-			subsequentScore, err := cell.ScoreForLRPStartAuction(instance)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(initialScore).Should(BeNumerically(">", subsequentScore), "the score should have gotten better")
-		})
-
-		It("removes the LRP, making it impossible to remove again", func() {
-			instanceToStop := models.ActualLRP{
-				ProcessGuid:  "pg-1",
-				InstanceGuid: "ig-2",
-				Index:        1,
-			}
-
-			Ω(cell.StopLRP(instanceToStop)).Should(Succeed())
-			Ω(cell.StopLRP(instanceToStop)).ShouldNot(Succeed())
-		})
-
-		Context("when the lrp is not present", func() {
-			It("returns an error", func() {
-				Because := By
-
-				Because("of a mismatched process guid")
-				instanceToStop := models.ActualLRP{
-					ProcessGuid:  "pg-0",
-					InstanceGuid: "ig-2",
-					Index:        1,
-				}
-				err := cell.StopLRP(instanceToStop)
-				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
-
-				Because("of a mismatched instance guid")
-				instanceToStop = models.ActualLRP{
-					ProcessGuid:  "pg-1",
-					InstanceGuid: "ig-3",
-					Index:        1,
-				}
-				err = cell.StopLRP(instanceToStop)
-				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
-
-				Because("of a mismatched index")
-				instanceToStop = models.ActualLRP{
-					ProcessGuid:  "pg-1",
-					InstanceGuid: "ig-2",
-					Index:        0,
-				}
-				err = cell.StopLRP(instanceToStop)
-				Ω(err).Should(MatchError(auctiontypes.ErrorNothingToStop))
-			})
-		})
-	})
-
 	Describe("Commit", func() {
 		Context("with nothing to commit", func() {
 			It("does nothing and returns empty", func() {
@@ -608,18 +349,11 @@ var _ = Describe("Cell", func() {
 
 		Context("with work to commit", func() {
 			var instanceToStart models.LRPStartAuction
-			var instanceToStop models.ActualLRP
 
 			BeforeEach(func() {
 				instanceToStart = BuildLRPStartAuction("pg-new", "ig-new", 0, "lucid64", 20, 10)
-				instanceToStop = models.ActualLRP{
-					ProcessGuid:  "pg-1",
-					InstanceGuid: "ig-2",
-					Index:        1,
-				}
 
 				Ω(cell.StartLRP(instanceToStart)).Should(Succeed())
-				Ω(cell.StopLRP(instanceToStop)).Should(Succeed())
 			})
 
 			It("asks the client to perform", func() {
@@ -627,14 +361,13 @@ var _ = Describe("Cell", func() {
 				Ω(client.PerformCallCount()).Should(Equal(1))
 				Ω(client.PerformArgsForCall(0)).Should(Equal(auctiontypes.Work{
 					LRPStarts: []models.LRPStartAuction{instanceToStart},
-					LRPStops:  []models.ActualLRP{instanceToStop},
 				}))
 			})
 
 			Context("when the client returns some failed work", func() {
 				It("forwards the failed work", func() {
 					failedWork := auctiontypes.Work{
-						LRPStops: []models.ActualLRP{instanceToStop},
+						LRPStarts: []models.LRPStartAuction{instanceToStart},
 					}
 					client.PerformReturns(failedWork, nil)
 					Ω(cell.Commit()).Should(Equal(failedWork))

@@ -61,13 +61,12 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			logger.Info("fetched-cell-state", lager.Data{"cell-state-count": len(cells), "num-failed-requests": len(clients) - len(cells)})
 
 			logger.Info("fetching-auctions")
-			lrpStartAuctions, lrpStopAuctions, taskAuctions := a.batch.DedupeAndDrain()
+			lrpStartAuctions, taskAuctions := a.batch.DedupeAndDrain()
 			logger.Info("fetched-auctions", lager.Data{
 				"lrp-start-auctions": len(lrpStartAuctions),
-				"lrp-stop-auctions":  len(lrpStopAuctions),
 				"task-auctions":      len(taskAuctions),
 			})
-			if len(lrpStartAuctions) == 0 && len(lrpStopAuctions) == 0 && len(taskAuctions) == 0 {
+			if len(lrpStartAuctions) == 0 && len(taskAuctions) == 0 {
 				logger.Info("nothing-to-auction")
 				break
 			}
@@ -75,33 +74,26 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			logger.Info("scheduling")
 			auctionRequest := auctiontypes.AuctionRequest{
 				LRPStarts: lrpStartAuctions,
-				LRPStops:  lrpStopAuctions,
 				Tasks:     taskAuctions,
 			}
 			auctionResults := Schedule(a.workPool, cells, a.timeProvider, auctionRequest)
 			logger.Info("scheduled", lager.Data{
 				"successful-lrp-start-auctions": len(auctionResults.SuccessfulLRPStarts),
-				"successful-lrp-stop-auctions":  len(auctionResults.SuccessfulLRPStops),
 				"successful-task-auctions":      len(auctionResults.SuccessfulTasks),
 				"failed-lrp-start-auctions":     len(auctionResults.FailedLRPStarts),
-				"failed-lrp-stop-auctions":      len(auctionResults.FailedLRPStops),
 				"failed-task-auctions":          len(auctionResults.FailedTasks),
 			})
 			numStartsFailed := len(auctionResults.FailedLRPStarts)
-			numStopsFailed := len(auctionResults.FailedLRPStops)
 			numTasksFailed := len(auctionResults.FailedTasks)
 
 			logger.Info("resubmitting-failures")
 			auctionResults = ResubmitFailedAuctions(a.batch, auctionResults, a.maxRetries)
 			logger.Info("resubmitted-failures", lager.Data{
 				"successful-lrp-start-auctions":     len(auctionResults.SuccessfulLRPStarts),
-				"successful-lrp-stop-auctions":      len(auctionResults.SuccessfulLRPStops),
 				"successful-task-auctions":          len(auctionResults.SuccessfulTasks),
 				"will-not-retry-lrp-start-auctions": len(auctionResults.FailedLRPStarts),
-				"will-not-retry-lrp-stop-auctions":  len(auctionResults.FailedLRPStops),
 				"will-not-retry-task-auctions":      len(auctionResults.FailedTasks),
 				"will-retry-lrp-start-auctions":     numStartsFailed - len(auctionResults.FailedLRPStarts),
-				"will-retry-lrp-stop-auctions":      numStopsFailed - len(auctionResults.FailedLRPStops),
 				"will-retry-task-auctions":          numTasksFailed - len(auctionResults.FailedTasks),
 			})
 
@@ -114,10 +106,6 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 
 func (a *auctionRunner) AddLRPStartAuction(lrpStart models.LRPStartAuction) {
 	a.batch.AddLRPStartAuction(lrpStart)
-}
-
-func (a *auctionRunner) AddLRPStopAuction(lrpStop models.LRPStopAuction) {
-	a.batch.AddLRPStopAuction(lrpStop)
 }
 
 func (a *auctionRunner) AddTaskForAuction(task models.Task) {

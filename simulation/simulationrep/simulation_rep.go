@@ -59,15 +59,6 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 
 	failedWork := auctiontypes.Work{}
 
-	for _, stop := range work.LRPStops {
-		_, ok := rep.lrps[stop.InstanceGuid]
-		if !ok {
-			failedWork.LRPStops = append(failedWork.LRPStops, stop)
-			continue
-		}
-		delete(rep.lrps, stop.InstanceGuid)
-	}
-
 	availableResources := rep.availableResources()
 
 	for _, start := range work.LRPStarts {

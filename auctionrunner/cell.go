@@ -58,38 +58,6 @@ func (c *Cell) ScoreForTask(task models.Task) (float64, error) {
 	return resourceScore, nil
 }
 
-func (c *Cell) ScoreForLRPStopAuction(lrpStopAuction models.LRPStopAuction) (float64, []string, error) {
-	matchingLRPs := []auctiontypes.LRP{}
-	numberOfInstancesWithMatchingProcessGuidButDifferentIndex := 0
-	for _, lrp := range c.state.LRPs {
-		if lrp.ProcessGuid == lrpStopAuction.ProcessGuid {
-			if lrp.Index == lrpStopAuction.Index {
-				matchingLRPs = append(matchingLRPs, lrp)
-			} else {
-				numberOfInstancesWithMatchingProcessGuidButDifferentIndex++
-			}
-		}
-	}
-
-	if len(matchingLRPs) == 0 {
-		return 0, nil, auctiontypes.ErrorNothingToStop
-	}
-
-	remainingResources := c.state.AvailableResources
-	instanceGuids := make([]string, len(matchingLRPs))
-
-	for i, lrp := range matchingLRPs {
-		instanceGuids[i] = lrp.InstanceGuid
-		remainingResources.MemoryMB += lrp.MemoryMB
-		remainingResources.DiskMB += lrp.DiskMB
-		remainingResources.Containers += 1
-	}
-
-	resourceScore := c.computeScore(remainingResources, numberOfInstancesWithMatchingProcessGuidButDifferentIndex)
-
-	return resourceScore, instanceGuids, nil
-}
-
 func (c *Cell) StartLRP(lrpStartAuction models.LRPStartAuction) error {
 	err := c.canHandleLRPStartAuction(lrpStartAuction)
 	if err != nil {
@@ -134,38 +102,8 @@ func (c *Cell) StartTask(task models.Task) error {
 	return nil
 }
 
-func (c *Cell) StopLRP(stop models.ActualLRP) error {
-	indexToDelete := -1
-	for i, lrp := range c.state.LRPs {
-		if lrp.ProcessGuid != stop.ProcessGuid {
-			continue
-		}
-		if lrp.InstanceGuid != stop.InstanceGuid {
-			continue
-		}
-		if lrp.Index != stop.Index {
-			continue
-		}
-		indexToDelete = i
-		break
-	}
-
-	if indexToDelete == -1 {
-		return auctiontypes.ErrorNothingToStop
-	}
-
-	c.state.AvailableResources.MemoryMB += c.state.LRPs[indexToDelete].MemoryMB
-	c.state.AvailableResources.DiskMB += c.state.LRPs[indexToDelete].DiskMB
-	c.state.AvailableResources.Containers += 1
-
-	c.state.LRPs = append(c.state.LRPs[0:indexToDelete], c.state.LRPs[indexToDelete+1:]...)
-	c.workToCommit.LRPStops = append(c.workToCommit.LRPStops, stop)
-
-	return nil
-}
-
 func (c *Cell) Commit() auctiontypes.Work {
-	if len(c.workToCommit.LRPStarts) == 0 && len(c.workToCommit.LRPStops) == 0 && len(c.workToCommit.Tasks) == 0 {
+	if len(c.workToCommit.LRPStarts) == 0 && len(c.workToCommit.Tasks) == 0 {
 		return auctiontypes.Work{}
 	}
 

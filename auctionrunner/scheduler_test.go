@@ -1,7 +1,6 @@
 package auctionrunner_test
 
 import (
-	"errors"
 	"time"
 
 	"github.com/cloudfoundry/gunk/timeprovider/faketimeprovider"
@@ -42,23 +41,16 @@ var _ = Describe("Scheduler", func() {
 				timeProvider.Now(),
 			)
 
-			stopAuction := BuildStopAuction(
-				BuildLRPStopAuction("pg-1", 1),
-				timeProvider.Now(),
-			)
-
 			taskAuction := BuildTaskAuction(BuildTask("tg-1", "lucid64", 0, 0), timeProvider.Now())
 
 			auctionRequest := auctiontypes.AuctionRequest{
 				LRPStarts: []auctiontypes.LRPStartAuction{startAuction},
-				LRPStops:  []auctiontypes.LRPStopAuction{stopAuction},
 				Tasks:     []auctiontypes.TaskAuction{taskAuction},
 			}
 
 			By("no auctions are marked successful")
 			results := Schedule(workPool, map[string]*Cell{}, timeProvider, auctionRequest)
 			Ω(results.SuccessfulLRPStarts).Should(BeEmpty())
-			Ω(results.SuccessfulLRPStops).Should(BeEmpty())
 			Ω(results.SuccessfulTasks).Should(BeEmpty())
 
 			By("all lrp starts are marked failed, and their attempts are incremented")
@@ -66,12 +58,6 @@ var _ = Describe("Scheduler", func() {
 			failedLRPStart := results.FailedLRPStarts[0]
 			Ω(failedLRPStart.Identifier()).Should(Equal(startAuction.Identifier()))
 			Ω(failedLRPStart.Attempts).Should(Equal(startAuction.Attempts + 1))
-
-			By("all lrp stops are marked failed, and their attempts are incremented")
-			Ω(results.FailedLRPStops).Should(HaveLen(1))
-			failedLRPStop := results.FailedLRPStops[0]
-			Ω(failedLRPStop.Identifier()).Should(Equal(stopAuction.Identifier()))
-			Ω(failedLRPStop.Attempts).Should(Equal(stopAuction.Attempts + 1))
 
 			By("all tasks are marked failed, and their attempts are incremented")
 			Ω(results.FailedTasks).Should(HaveLen(1))
@@ -154,179 +140,6 @@ var _ = Describe("Scheduler", func() {
 				startAuction.Attempts = 1
 				Ω(results.SuccessfulLRPStarts).Should(BeEmpty())
 				Ω(results.FailedLRPStarts).Should(ConsistOf(startAuction))
-			})
-		})
-	})
-
-	Describe("handling stop auctions", func() {
-		var stopAuction auctiontypes.LRPStopAuction
-
-		BeforeEach(func() {
-			clients["A"] = &fakes.FakeSimulationCellRep{}
-			cells["A"] = NewCell(clients["A"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
-				{"pg", "ig-1", 0, 10, 10},
-				{"pg", "ig-2", 1, 10, 10},
-				{"pg", "ig-3", 1, 10, 10},
-				{"pg-one", "ig-4", 0, 10, 10},
-				{"pg-other", "ig-5", 0, 10, 10},
-			}))
-
-			clients["B"] = &fakes.FakeSimulationCellRep{}
-			cells["B"] = NewCell(clients["B"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
-				{"pg", "ig-6", 1, 10, 10},
-				{"pg-other", "ig-7", 0, 10, 10},
-			}))
-
-			clients["C"] = &fakes.FakeSimulationCellRep{}
-			cells["C"] = NewCell(clients["C"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
-				{"pg", "ig-8", 1, 10, 10},
-				{"pg-other", "ig-9", 0, 10, 10},
-				{"pg-other", "ig-10", 0, 10, 10},
-				{"pg-three", "ig-11", 2, 10, 10},
-				{"pg-three", "ig-12", 2, 10, 10},
-				{"pg-three", "ig-12", 2, 10, 10},
-			}))
-		})
-
-		Context("when the stop auction maps onto multiple instances", func() {
-			BeforeEach(func() {
-				stopAuction = BuildStopAuction(
-					BuildLRPStopAuction("pg", 1),
-					timeProvider.Now(),
-				)
-				timeProvider.Increment(time.Minute)
-			})
-
-			It("tells the appropriate cells to stop", func() {
-				results = Schedule(workPool, cells, timeProvider, auctiontypes.AuctionRequest{LRPStops: []auctiontypes.LRPStopAuction{stopAuction}})
-
-				Ω(clients["A"].PerformCallCount()).Should(Equal(1))
-				Ω(clients["B"].PerformCallCount()).Should(Equal(0))
-				Ω(clients["C"].PerformCallCount()).Should(Equal(1))
-
-				stopsToA := clients["A"].PerformArgsForCall(0).LRPStops
-				stopsToC := clients["C"].PerformArgsForCall(0).LRPStops
-
-				Ω(stopsToA).Should(ConsistOf(
-					models.ActualLRP{
-						ProcessGuid:  "pg",
-						InstanceGuid: "ig-2",
-						Index:        1,
-						CellID:       "A",
-					},
-					models.ActualLRP{
-						ProcessGuid:  "pg",
-						InstanceGuid: "ig-3",
-						Index:        1,
-						CellID:       "A",
-					},
-				))
-
-				Ω(stopsToC).Should(ConsistOf(models.ActualLRP{
-					ProcessGuid:  "pg",
-					InstanceGuid: "ig-8",
-					Index:        1,
-					CellID:       "C",
-				}))
-			})
-
-			It("marks the stop auction a success", func() {
-				results = Schedule(workPool, cells, timeProvider, auctiontypes.AuctionRequest{LRPStops: []auctiontypes.LRPStopAuction{stopAuction}})
-
-				stopAuction.Winner = "B"
-				stopAuction.Attempts = 1
-				stopAuction.WaitDuration = time.Minute
-				Ω(results.SuccessfulLRPStops).Should(ConsistOf(stopAuction))
-				Ω(results.FailedLRPStops).Should(BeEmpty())
-			})
-
-			Context("if a cell fails to stop", func() {
-				It("nonetheless markes the stop auction as a success -- if this is really an issue it will come up again later", func() {
-					clients["C"].PerformReturns(auctiontypes.Work{}, errors.New("boom"))
-					results = Schedule(workPool, cells, timeProvider, auctiontypes.AuctionRequest{LRPStops: []auctiontypes.LRPStopAuction{stopAuction}})
-
-					stopAuction.Winner = "B"
-					stopAuction.Attempts = 1
-					stopAuction.WaitDuration = time.Minute
-					Ω(results.SuccessfulLRPStops).Should(ConsistOf(stopAuction))
-					Ω(results.FailedLRPStops).Should(BeEmpty())
-				})
-			})
-		})
-
-		Context("when the stop auction maps onto a single cell with multiple instances", func() {
-			BeforeEach(func() {
-				stopAuction = BuildStopAuction(
-					BuildLRPStopAuction("pg-three", 2),
-					timeProvider.Now(),
-				)
-				timeProvider.Increment(time.Minute)
-			})
-
-			It("stops all but one of the instances (doesn't matter which)", func() {
-				results = Schedule(workPool, cells, timeProvider, auctiontypes.AuctionRequest{LRPStops: []auctiontypes.LRPStopAuction{stopAuction}})
-
-				Ω(clients["A"].PerformCallCount()).Should(Equal(0))
-				Ω(clients["B"].PerformCallCount()).Should(Equal(0))
-				Ω(clients["C"].PerformCallCount()).Should(Equal(1))
-
-				stopsToC := clients["C"].PerformArgsForCall(0).LRPStops
-
-				Ω(stopsToC).Should(HaveLen(2))
-
-				stopAuction.Winner = "C"
-				stopAuction.Attempts = 1
-				stopAuction.WaitDuration = time.Minute
-				Ω(results.SuccessfulLRPStops).Should(ConsistOf(stopAuction))
-				Ω(results.FailedLRPStops).Should(BeEmpty())
-			})
-		})
-
-		Context("when the stop auction maps onto a single instance", func() {
-			BeforeEach(func() {
-				stopAuction = BuildStopAuction(
-					BuildLRPStopAuction("pg-one", 0),
-					timeProvider.Now(),
-				)
-				timeProvider.Increment(time.Minute)
-			})
-
-			It("succeeds without taking any actions on any cells", func() {
-				results = Schedule(workPool, cells, timeProvider, auctiontypes.AuctionRequest{LRPStops: []auctiontypes.LRPStopAuction{stopAuction}})
-
-				Ω(clients["A"].PerformCallCount()).Should(Equal(0))
-				Ω(clients["B"].PerformCallCount()).Should(Equal(0))
-				Ω(clients["C"].PerformCallCount()).Should(Equal(0))
-
-				stopAuction.Winner = "A"
-				stopAuction.Attempts = 1
-				stopAuction.WaitDuration = time.Minute
-				Ω(results.SuccessfulLRPStops).Should(ConsistOf(stopAuction))
-				Ω(results.FailedLRPStops).Should(BeEmpty())
-			})
-		})
-
-		Context("when no instances are found for the stop auction", func() {
-			BeforeEach(func() {
-				stopAuction = BuildStopAuction(
-					BuildLRPStopAuction("pg", 17),
-					timeProvider.Now(),
-				)
-				timeProvider.Increment(time.Minute)
-			})
-
-			It("fails silently -- if this is really an issue it will come up again later", func() {
-				results = Schedule(workPool, cells, timeProvider, auctiontypes.AuctionRequest{LRPStops: []auctiontypes.LRPStopAuction{stopAuction}})
-
-				Ω(clients["A"].PerformCallCount()).Should(Equal(0))
-				Ω(clients["B"].PerformCallCount()).Should(Equal(0))
-				Ω(clients["C"].PerformCallCount()).Should(Equal(0))
-
-				stopAuction.Attempts = 1
-				stopAuction.WaitDuration = time.Minute
-
-				Ω(results.SuccessfulLRPStops).Should(ConsistOf(stopAuction))
-				Ω(results.FailedLRPStops).Should(BeEmpty())
 			})
 		})
 	})
@@ -420,22 +233,16 @@ var _ = Describe("Scheduler", func() {
 			cells["A"] = NewCell(clients["A"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
 				{"pg-1", "ig-1", 0, 10, 10},
 				{"pg-2", "ig-2", 0, 10, 10},
-				{"pg-dupe", "ig-3", 0, 80, 80},
 			}))
 
 			clients["B"] = &fakes.FakeSimulationCellRep{}
 			cells["B"] = NewCell(clients["B"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
 				{"pg-3", "ig-4", 0, 10, 10},
-				{"pg-dupe", "ig-5", 0, 80, 80},
+				{"pg-4", "ig-5", 0, 20, 20},
 			}))
 		})
 
 		It("should optimize the distribution", func() {
-			stopAuction := BuildStopAuction(
-				BuildLRPStopAuction("pg-dupe", 0),
-				timeProvider.Now(),
-			)
-
 			startPG3 := BuildStartAuction(
 				BuildLRPStartAuction("pg-3", "ig-new-1", 1, "lucid64", 40, 40),
 				timeProvider.Now(),
@@ -464,7 +271,6 @@ var _ = Describe("Scheduler", func() {
 
 			auctionRequest := auctiontypes.AuctionRequest{
 				LRPStarts: []auctiontypes.LRPStartAuction{startPG3, startPG2, startPGNope},
-				LRPStops:  []auctiontypes.LRPStopAuction{stopAuction},
 				Tasks:     []auctiontypes.TaskAuction{taskAuction1, taskAuction2, taskAuctionNope},
 			}
 
@@ -473,24 +279,11 @@ var _ = Describe("Scheduler", func() {
 			Ω(clients["A"].PerformCallCount()).Should(Equal(1))
 			Ω(clients["B"].PerformCallCount()).Should(Equal(1))
 
-			Ω(clients["A"].PerformArgsForCall(0).LRPStops).Should(ConsistOf(models.ActualLRP{
-				ProcessGuid:  "pg-dupe",
-				InstanceGuid: "ig-3",
-				Index:        0,
-				CellID:       "A",
-			}))
-			Ω(clients["B"].PerformArgsForCall(0).LRPStops).Should(BeEmpty())
-
 			Ω(clients["A"].PerformArgsForCall(0).LRPStarts).Should(ConsistOf(startPG3.LRPStartAuction))
 			Ω(clients["B"].PerformArgsForCall(0).LRPStarts).Should(ConsistOf(startPG2.LRPStartAuction))
 
-			Ω(clients["A"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction1.Task))
-			Ω(clients["B"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction2.Task))
-
-			successfulStop := stopAuction
-			successfulStop.Winner = "B"
-			successfulStop.Attempts = 1
-			Ω(results.SuccessfulLRPStops).Should(ConsistOf(successfulStop))
+			Ω(clients["A"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction2.Task))
+			Ω(clients["B"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction1.Task))
 
 			startPG3.Winner = "A"
 			startPG3.Attempts = 1
@@ -509,15 +302,15 @@ var _ = Describe("Scheduler", func() {
 			}
 			Ω(successfulTaskAuction1).ShouldNot(BeNil())
 			Ω(successfulTaskAuction1.Attempts).Should(Equal(1))
-			Ω(successfulTaskAuction1.Winner).Should(Equal("A"))
+			Ω(successfulTaskAuction1.Winner).Should(Equal("B"))
 			Ω(successfulTaskAuction2).ShouldNot(BeNil())
 			Ω(successfulTaskAuction2.Attempts).Should(Equal(1))
-			Ω(successfulTaskAuction2.Winner).Should(Equal("B"))
+			Ω(successfulTaskAuction2.Winner).Should(Equal("A"))
 
-			Ω(results.FailedLRPStops).Should(BeEmpty())
 			startPGNope.Attempts = 1
 			Ω(results.FailedLRPStarts).Should(ConsistOf(startPGNope))
 			Ω(results.FailedTasks).Should(HaveLen(1))
+
 			failedTask := results.FailedTasks[0]
 			Ω(failedTask.Identifier()).Should(Equal(taskAuctionNope.Identifier()))
 			Ω(failedTask.Attempts).Should(Equal(1))

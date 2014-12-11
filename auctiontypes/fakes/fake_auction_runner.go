@@ -24,11 +24,6 @@ type FakeAuctionRunner struct {
 	addLRPStartAuctionArgsForCall []struct {
 		arg1 models.LRPStartAuction
 	}
-	AddLRPStopAuctionStub        func(models.LRPStopAuction)
-	addLRPStopAuctionMutex       sync.RWMutex
-	addLRPStopAuctionArgsForCall []struct {
-		arg1 models.LRPStopAuction
-	}
 	AddTaskForAuctionStub        func(models.Task)
 	addTaskForAuctionMutex       sync.RWMutex
 	addTaskForAuctionArgsForCall []struct {
@@ -90,29 +85,6 @@ func (fake *FakeAuctionRunner) AddLRPStartAuctionArgsForCall(i int) models.LRPSt
 	fake.addLRPStartAuctionMutex.RLock()
 	defer fake.addLRPStartAuctionMutex.RUnlock()
 	return fake.addLRPStartAuctionArgsForCall[i].arg1
-}
-
-func (fake *FakeAuctionRunner) AddLRPStopAuction(arg1 models.LRPStopAuction) {
-	fake.addLRPStopAuctionMutex.Lock()
-	fake.addLRPStopAuctionArgsForCall = append(fake.addLRPStopAuctionArgsForCall, struct {
-		arg1 models.LRPStopAuction
-	}{arg1})
-	fake.addLRPStopAuctionMutex.Unlock()
-	if fake.AddLRPStopAuctionStub != nil {
-		fake.AddLRPStopAuctionStub(arg1)
-	}
-}
-
-func (fake *FakeAuctionRunner) AddLRPStopAuctionCallCount() int {
-	fake.addLRPStopAuctionMutex.RLock()
-	defer fake.addLRPStopAuctionMutex.RUnlock()
-	return len(fake.addLRPStopAuctionArgsForCall)
-}
-
-func (fake *FakeAuctionRunner) AddLRPStopAuctionArgsForCall(i int) models.LRPStopAuction {
-	fake.addLRPStopAuctionMutex.RLock()
-	defer fake.addLRPStopAuctionMutex.RUnlock()
-	return fake.addLRPStopAuctionArgsForCall[i].arg1
 }
 
 func (fake *FakeAuctionRunner) AddTaskForAuction(arg1 models.Task) {

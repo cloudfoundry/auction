@@ -41,10 +41,8 @@ func (a *AuctionRunnerDelegate) DistributedBatch(work auctiontypes.AuctionResult
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.workResults.FailedLRPStarts = append(a.workResults.FailedLRPStarts, work.FailedLRPStarts...)
-	a.workResults.FailedLRPStops = append(a.workResults.FailedLRPStops, work.FailedLRPStops...)
 	a.workResults.FailedTasks = append(a.workResults.FailedTasks, work.FailedTasks...)
 	a.workResults.SuccessfulLRPStarts = append(a.workResults.SuccessfulLRPStarts, work.SuccessfulLRPStarts...)
-	a.workResults.SuccessfulLRPStops = append(a.workResults.SuccessfulLRPStops, work.SuccessfulLRPStops...)
 	a.workResults.SuccessfulTasks = append(a.workResults.SuccessfulTasks, work.SuccessfulTasks...)
 }
 
@@ -53,10 +51,8 @@ func (a *AuctionRunnerDelegate) ResultSize() int {
 	defer a.lock.Unlock()
 
 	return len(a.workResults.FailedLRPStarts) +
-		len(a.workResults.FailedLRPStops) +
 		len(a.workResults.FailedTasks) +
 		len(a.workResults.SuccessfulLRPStarts) +
-		len(a.workResults.SuccessfulLRPStops) +
 		len(a.workResults.SuccessfulTasks)
 }
 

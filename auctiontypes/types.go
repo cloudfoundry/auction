@@ -18,7 +18,6 @@ var ErrorNothingToStop = errors.New("nothing to stop")
 type AuctionRunner interface {
 	ifrit.Runner
 	AddLRPStartAuction(models.LRPStartAuction)
-	AddLRPStopAuction(models.LRPStopAuction)
 	AddTaskForAuction(models.Task)
 }
 
@@ -29,16 +28,13 @@ type AuctionRunnerDelegate interface {
 
 type AuctionRequest struct {
 	LRPStarts []LRPStartAuction
-	LRPStops  []LRPStopAuction
 	Tasks     []TaskAuction
 }
 
 type AuctionResults struct {
 	SuccessfulLRPStarts []LRPStartAuction
-	SuccessfulLRPStops  []LRPStopAuction
 	SuccessfulTasks     []TaskAuction
 	FailedLRPStarts     []LRPStartAuction
-	FailedLRPStops      []LRPStopAuction
 	FailedTasks         []TaskAuction
 }
 
@@ -59,19 +55,6 @@ func (s LRPStartAuction) Identifier() string {
 
 func IdentifierForLRPStartAuction(start models.LRPStartAuction) string {
 	return fmt.Sprintf("%s.%d.%s", start.DesiredLRP.ProcessGuid, start.Index, start.InstanceGuid)
-}
-
-type LRPStopAuction struct {
-	LRPStopAuction models.LRPStopAuction
-	Winner         string
-	Attempts       int
-
-	QueueTime    time.Time
-	WaitDuration time.Duration
-}
-
-func (s LRPStopAuction) Identifier() string {
-	return fmt.Sprintf("%s.%d", s.LRPStopAuction.ProcessGuid, s.LRPStopAuction.Index)
 }
 
 type TaskAuction struct {
@@ -106,7 +89,6 @@ type SimulationCellRep interface {
 
 type Work struct {
 	LRPStarts []models.LRPStartAuction
-	LRPStops  []models.ActualLRP
 	Tasks     []models.Task
 }
 

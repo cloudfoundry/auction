@@ -18,29 +18,20 @@ var _ = Describe("Perform", func() {
 		var requestedWork, failedWork auctiontypes.Work
 		BeforeEach(func() {
 			requestedWork = auctiontypes.Work{
-				LRPStops: []models.ActualLRP{
+				Tasks: []models.Task{
 					{
-						ProcessGuid:  "pg-a",
-						InstanceGuid: "ig-a",
-						Index:        1,
-						CellID:       "A",
+						TaskGuid: "tg-a",
 					},
 					{
-						ProcessGuid:  "pg-b",
-						InstanceGuid: "ig-b",
-						Index:        2,
-						CellID:       "B",
+						TaskGuid: "tg-b",
 					},
 				},
 			}
 
 			failedWork = auctiontypes.Work{
-				LRPStops: []models.ActualLRP{
+				Tasks: []models.Task{
 					{
-						ProcessGuid:  "pg-a",
-						InstanceGuid: "ig-a",
-						Index:        1,
-						CellID:       "A",
+						TaskGuid: "pg-a",
 					},
 				},
 			}

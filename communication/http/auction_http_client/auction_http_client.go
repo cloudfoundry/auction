@@ -76,7 +76,6 @@ func (c *AuctionHTTPClient) Perform(work auctiontypes.Work) (auctiontypes.Work, 
 	logger := c.logger.Session("sending-work", lager.Data{
 		"rep":    c.repGuid,
 		"starts": len(work.LRPStarts),
-		"stops":  len(work.LRPStops),
 	})
 
 	logger.Debug("requesting")

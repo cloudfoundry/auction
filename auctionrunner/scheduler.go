@@ -7,15 +7,14 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	"github.com/cloudfoundry/gunk/timeprovider"
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
 /*
-Schedule takes in a set of job requests (tasks, starts, and stops) and assigns
-the work to available cells according to the diego scoring algorithm. The
+Schedule takes in a set of job requests (LRP start auctions and task starts) and
+assigns the work to available cells according to the diego scoring algorithm. The
 scheduler is single-threaded.  It determines scheduling of jobs one at a time so
 that each calculation reflects available resources correctly.  It commits the
 work in batches at the end, for better network performance.  Schedule returns
@@ -28,14 +27,8 @@ func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider 
 
 	if len(cells) == 0 {
 		results.FailedLRPStarts = auctionRequest.LRPStarts
-		results.FailedLRPStops = auctionRequest.LRPStops
 		results.FailedTasks = auctionRequest.Tasks
 		return markResults(results, timeProvider)
-	}
-
-	for _, stopAuction := range auctionRequest.LRPStops {
-		succesfulStop := scheduleLRPStopAuction(cells, stopAuction)
-		results.SuccessfulLRPStops = append(results.SuccessfulLRPStops, succesfulStop)
 	}
 
 	var successfulLRPStarts = map[string]auctiontypes.LRPStartAuction{}
@@ -95,19 +88,12 @@ func markResults(results auctiontypes.AuctionResults, timeProvider timeprovider.
 	for i := range results.FailedLRPStarts {
 		results.FailedLRPStarts[i].Attempts++
 	}
-	for i := range results.FailedLRPStops {
-		results.FailedLRPStops[i].Attempts++
-	}
 	for i := range results.FailedTasks {
 		results.FailedTasks[i].Attempts++
 	}
 	for i := range results.SuccessfulLRPStarts {
 		results.SuccessfulLRPStarts[i].Attempts++
 		results.SuccessfulLRPStarts[i].WaitDuration = now.Sub(results.SuccessfulLRPStarts[i].QueueTime)
-	}
-	for i := range results.SuccessfulLRPStops {
-		results.SuccessfulLRPStops[i].Attempts++
-		results.SuccessfulLRPStops[i].WaitDuration = now.Sub(results.SuccessfulLRPStops[i].QueueTime)
 	}
 	for i := range results.SuccessfulTasks {
 		results.SuccessfulTasks[i].Attempts++
@@ -207,59 +193,6 @@ func scheduleTaskAuction(cells map[string]*Cell, taskAuction auctiontypes.TaskAu
 	taskAuction.Winner = winnerGuid
 
 	return taskAuction, nil
-}
-
-func scheduleLRPStopAuction(cells map[string]*Cell, lrpStopAuction auctiontypes.LRPStopAuction) auctiontypes.LRPStopAuction {
-	winnerGuid := ""
-	winnerScore := 1e20
-	instancesToStop := map[string][]string{}
-
-	for guid, cell := range cells {
-		score, instances, err := cell.ScoreForLRPStopAuction(lrpStopAuction.LRPStopAuction)
-		if err != nil {
-			continue
-		}
-
-		instancesToStop[guid] = instances
-
-		if score < winnerScore {
-			winnerGuid = guid
-			winnerScore = score
-		}
-	}
-
-	if len(instancesToStop) == 0 {
-		//no one's got this instance, we're done.  if it's still out there we'll eventually try again.
-		return lrpStopAuction
-	}
-
-	lrpStopAuction.Winner = winnerGuid
-
-	if len(instancesToStop[winnerGuid]) > 1 {
-		for _, instance := range instancesToStop[winnerGuid][1:] {
-			cells[winnerGuid].StopLRP(models.ActualLRP{
-				ProcessGuid:  lrpStopAuction.LRPStopAuction.ProcessGuid,
-				InstanceGuid: instance,
-				Index:        lrpStopAuction.LRPStopAuction.Index,
-				CellID:       winnerGuid,
-			})
-		}
-	}
-
-	delete(instancesToStop, winnerGuid)
-
-	for guid, instances := range instancesToStop {
-		for _, instance := range instances {
-			cells[guid].StopLRP(models.ActualLRP{
-				ProcessGuid:  lrpStopAuction.LRPStopAuction.ProcessGuid,
-				InstanceGuid: instance,
-				Index:        lrpStopAuction.LRPStopAuction.Index,
-				CellID:       guid,
-			})
-		}
-	}
-
-	return lrpStopAuction
 }
 
 type SortableAuctions []auctiontypes.LRPStartAuction

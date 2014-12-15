@@ -65,11 +65,10 @@ func (c *Cell) StartLRP(lrpStartAuction models.LRPStartAuction) error {
 	}
 
 	c.state.LRPs = append(c.state.LRPs, auctiontypes.LRP{
-		ProcessGuid:  lrpStartAuction.DesiredLRP.ProcessGuid,
-		InstanceGuid: lrpStartAuction.InstanceGuid,
-		Index:        lrpStartAuction.Index,
-		MemoryMB:     lrpStartAuction.DesiredLRP.MemoryMB,
-		DiskMB:       lrpStartAuction.DesiredLRP.DiskMB,
+		ProcessGuid: lrpStartAuction.DesiredLRP.ProcessGuid,
+		Index:       lrpStartAuction.Index,
+		MemoryMB:    lrpStartAuction.DesiredLRP.MemoryMB,
+		DiskMB:      lrpStartAuction.DesiredLRP.DiskMB,
 	})
 
 	c.state.AvailableResources.MemoryMB -= lrpStartAuction.DesiredLRP.MemoryMB

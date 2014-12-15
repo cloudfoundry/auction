@@ -67,12 +67,11 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 		hasRoom = hasRoom && availableResources.DiskMB >= start.DesiredLRP.DiskMB
 
 		if hasRoom {
-			rep.lrps[start.InstanceGuid] = auctiontypes.LRP{
-				ProcessGuid:  start.DesiredLRP.ProcessGuid,
-				InstanceGuid: start.InstanceGuid,
-				Index:        start.Index,
-				MemoryMB:     start.DesiredLRP.MemoryMB,
-				DiskMB:       start.DesiredLRP.DiskMB,
+			rep.lrps[auctiontypes.IdentifierForLRP(start.DesiredLRP.ProcessGuid, start.Index)] = auctiontypes.LRP{
+				ProcessGuid: start.DesiredLRP.ProcessGuid,
+				Index:       start.Index,
+				MemoryMB:    start.DesiredLRP.MemoryMB,
+				DiskMB:      start.DesiredLRP.DiskMB,
 			}
 			availableResources.Containers -= 1
 			availableResources.MemoryMB -= start.DesiredLRP.MemoryMB

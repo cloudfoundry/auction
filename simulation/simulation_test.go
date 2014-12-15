@@ -20,11 +20,10 @@ var _ = Describe("Auction", func() {
 
 	newLRP := func(processGuid string, index int, memoryMB int) auctiontypes.LRP {
 		return auctiontypes.LRP{
-			ProcessGuid:  processGuid,
-			InstanceGuid: util.NewGuid("INS"),
-			Index:        index,
-			MemoryMB:     memoryMB,
-			DiskMB:       1,
+			ProcessGuid: processGuid,
+			Index:       index,
+			MemoryMB:    memoryMB,
+			DiskMB:      1,
 		}
 	}
 
@@ -36,7 +35,7 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	newLRPStartAuction := func(processGuid string, memoryMB int) models.LRPStartAuction {
+	newLRPStartAuction := func(processGuid string, index int, memoryMB int) models.LRPStartAuction {
 		return models.LRPStartAuction{
 			DesiredLRP: models.DesiredLRP{
 				ProcessGuid: processGuid,
@@ -45,16 +44,14 @@ var _ = Describe("Auction", func() {
 				Stack:       "lucid64",
 				Domain:      "domain",
 			},
-
-			InstanceGuid: util.NewGuid("INS"),
-			Index:        0,
+			Index: index,
 		}
 	}
 
 	generateUniqueLRPStartAuctions := func(numInstances int, memoryMB int) []models.LRPStartAuction {
 		instances := []models.LRPStartAuction{}
 		for i := 0; i < numInstances; i++ {
-			instances = append(instances, newLRPStartAuction(util.NewGrayscaleGuid("BBB"), memoryMB))
+			instances = append(instances, newLRPStartAuction(util.NewGrayscaleGuid("BBB"), i, memoryMB))
 		}
 		return instances
 	}
@@ -63,7 +60,7 @@ var _ = Describe("Auction", func() {
 		instances := []models.LRPStartAuction{}
 		for i := 0; i < numInstances; i++ {
 			color := colors[util.R.Intn(len(colors))]
-			instances = append(instances, newLRPStartAuction(color, memoryMB))
+			instances = append(instances, newLRPStartAuction(color, i, memoryMB))
 		}
 		return instances
 	}
@@ -71,7 +68,7 @@ var _ = Describe("Auction", func() {
 	generateLRPStartAuctionsForProcessGuid := func(numInstances int, processGuid string, memoryMB int) []models.LRPStartAuction {
 		instances := []models.LRPStartAuction{}
 		for i := 0; i < numInstances; i++ {
-			instances = append(instances, newLRPStartAuction(processGuid, memoryMB))
+			instances = append(instances, newLRPStartAuction(processGuid, i, memoryMB))
 		}
 		return instances
 	}
@@ -88,8 +85,7 @@ var _ = Describe("Auction", func() {
 					Domain:      "domain",
 				},
 
-				InstanceGuid: lrp.InstanceGuid,
-				Index:        lrp.Index,
+				Index: lrp.Index,
 			})
 		}
 		return work

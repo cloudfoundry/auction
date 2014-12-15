@@ -54,7 +54,11 @@ func (s LRPStartAuction) Identifier() string {
 }
 
 func IdentifierForLRPStartAuction(start models.LRPStartAuction) string {
-	return fmt.Sprintf("%s.%d.%s", start.DesiredLRP.ProcessGuid, start.Index, start.InstanceGuid)
+	return IdentifierForLRP(start.DesiredLRP.ProcessGuid, start.Index)
+}
+
+func IdentifierForLRP(processGuid string, index int) string {
+	return fmt.Sprintf("%s.%d", processGuid, index)
 }
 
 type TaskAuction struct {
@@ -101,11 +105,14 @@ type CellState struct {
 }
 
 type LRP struct {
-	ProcessGuid  string
-	InstanceGuid string
-	Index        int
-	MemoryMB     int
-	DiskMB       int
+	ProcessGuid string
+	Index       int
+	MemoryMB    int
+	DiskMB      int
+}
+
+func (s LRP) Identifier() string {
+	return IdentifierForLRP(s.ProcessGuid, s.Index)
 }
 
 type Task struct {

@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func BuildLRPStartAuction(processGuid, instanceGuid string, index int, stack string, memoryMB, diskMB int) models.LRPStartAuction {
+func BuildLRPStartAuction(processGuid string, index int, stack string, memoryMB, diskMB int) models.LRPStartAuction {
 	return models.LRPStartAuction{
 		DesiredLRP: models.DesiredLRP{
 			ProcessGuid: processGuid,
@@ -16,8 +16,7 @@ func BuildLRPStartAuction(processGuid, instanceGuid string, index int, stack str
 			DiskMB:      diskMB,
 			Stack:       stack,
 		},
-		InstanceGuid: instanceGuid,
-		Index:        index,
+		Index: index,
 	}
 }
 

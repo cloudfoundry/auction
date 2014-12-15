@@ -37,7 +37,7 @@ func PrintReport(report *Report) {
 
 	auctionedInstances := map[string]bool{}
 	for _, start := range report.AuctionResults.SuccessfulLRPStarts {
-		auctionedInstances[start.LRPStartAuction.InstanceGuid] = true
+		auctionedInstances[start.Identifier()] = true
 	}
 
 	fmt.Println("Distribution")
@@ -62,7 +62,7 @@ func PrintReport(report *Report) {
 			if _, ok := colorLookup[instance.ProcessGuid]; ok {
 				key = instance.ProcessGuid
 			}
-			if auctionedInstances[instance.InstanceGuid] {
+			if auctionedInstances[instance.Identifier()] {
 				newCounts[key] += instance.MemoryMB
 				numNew += 1
 			} else {

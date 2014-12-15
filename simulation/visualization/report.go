@@ -54,11 +54,11 @@ func (r *Report) IsAuctionedInstance(inst auctiontypes.LRP) bool {
 	if r.auctionedInstancesByInstGuid == nil {
 		r.auctionedInstancesByInstGuid = map[string]bool{}
 		for _, result := range r.AuctionResults.SuccessfulLRPStarts {
-			r.auctionedInstancesByInstGuid[result.LRPStartAuction.InstanceGuid] = true
+			r.auctionedInstancesByInstGuid[result.Identifier()] = true
 		}
 	}
 
-	return r.auctionedInstancesByInstGuid[inst.InstanceGuid]
+	return r.auctionedInstancesByInstGuid[inst.Identifier()]
 }
 
 func (r *Report) AuctionsPerformed() int {

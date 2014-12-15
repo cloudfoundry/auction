@@ -37,7 +37,7 @@ var _ = Describe("Scheduler", func() {
 	Context("when the cells are empty", func() {
 		It("immediately returns everything as having failed, incrementing the attempt number", func() {
 			startAuction := BuildStartAuction(
-				BuildLRPStartAuction("pg-7", "ig-7", 0, "lucid64", 10, 10),
+				BuildLRPStartAuction("pg-7", 0, "lucid64", 10, 10),
 				timeProvider.Now(),
 			)
 
@@ -73,16 +73,16 @@ var _ = Describe("Scheduler", func() {
 		BeforeEach(func() {
 			clients["A"] = &fakes.FakeSimulationCellRep{}
 			cells["A"] = NewCell(clients["A"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
-				{"pg-1", "ig-1", 0, 10, 10},
-				{"pg-2", "ig-2", 0, 10, 10},
+				{"pg-1", 0, 10, 10},
+				{"pg-2", 0, 10, 10},
 			}))
 
 			clients["B"] = &fakes.FakeSimulationCellRep{}
 			cells["B"] = NewCell(clients["B"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
-				{"pg-3", "ig-3", 0, 10, 10},
+				{"pg-3", 0, 10, 10},
 			}))
 
-			startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", "ig-4", 0, "lucid64", 10, 10), timeProvider.Now())
+			startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", 0, "lucid64", 10, 10), timeProvider.Now())
 			timeProvider.Increment(time.Minute)
 		})
 
@@ -126,7 +126,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when there is no room", func() {
 			BeforeEach(func() {
-				startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", "ig-4", 0, "lucid64", 1000, 1000), timeProvider.Now())
+				startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", 0, "lucid64", 1000, 1000), timeProvider.Now())
 				timeProvider.Increment(time.Minute)
 				results = Schedule(workPool, cells, timeProvider, auctiontypes.AuctionRequest{LRPStarts: []auctiontypes.LRPStartAuction{startAuction}})
 			})
@@ -150,13 +150,13 @@ var _ = Describe("Scheduler", func() {
 		BeforeEach(func() {
 			clients["A"] = &fakes.FakeSimulationCellRep{}
 			cells["A"] = NewCell(clients["A"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
-				{"does-not-matter", "does-not-matter1", 0, 10, 10},
-				{"does-not-matter", "does-not-matter2", 0, 10, 10},
+				{"does-not-matter", 0, 10, 10},
+				{"does-not-matter", 0, 10, 10},
 			}))
 
 			clients["B"] = &fakes.FakeSimulationCellRep{}
 			cells["B"] = NewCell(clients["B"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
-				{"does-not-matter", "does-not-matter3", 0, 10, 10},
+				{"does-not-matter", 0, 10, 10},
 			}))
 
 			taskAuction = BuildTaskAuction(BuildTask("tg-1", "lucid64", 10, 10), timeProvider.Now())
@@ -231,28 +231,28 @@ var _ = Describe("Scheduler", func() {
 		BeforeEach(func() {
 			clients["A"] = &fakes.FakeSimulationCellRep{}
 			cells["A"] = NewCell(clients["A"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
-				{"pg-1", "ig-1", 0, 10, 10},
-				{"pg-2", "ig-2", 0, 10, 10},
+				{"pg-1", 0, 10, 10},
+				{"pg-2", 0, 10, 10},
 			}))
 
 			clients["B"] = &fakes.FakeSimulationCellRep{}
 			cells["B"] = NewCell(clients["B"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
-				{"pg-3", "ig-4", 0, 10, 10},
-				{"pg-4", "ig-5", 0, 20, 20},
+				{"pg-3", 0, 10, 10},
+				{"pg-4", 0, 20, 20},
 			}))
 		})
 
 		It("should optimize the distribution", func() {
 			startPG3 := BuildStartAuction(
-				BuildLRPStartAuction("pg-3", "ig-new-1", 1, "lucid64", 40, 40),
+				BuildLRPStartAuction("pg-3", 1, "lucid64", 40, 40),
 				timeProvider.Now(),
 			)
 			startPG2 := BuildStartAuction(
-				BuildLRPStartAuction("pg-2", "ig-new-2", 1, "lucid64", 5, 5),
+				BuildLRPStartAuction("pg-2", 1, "lucid64", 5, 5),
 				timeProvider.Now(),
 			)
 			startPGNope := BuildStartAuction(
-				BuildLRPStartAuction("pg-nope", "ig-nope", 1, ".net", 10, 10),
+				BuildLRPStartAuction("pg-nope", 1, ".net", 10, 10),
 				timeProvider.Now(),
 			)
 
@@ -321,7 +321,7 @@ var _ = Describe("Scheduler", func() {
 		BeforeEach(func() {
 			clients["A"] = &fakes.FakeSimulationCellRep{}
 			cells["A"] = NewCell(clients["A"], BuildCellState(100, 100, 100, []auctiontypes.LRP{
-				{"pg-1", "ig-1", 0, 30, 30},
+				{"pg-1", 0, 30, 30},
 			}))
 
 			clients["B"] = &fakes.FakeSimulationCellRep{}
@@ -330,11 +330,11 @@ var _ = Describe("Scheduler", func() {
 
 		It("orders work such that large start auctions occur first", func() {
 			startMedium := BuildStartAuction(
-				BuildLRPStartAuction("pg-medium", "ig-medium", 1, "lucid64", 40, 40),
+				BuildLRPStartAuction("pg-medium", 1, "lucid64", 40, 40),
 				timeProvider.Now(),
 			)
 			startLarge := BuildStartAuction(
-				BuildLRPStartAuction("pg-large", "ig-large", 1, "lucid64", 80, 80),
+				BuildLRPStartAuction("pg-large", 1, "lucid64", 80, 80),
 				timeProvider.Now(),
 			)
 			lrpStartAuctions := []auctiontypes.LRPStartAuction{startLarge, startMedium} //note we're submitting the smaller one first

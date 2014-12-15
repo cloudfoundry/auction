@@ -26,8 +26,8 @@ var _ = Describe("ResubmitFailedAuctions", func() {
 	It("always returns succesful work untouched", func() {
 		results = auctiontypes.AuctionResults{
 			SuccessfulLRPStarts: []auctiontypes.LRPStartAuction{
-				BuildStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10), timeProvider.Now()),
-				BuildStartAuction(BuildLRPStartAuction("pg-2", "ig-2", 1, "lucid64", 10, 10), timeProvider.Now()),
+				BuildStartAuction(BuildLRPStartAuction("pg-1", 1, "lucid64", 10, 10), timeProvider.Now()),
+				BuildStartAuction(BuildLRPStartAuction("pg-2", 1, "lucid64", 10, 10), timeProvider.Now()),
 			},
 			SuccessfulTasks: []auctiontypes.TaskAuction{
 				BuildTaskAuction(BuildTask("tg-1", "lucid64", 10, 10), timeProvider.Now()),
@@ -51,9 +51,9 @@ var _ = Describe("ResubmitFailedAuctions", func() {
 		var retryableTaskAuction, failedTaskAuction auctiontypes.TaskAuction
 
 		BeforeEach(func() {
-			retryableStartAuction = BuildStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10), timeProvider.Now())
+			retryableStartAuction = BuildStartAuction(BuildLRPStartAuction("pg-1", 1, "lucid64", 10, 10), timeProvider.Now())
 			retryableStartAuction.Attempts = maxRetries
-			failedStartAuction = BuildStartAuction(BuildLRPStartAuction("pg-2", "ig-2", 1, "lucid64", 10, 10), timeProvider.Now())
+			failedStartAuction = BuildStartAuction(BuildLRPStartAuction("pg-2", 1, "lucid64", 10, 10), timeProvider.Now())
 			failedStartAuction.Attempts = maxRetries + 1
 
 			retryableTaskAuction = BuildTaskAuction(BuildTask("tg-1", "lucid64", 10, 10), timeProvider.Now())

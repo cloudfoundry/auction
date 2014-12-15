@@ -33,7 +33,7 @@ var _ = Describe("Batch", func() {
 	Describe("adding work", func() {
 		Context("when adding start auctions", func() {
 			BeforeEach(func() {
-				lrpStartAuction = BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10)
+				lrpStartAuction = BuildLRPStartAuction("pg-1", 1, "lucid64", 10, 10)
 				batch.AddLRPStartAuction(lrpStartAuction)
 			})
 
@@ -67,10 +67,10 @@ var _ = Describe("Batch", func() {
 	Describe("resubmitting work", func() {
 		Context("resubmitting starts", func() {
 			It("adds the work, and ensures it has priority when deduping", func() {
-				lrpStartAuction1 := BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10)
+				lrpStartAuction1 := BuildLRPStartAuction("pg-1", 1, "lucid64", 10, 10)
 				startAuction1 := BuildStartAuction(lrpStartAuction1, timeProvider.Now())
 
-				lrpStartAuction2 := BuildLRPStartAuction("pg-2", "ig-2", 1, "lucid64", 10, 10)
+				lrpStartAuction2 := BuildLRPStartAuction("pg-2", 1, "lucid64", 10, 10)
 				startAuction2 := BuildStartAuction(lrpStartAuction2, timeProvider.Now())
 
 				batch.AddLRPStartAuction(lrpStartAuction1)
@@ -88,7 +88,7 @@ var _ = Describe("Batch", func() {
 			})
 
 			It("should have work", func() {
-				lrpStartAuction := BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10)
+				lrpStartAuction := BuildLRPStartAuction("pg-1", 1, "lucid64", 10, 10)
 				startAuction := BuildStartAuction(lrpStartAuction, timeProvider.Now())
 				batch.ResubmitStartAuctions([]auctiontypes.LRPStartAuction{startAuction})
 
@@ -130,9 +130,9 @@ var _ = Describe("Batch", func() {
 
 	Describe("DedupeAndDrain", func() {
 		BeforeEach(func() {
-			batch.AddLRPStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10))
-			batch.AddLRPStartAuction(BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10))
-			batch.AddLRPStartAuction(BuildLRPStartAuction("pg-2", "ig-2", 2, "lucid64", 10, 10))
+			batch.AddLRPStartAuction(BuildLRPStartAuction("pg-1", 1, "lucid64", 10, 10))
+			batch.AddLRPStartAuction(BuildLRPStartAuction("pg-1", 1, "lucid64", 10, 10))
+			batch.AddLRPStartAuction(BuildLRPStartAuction("pg-2", 2, "lucid64", 10, 10))
 
 			batch.AddTask(BuildTask("tg-1", "lucid64", 10, 10))
 			batch.AddTask(BuildTask("tg-1", "lucid64", 10, 10))
@@ -143,11 +143,11 @@ var _ = Describe("Batch", func() {
 			lrpStartAuctions, taskAuctions := batch.DedupeAndDrain()
 			Ω(lrpStartAuctions).Should(Equal([]auctiontypes.LRPStartAuction{
 				BuildStartAuction(
-					BuildLRPStartAuction("pg-1", "ig-1", 1, "lucid64", 10, 10),
+					BuildLRPStartAuction("pg-1", 1, "lucid64", 10, 10),
 					timeProvider.Now(),
 				),
 				BuildStartAuction(
-					BuildLRPStartAuction("pg-2", "ig-2", 2, "lucid64", 10, 10),
+					BuildLRPStartAuction("pg-2", 2, "lucid64", 10, 10),
 					timeProvider.Now(),
 				),
 			}))

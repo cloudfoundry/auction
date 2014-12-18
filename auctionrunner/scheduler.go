@@ -132,7 +132,7 @@ func scheduleLRPStartAuction(cells map[string]*Cell, lrpStartAuction auctiontype
 	winnerScore := 1e20
 
 	for guid, cell := range cells {
-		score, err := cell.ScoreForLRPStartAuction(lrpStartAuction.LRPStartAuction)
+		score, err := cell.ScoreForLRPStartAuction(lrpStartAuction.LRPStart)
 		if err != nil {
 			continue
 		}
@@ -151,7 +151,7 @@ func scheduleLRPStartAuction(cells map[string]*Cell, lrpStartAuction auctiontype
 
 	winnerGuid := winnerGuids[randomizer.Intn(len(winnerGuids))]
 
-	err := cells[winnerGuid].StartLRP(lrpStartAuction.LRPStartAuction)
+	err := cells[winnerGuid].StartLRP(lrpStartAuction.LRPStart)
 	if err != nil {
 		return auctiontypes.LRPStartAuction{}, err
 	}
@@ -200,5 +200,5 @@ type SortableAuctions []auctiontypes.LRPStartAuction
 func (a SortableAuctions) Len() int      { return len(a) }
 func (a SortableAuctions) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a SortableAuctions) Less(i, j int) bool {
-	return a[i].LRPStartAuction.DesiredLRP.MemoryMB < a[j].LRPStartAuction.DesiredLRP.MemoryMB
+	return a[i].LRPStart.DesiredLRP.MemoryMB < a[j].LRPStart.DesiredLRP.MemoryMB
 }

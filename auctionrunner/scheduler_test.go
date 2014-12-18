@@ -37,7 +37,7 @@ var _ = Describe("Scheduler", func() {
 	Context("when the cells are empty", func() {
 		It("immediately returns everything as having failed, incrementing the attempt number", func() {
 			startAuction := BuildStartAuction(
-				BuildLRPStartAuction("pg-7", 0, "lucid64", 10, 10),
+				BuildLRPStart("pg-7", 0, "lucid64", 10, 10),
 				timeProvider.Now(),
 			)
 
@@ -82,7 +82,7 @@ var _ = Describe("Scheduler", func() {
 				{"pg-3", 0, 10, 10},
 			}))
 
-			startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", 0, "lucid64", 10, 10), timeProvider.Now())
+			startAuction = BuildStartAuction(BuildLRPStart("pg-4", 0, "lucid64", 10, 10), timeProvider.Now())
 			timeProvider.Increment(time.Minute)
 		})
 
@@ -98,7 +98,7 @@ var _ = Describe("Scheduler", func() {
 				startsToB := clients["B"].PerformArgsForCall(0).LRPStarts
 
 				Ω(startsToB).Should(ConsistOf(
-					startAuction.LRPStartAuction,
+					startAuction.LRPStart,
 				))
 			})
 
@@ -113,7 +113,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when the cell rejects the start auction", func() {
 			BeforeEach(func() {
-				clients["B"].PerformReturns(auctiontypes.Work{LRPStarts: []models.LRPStartAuction{startAuction.LRPStartAuction}}, nil)
+				clients["B"].PerformReturns(auctiontypes.Work{LRPStarts: []models.LRPStart{startAuction.LRPStart}}, nil)
 				results = Schedule(workPool, cells, timeProvider, auctiontypes.AuctionRequest{LRPStarts: []auctiontypes.LRPStartAuction{startAuction}})
 			})
 
@@ -126,7 +126,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when there is no room", func() {
 			BeforeEach(func() {
-				startAuction = BuildStartAuction(BuildLRPStartAuction("pg-4", 0, "lucid64", 1000, 1000), timeProvider.Now())
+				startAuction = BuildStartAuction(BuildLRPStart("pg-4", 0, "lucid64", 1000, 1000), timeProvider.Now())
 				timeProvider.Increment(time.Minute)
 				results = Schedule(workPool, cells, timeProvider, auctiontypes.AuctionRequest{LRPStarts: []auctiontypes.LRPStartAuction{startAuction}})
 			})
@@ -244,15 +244,15 @@ var _ = Describe("Scheduler", func() {
 
 		It("should optimize the distribution", func() {
 			startPG3 := BuildStartAuction(
-				BuildLRPStartAuction("pg-3", 1, "lucid64", 40, 40),
+				BuildLRPStart("pg-3", 1, "lucid64", 40, 40),
 				timeProvider.Now(),
 			)
 			startPG2 := BuildStartAuction(
-				BuildLRPStartAuction("pg-2", 1, "lucid64", 5, 5),
+				BuildLRPStart("pg-2", 1, "lucid64", 5, 5),
 				timeProvider.Now(),
 			)
 			startPGNope := BuildStartAuction(
-				BuildLRPStartAuction("pg-nope", 1, ".net", 10, 10),
+				BuildLRPStart("pg-nope", 1, ".net", 10, 10),
 				timeProvider.Now(),
 			)
 
@@ -279,8 +279,8 @@ var _ = Describe("Scheduler", func() {
 			Ω(clients["A"].PerformCallCount()).Should(Equal(1))
 			Ω(clients["B"].PerformCallCount()).Should(Equal(1))
 
-			Ω(clients["A"].PerformArgsForCall(0).LRPStarts).Should(ConsistOf(startPG3.LRPStartAuction))
-			Ω(clients["B"].PerformArgsForCall(0).LRPStarts).Should(ConsistOf(startPG2.LRPStartAuction))
+			Ω(clients["A"].PerformArgsForCall(0).LRPStarts).Should(ConsistOf(startPG3.LRPStart))
+			Ω(clients["B"].PerformArgsForCall(0).LRPStarts).Should(ConsistOf(startPG2.LRPStart))
 
 			Ω(clients["A"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction2.Task))
 			Ω(clients["B"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction1.Task))
@@ -330,11 +330,11 @@ var _ = Describe("Scheduler", func() {
 
 		It("orders work such that large start auctions occur first", func() {
 			startMedium := BuildStartAuction(
-				BuildLRPStartAuction("pg-medium", 1, "lucid64", 40, 40),
+				BuildLRPStart("pg-medium", 1, "lucid64", 40, 40),
 				timeProvider.Now(),
 			)
 			startLarge := BuildStartAuction(
-				BuildLRPStartAuction("pg-large", 1, "lucid64", 80, 80),
+				BuildLRPStart("pg-large", 1, "lucid64", 80, 80),
 				timeProvider.Now(),
 			)
 			lrpStartAuctions := []auctiontypes.LRPStartAuction{startLarge, startMedium} //note we're submitting the smaller one first
@@ -352,8 +352,8 @@ var _ = Describe("Scheduler", func() {
 			Ω(clients["A"].PerformCallCount()).Should(Equal(1))
 			Ω(clients["B"].PerformCallCount()).Should(Equal(1))
 
-			Ω(clients["A"].PerformArgsForCall(0).LRPStarts).Should(ConsistOf(startMedium.LRPStartAuction))
-			Ω(clients["B"].PerformArgsForCall(0).LRPStarts).Should(ConsistOf(startLarge.LRPStartAuction))
+			Ω(clients["A"].PerformArgsForCall(0).LRPStarts).Should(ConsistOf(startMedium.LRPStart))
+			Ω(clients["B"].PerformArgsForCall(0).LRPStarts).Should(ConsistOf(startLarge.LRPStart))
 		})
 	})
 })

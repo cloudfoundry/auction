@@ -104,8 +104,8 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 	}
 }
 
-func (a *auctionRunner) AddLRPStartAuction(lrpStart models.LRPStartAuction) {
-	a.batch.AddLRPStartAuction(lrpStart)
+func (a *auctionRunner) AddLRPStartForAuction(lrpStart models.LRPStart) {
+	a.batch.AddLRPStart(lrpStart)
 }
 
 func (a *auctionRunner) AddTaskForAuction(task models.Task) {

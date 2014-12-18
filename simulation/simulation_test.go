@@ -35,8 +35,8 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	newLRPStartAuction := func(processGuid string, index int, memoryMB int) models.LRPStartAuction {
-		return models.LRPStartAuction{
+	newLRPStartAuction := func(processGuid string, index int, memoryMB int) models.LRPStart {
+		return models.LRPStart{
 			DesiredLRP: models.DesiredLRP{
 				ProcessGuid: processGuid,
 				MemoryMB:    memoryMB,
@@ -48,16 +48,16 @@ var _ = Describe("Auction", func() {
 		}
 	}
 
-	generateUniqueLRPStartAuctions := func(numInstances int, memoryMB int) []models.LRPStartAuction {
-		instances := []models.LRPStartAuction{}
+	generateUniqueLRPStartAuctions := func(numInstances int, memoryMB int) []models.LRPStart {
+		instances := []models.LRPStart{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newLRPStartAuction(util.NewGrayscaleGuid("BBB"), i, memoryMB))
 		}
 		return instances
 	}
 
-	generateLRPStartAuctionsWithRandomColor := func(numInstances int, memoryMB int, colors []string) []models.LRPStartAuction {
-		instances := []models.LRPStartAuction{}
+	generateLRPStartAuctionsWithRandomColor := func(numInstances int, memoryMB int, colors []string) []models.LRPStart {
+		instances := []models.LRPStart{}
 		for i := 0; i < numInstances; i++ {
 			color := colors[util.R.Intn(len(colors))]
 			instances = append(instances, newLRPStartAuction(color, i, memoryMB))
@@ -65,8 +65,8 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	generateLRPStartAuctionsForProcessGuid := func(numInstances int, processGuid string, memoryMB int) []models.LRPStartAuction {
-		instances := []models.LRPStartAuction{}
+	generateLRPStartAuctionsForProcessGuid := func(numInstances int, processGuid string, memoryMB int) []models.LRPStart {
+		instances := []models.LRPStart{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newLRPStartAuction(processGuid, i, memoryMB))
 		}
@@ -76,7 +76,7 @@ var _ = Describe("Auction", func() {
 	workForInstances := func(lrps []auctiontypes.LRP) auctiontypes.Work {
 		work := auctiontypes.Work{}
 		for _, lrp := range lrps {
-			work.LRPStarts = append(work.LRPStarts, models.LRPStartAuction{
+			work.LRPStarts = append(work.LRPStarts, models.LRPStart{
 				DesiredLRP: models.DesiredLRP{
 					ProcessGuid: lrp.ProcessGuid,
 					MemoryMB:    lrp.MemoryMB,
@@ -91,11 +91,11 @@ var _ = Describe("Auction", func() {
 		return work
 	}
 
-	runStartAuction := func(lrpStartAuctions []models.LRPStartAuction, numCells int, i int, j int) {
+	runStartAuction := func(lrpStartAuctions []models.LRPStart, numCells int, i int, j int) {
 		t := time.Now()
 		auctionRunnerDelegate.SetCellLimit(numCells)
 		for _, startAuction := range lrpStartAuctions {
-			auctionRunner.AddLRPStartAuction(startAuction)
+			auctionRunner.AddLRPStartForAuction(startAuction)
 		}
 
 		Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStartAuctions)))
@@ -152,7 +152,7 @@ var _ = Describe("Auction", func() {
 				i := i
 				Context("with single-instance and multi-instance apps", func() {
 					It("should distribute evenly", func() {
-						instances := []models.LRPStartAuction{}
+						instances := []models.LRPStart{}
 						colors := []string{"purple", "red", "orange", "teal", "gray", "blue", "pink", "green", "lime", "cyan", "lightseagreen", "brown"}
 
 						instances = append(instances, generateUniqueLRPStartAuctions(n1apps[i]/2, 1)...)
@@ -162,7 +162,7 @@ var _ = Describe("Auction", func() {
 						instances = append(instances, generateUniqueLRPStartAuctions(n4apps[i]/2, 4)...)
 						instances = append(instances, generateLRPStartAuctionsWithRandomColor(n4apps[i]/2, 4, colors[8:12])...)
 
-						permutedInstances := make([]models.LRPStartAuction, len(instances))
+						permutedInstances := make([]models.LRPStart, len(instances))
 						for i, index := range util.R.Perm(len(instances)) {
 							permutedInstances[i] = instances[index]
 						}

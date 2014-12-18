@@ -19,10 +19,10 @@ type FakeAuctionRunner struct {
 	runReturns struct {
 		result1 error
 	}
-	AddLRPStartAuctionStub        func(models.LRPStartAuction)
-	addLRPStartAuctionMutex       sync.RWMutex
-	addLRPStartAuctionArgsForCall []struct {
-		arg1 models.LRPStartAuction
+	AddLRPStartForAuctionStub        func(models.LRPStart)
+	addLRPStartForAuctionMutex       sync.RWMutex
+	addLRPStartForAuctionArgsForCall []struct {
+		arg1 models.LRPStart
 	}
 	AddTaskForAuctionStub        func(models.Task)
 	addTaskForAuctionMutex       sync.RWMutex
@@ -64,27 +64,27 @@ func (fake *FakeAuctionRunner) RunReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAuctionRunner) AddLRPStartAuction(arg1 models.LRPStartAuction) {
-	fake.addLRPStartAuctionMutex.Lock()
-	fake.addLRPStartAuctionArgsForCall = append(fake.addLRPStartAuctionArgsForCall, struct {
-		arg1 models.LRPStartAuction
+func (fake *FakeAuctionRunner) AddLRPStartForAuction(arg1 models.LRPStart) {
+	fake.addLRPStartForAuctionMutex.Lock()
+	fake.addLRPStartForAuctionArgsForCall = append(fake.addLRPStartForAuctionArgsForCall, struct {
+		arg1 models.LRPStart
 	}{arg1})
-	fake.addLRPStartAuctionMutex.Unlock()
-	if fake.AddLRPStartAuctionStub != nil {
-		fake.AddLRPStartAuctionStub(arg1)
+	fake.addLRPStartForAuctionMutex.Unlock()
+	if fake.AddLRPStartForAuctionStub != nil {
+		fake.AddLRPStartForAuctionStub(arg1)
 	}
 }
 
-func (fake *FakeAuctionRunner) AddLRPStartAuctionCallCount() int {
-	fake.addLRPStartAuctionMutex.RLock()
-	defer fake.addLRPStartAuctionMutex.RUnlock()
-	return len(fake.addLRPStartAuctionArgsForCall)
+func (fake *FakeAuctionRunner) AddLRPStartForAuctionCallCount() int {
+	fake.addLRPStartForAuctionMutex.RLock()
+	defer fake.addLRPStartForAuctionMutex.RUnlock()
+	return len(fake.addLRPStartForAuctionArgsForCall)
 }
 
-func (fake *FakeAuctionRunner) AddLRPStartAuctionArgsForCall(i int) models.LRPStartAuction {
-	fake.addLRPStartAuctionMutex.RLock()
-	defer fake.addLRPStartAuctionMutex.RUnlock()
-	return fake.addLRPStartAuctionArgsForCall[i].arg1
+func (fake *FakeAuctionRunner) AddLRPStartForAuctionArgsForCall(i int) models.LRPStart {
+	fake.addLRPStartForAuctionMutex.RLock()
+	defer fake.addLRPStartForAuctionMutex.RUnlock()
+	return fake.addLRPStartForAuctionArgsForCall[i].arg1
 }
 
 func (fake *FakeAuctionRunner) AddTaskForAuction(arg1 models.Task) {

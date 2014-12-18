@@ -33,8 +33,8 @@ var _ = Describe("Cell", func() {
 
 	Describe("ScoreForLRPStartAuction", func() {
 		It("factors in memory usage", func() {
-			bigInstance := BuildLRPStartAuction("pg-big", 0, "lucid64", 20, 10)
-			smallInstance := BuildLRPStartAuction("pg-small", 0, "lucid64", 10, 10)
+			bigInstance := BuildLRPStart("pg-big", 0, "lucid64", 20, 10)
+			smallInstance := BuildLRPStart("pg-small", 0, "lucid64", 10, 10)
 
 			By("factoring in the amount of memory taken up by the instance")
 			bigScore, err := emptyCell.ScoreForLRPStartAuction(bigInstance)
@@ -53,8 +53,8 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in disk usage", func() {
-			bigInstance := BuildLRPStartAuction("pg-big", 0, "lucid64", 10, 20)
-			smallInstance := BuildLRPStartAuction("pg-small", 0, "lucid64", 10, 10)
+			bigInstance := BuildLRPStart("pg-big", 0, "lucid64", 10, 20)
+			smallInstance := BuildLRPStart("pg-small", 0, "lucid64", 10, 10)
 
 			By("factoring in the amount of memory taken up by the instance")
 			bigScore, err := emptyCell.ScoreForLRPStartAuction(bigInstance)
@@ -73,7 +73,7 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in container usage", func() {
-			instance := BuildLRPStartAuction("pg-big", 0, "lucid64", 20, 20)
+			instance := BuildLRPStart("pg-big", 0, "lucid64", 20, 20)
 
 			bigState := BuildCellState(100, 200, 50, nil)
 			bigCell := NewCell(client, bigState)
@@ -89,9 +89,9 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in process-guids that are already present", func() {
-			instanceWithTwoMatches := BuildLRPStartAuction("pg-1", 2, "lucid64", 10, 10)
-			instanceWithOneMatch := BuildLRPStartAuction("pg-2", 1, "lucid64", 10, 10)
-			instanceWithNoMatches := BuildLRPStartAuction("pg-new", 0, "lucid64", 10, 10)
+			instanceWithTwoMatches := BuildLRPStart("pg-1", 2, "lucid64", 10, 10)
+			instanceWithOneMatch := BuildLRPStart("pg-2", 1, "lucid64", 10, 10)
+			instanceWithNoMatches := BuildLRPStart("pg-new", 0, "lucid64", 10, 10)
 
 			twoMatchesScore, err := cell.ScoreForLRPStartAuction(instanceWithTwoMatches)
 			Ω(err).ShouldNot(HaveOccurred())
@@ -107,7 +107,7 @@ var _ = Describe("Cell", func() {
 		Context("when the LRP does not fit", func() {
 			Context("because of memory constraints", func() {
 				It("should error", func() {
-					massiveMemoryInstance := BuildLRPStartAuction("pg-new", 0, "lucid64", 10000, 10)
+					massiveMemoryInstance := BuildLRPStart("pg-new", 0, "lucid64", 10000, 10)
 					score, err := cell.ScoreForLRPStartAuction(massiveMemoryInstance)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
@@ -116,7 +116,7 @@ var _ = Describe("Cell", func() {
 
 			Context("because of disk constraints", func() {
 				It("should error", func() {
-					massiveDiskInstance := BuildLRPStartAuction("pg-new", 0, "lucid64", 10, 10000)
+					massiveDiskInstance := BuildLRPStart("pg-new", 0, "lucid64", 10, 10000)
 					score, err := cell.ScoreForLRPStartAuction(massiveDiskInstance)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
@@ -125,7 +125,7 @@ var _ = Describe("Cell", func() {
 
 			Context("because of container constraints", func() {
 				It("should error", func() {
-					instance := BuildLRPStartAuction("pg-new", 0, "lucid64", 10, 10)
+					instance := BuildLRPStart("pg-new", 0, "lucid64", 10, 10)
 					zeroState := BuildCellState(100, 100, 0, nil)
 					zeroCell := NewCell(client, zeroState)
 					score, err := zeroCell.ScoreForLRPStartAuction(instance)
@@ -137,7 +137,7 @@ var _ = Describe("Cell", func() {
 
 		Context("when the LRP doesn't match the stack", func() {
 			It("should error", func() {
-				nonMatchingInstance := BuildLRPStartAuction("pg-new", 0, ".net", 10, 10)
+				nonMatchingInstance := BuildLRPStart("pg-new", 0, ".net", 10, 10)
 				score, err := cell.ScoreForLRPStartAuction(nonMatchingInstance)
 				Ω(score).Should(BeZero())
 				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
@@ -246,8 +246,8 @@ var _ = Describe("Cell", func() {
 	Describe("StartLRP", func() {
 		Context("when there is room for the LRP", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
-				instance := BuildLRPStartAuction("pg-test", 0, "lucid64", 10, 10)
-				instanceToAdd := BuildLRPStartAuction("pg-new", 0, "lucid64", 10, 10)
+				instance := BuildLRPStart("pg-test", 0, "lucid64", 10, 10)
+				instanceToAdd := BuildLRPStart("pg-new", 0, "lucid64", 10, 10)
 
 				initialScore, err := cell.ScoreForLRPStartAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
@@ -260,9 +260,9 @@ var _ = Describe("Cell", func() {
 			})
 
 			It("should register the LRP and keep it in mind when handling future requests", func() {
-				instance := BuildLRPStartAuction("pg-test", 0, "lucid64", 10, 10)
-				instanceWithMatchingProcessGuid := BuildLRPStartAuction("pg-new", 1, "lucid64", 10, 10)
-				instanceToAdd := BuildLRPStartAuction("pg-new", 0, "lucid64", 10, 10)
+				instance := BuildLRPStart("pg-test", 0, "lucid64", 10, 10)
+				instanceWithMatchingProcessGuid := BuildLRPStart("pg-new", 1, "lucid64", 10, 10)
+				instanceToAdd := BuildLRPStart("pg-new", 0, "lucid64", 10, 10)
 
 				initialScore, err := cell.ScoreForLRPStartAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
@@ -289,7 +289,7 @@ var _ = Describe("Cell", func() {
 
 		Context("when there is a stack mismatch", func() {
 			It("should error", func() {
-				instance := BuildLRPStartAuction("pg-test", 0, ".net", 10, 10)
+				instance := BuildLRPStart("pg-test", 0, ".net", 10, 10)
 				err := cell.StartLRP(instance)
 				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
 			})
@@ -297,7 +297,7 @@ var _ = Describe("Cell", func() {
 
 		Context("when there is no room for the LRP", func() {
 			It("should error", func() {
-				instance := BuildLRPStartAuction("pg-test", 0, "lucid64", 10000, 10)
+				instance := BuildLRPStart("pg-test", 0, "lucid64", 10000, 10)
 				err := cell.StartLRP(instance)
 				Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
@@ -348,10 +348,10 @@ var _ = Describe("Cell", func() {
 		})
 
 		Context("with work to commit", func() {
-			var instanceToStart models.LRPStartAuction
+			var instanceToStart models.LRPStart
 
 			BeforeEach(func() {
-				instanceToStart = BuildLRPStartAuction("pg-new", 0, "lucid64", 20, 10)
+				instanceToStart = BuildLRPStart("pg-new", 0, "lucid64", 20, 10)
 
 				Ω(cell.StartLRP(instanceToStart)).Should(Succeed())
 			})
@@ -360,14 +360,14 @@ var _ = Describe("Cell", func() {
 				cell.Commit()
 				Ω(client.PerformCallCount()).Should(Equal(1))
 				Ω(client.PerformArgsForCall(0)).Should(Equal(auctiontypes.Work{
-					LRPStarts: []models.LRPStartAuction{instanceToStart},
+					LRPStarts: []models.LRPStart{instanceToStart},
 				}))
 			})
 
 			Context("when the client returns some failed work", func() {
 				It("forwards the failed work", func() {
 					failedWork := auctiontypes.Work{
-						LRPStarts: []models.LRPStartAuction{instanceToStart},
+						LRPStarts: []models.LRPStart{instanceToStart},
 					}
 					client.PerformReturns(failedWork, nil)
 					Ω(cell.Commit()).Should(Equal(failedWork))

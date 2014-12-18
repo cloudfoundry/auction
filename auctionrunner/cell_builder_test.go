@@ -41,7 +41,7 @@ var _ = Describe("CellBuilder", func() {
 		Ω(cells).Should(HaveKey("A"))
 		Ω(cells).Should(HaveKey("B"))
 
-		instance := BuildLRPStartAuction("pg-1", 0, "lucid64", 20, 20)
+		instance := BuildLRPStart("pg-1", 0, "lucid64", 20, 20)
 		_, err := cells["A"].ScoreForLRPStartAuction(instance)
 		Ω(err).ShouldNot(HaveOccurred())
 

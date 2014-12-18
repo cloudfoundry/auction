@@ -19,22 +19,22 @@ func NewCell(client auctiontypes.CellRep, state auctiontypes.CellState) *Cell {
 	}
 }
 
-func (c *Cell) ScoreForLRPStartAuction(lrpStartAuction models.LRPStartAuction) (float64, error) {
-	err := c.canHandleLRPStartAuction(lrpStartAuction)
+func (c *Cell) ScoreForLRPStartAuction(lrpStart models.LRPStart) (float64, error) {
+	err := c.canHandleLRPStart(lrpStart)
 	if err != nil {
 		return 0, err
 	}
 
 	numberOfInstancesWithMatchingProcessGuid := 0
 	for _, lrp := range c.state.LRPs {
-		if lrp.ProcessGuid == lrpStartAuction.DesiredLRP.ProcessGuid {
+		if lrp.ProcessGuid == lrpStart.DesiredLRP.ProcessGuid {
 			numberOfInstancesWithMatchingProcessGuid++
 		}
 	}
 
 	remainingResources := c.state.AvailableResources
-	remainingResources.MemoryMB -= lrpStartAuction.DesiredLRP.MemoryMB
-	remainingResources.DiskMB -= lrpStartAuction.DesiredLRP.DiskMB
+	remainingResources.MemoryMB -= lrpStart.DesiredLRP.MemoryMB
+	remainingResources.DiskMB -= lrpStart.DesiredLRP.DiskMB
 	remainingResources.Containers -= 1
 
 	resourceScore := c.computeScore(remainingResources, numberOfInstancesWithMatchingProcessGuid)
@@ -58,24 +58,24 @@ func (c *Cell) ScoreForTask(task models.Task) (float64, error) {
 	return resourceScore, nil
 }
 
-func (c *Cell) StartLRP(lrpStartAuction models.LRPStartAuction) error {
-	err := c.canHandleLRPStartAuction(lrpStartAuction)
+func (c *Cell) StartLRP(lrpStart models.LRPStart) error {
+	err := c.canHandleLRPStart(lrpStart)
 	if err != nil {
 		return err
 	}
 
 	c.state.LRPs = append(c.state.LRPs, auctiontypes.LRP{
-		ProcessGuid: lrpStartAuction.DesiredLRP.ProcessGuid,
-		Index:       lrpStartAuction.Index,
-		MemoryMB:    lrpStartAuction.DesiredLRP.MemoryMB,
-		DiskMB:      lrpStartAuction.DesiredLRP.DiskMB,
+		ProcessGuid: lrpStart.DesiredLRP.ProcessGuid,
+		Index:       lrpStart.Index,
+		MemoryMB:    lrpStart.DesiredLRP.MemoryMB,
+		DiskMB:      lrpStart.DesiredLRP.DiskMB,
 	})
 
-	c.state.AvailableResources.MemoryMB -= lrpStartAuction.DesiredLRP.MemoryMB
-	c.state.AvailableResources.DiskMB -= lrpStartAuction.DesiredLRP.DiskMB
+	c.state.AvailableResources.MemoryMB -= lrpStart.DesiredLRP.MemoryMB
+	c.state.AvailableResources.DiskMB -= lrpStart.DesiredLRP.DiskMB
 	c.state.AvailableResources.Containers -= 1
 
-	c.workToCommit.LRPStarts = append(c.workToCommit.LRPStarts, lrpStartAuction)
+	c.workToCommit.LRPStarts = append(c.workToCommit.LRPStarts, lrpStart)
 
 	return nil
 }
@@ -116,14 +116,14 @@ func (c *Cell) Commit() auctiontypes.Work {
 	return failedWork
 }
 
-func (c *Cell) canHandleLRPStartAuction(lrpStartAuction models.LRPStartAuction) error {
-	if c.state.Stack != lrpStartAuction.DesiredLRP.Stack {
+func (c *Cell) canHandleLRPStart(lrpStart models.LRPStart) error {
+	if c.state.Stack != lrpStart.DesiredLRP.Stack {
 		return auctiontypes.ErrorStackMismatch
 	}
-	if c.state.AvailableResources.MemoryMB < lrpStartAuction.DesiredLRP.MemoryMB {
+	if c.state.AvailableResources.MemoryMB < lrpStart.DesiredLRP.MemoryMB {
 		return auctiontypes.ErrorInsufficientResources
 	}
-	if c.state.AvailableResources.DiskMB < lrpStartAuction.DesiredLRP.DiskMB {
+	if c.state.AvailableResources.DiskMB < lrpStart.DesiredLRP.DiskMB {
 		return auctiontypes.ErrorInsufficientResources
 	}
 	if c.state.AvailableResources.Containers < 1 {

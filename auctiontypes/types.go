@@ -12,7 +12,7 @@ import (
 // Auction Runners
 
 var ErrorStackMismatch = errors.New("stack mismatch")
-var ErrorInsufficientResources = errors.New("insuccifient resources")
+var ErrorInsufficientResources = errors.New("insufficient resources")
 var ErrorNothingToStop = errors.New("nothing to stop")
 
 type AuctionRunner interface {
@@ -40,13 +40,17 @@ type AuctionResults struct {
 
 // LRPStart and Task Auctions
 
-type LRPStartAuction struct {
-	LRPStart models.LRPStart
+type AuctionRecord struct {
 	Winner   string
 	Attempts int
 
 	QueueTime    time.Time
 	WaitDuration time.Duration
+}
+
+type LRPStartAuction struct {
+	LRPStart models.LRPStart
+	AuctionRecord
 }
 
 func (s LRPStartAuction) Identifier() string {
@@ -62,12 +66,8 @@ func IdentifierForLRP(processGuid string, index int) string {
 }
 
 type TaskAuction struct {
-	Task     models.Task
-	Winner   string
-	Attempts int
-
-	QueueTime    time.Time
-	WaitDuration time.Duration
+	Task models.Task
+	AuctionRecord
 }
 
 func (t TaskAuction) Identifier() string {

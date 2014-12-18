@@ -31,15 +31,19 @@ func BuildTask(taskGuid, stack string, memoryMB, diskMB int) models.Task {
 
 func BuildStartAuction(start models.LRPStart, queueTime time.Time) auctiontypes.LRPStartAuction {
 	return auctiontypes.LRPStartAuction{
-		LRPStart:  start,
-		QueueTime: queueTime,
+		LRPStart: start,
+		AuctionRecord: auctiontypes.AuctionRecord{
+			QueueTime: queueTime,
+		},
 	}
 }
 
 func BuildTaskAuction(task models.Task, queueTime time.Time) auctiontypes.TaskAuction {
 	return auctiontypes.TaskAuction{
-		Task:      task,
-		QueueTime: queueTime,
+		Task: task,
+		AuctionRecord: auctiontypes.AuctionRecord{
+			QueueTime: queueTime,
+		},
 	}
 }
 

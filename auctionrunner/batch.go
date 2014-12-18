@@ -29,8 +29,10 @@ func NewBatch(timeProvider timeprovider.TimeProvider) *Batch {
 func (b *Batch) AddLRPStart(start models.LRPStart) {
 	b.lock.Lock()
 	b.lrpStartAuctions = append(b.lrpStartAuctions, auctiontypes.LRPStartAuction{
-		LRPStart:  start,
-		QueueTime: b.timeProvider.Now(),
+		LRPStart: start,
+		AuctionRecord: auctiontypes.AuctionRecord{
+			QueueTime: b.timeProvider.Now(),
+		},
 	})
 	b.claimToHaveWork()
 	b.lock.Unlock()
@@ -39,8 +41,10 @@ func (b *Batch) AddLRPStart(start models.LRPStart) {
 func (b *Batch) AddTask(task models.Task) {
 	b.lock.Lock()
 	b.taskAuctions = append(b.taskAuctions, auctiontypes.TaskAuction{
-		Task:      task,
-		QueueTime: b.timeProvider.Now(),
+		Task: task,
+		AuctionRecord: auctiontypes.AuctionRecord{
+			QueueTime: b.timeProvider.Now(),
+		},
 	})
 	b.claimToHaveWork()
 	b.lock.Unlock()

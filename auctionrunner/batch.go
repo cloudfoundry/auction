@@ -38,14 +38,20 @@ func (b *Batch) AddLRPStart(start models.LRPStart) {
 	b.lock.Unlock()
 }
 
-func (b *Batch) AddTask(task models.Task) {
+func (b *Batch) AddTasks(tasks []models.Task) {
+	auctions := make([]auctiontypes.TaskAuction, 0, len(tasks))
+	now := b.timeProvider.Now()
+	for _, t := range tasks {
+		auctions = append(auctions, auctiontypes.TaskAuction{
+			Task: t,
+			AuctionRecord: auctiontypes.AuctionRecord{
+				QueueTime: now,
+			},
+		})
+	}
+
 	b.lock.Lock()
-	b.taskAuctions = append(b.taskAuctions, auctiontypes.TaskAuction{
-		Task: task,
-		AuctionRecord: auctiontypes.AuctionRecord{
-			QueueTime: b.timeProvider.Now(),
-		},
-	})
+	b.taskAuctions = append(b.taskAuctions, auctions...)
 	b.claimToHaveWork()
 	b.lock.Unlock()
 }

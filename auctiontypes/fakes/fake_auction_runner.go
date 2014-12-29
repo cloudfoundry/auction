@@ -24,10 +24,10 @@ type FakeAuctionRunner struct {
 	addLRPStartForAuctionArgsForCall []struct {
 		arg1 models.LRPStart
 	}
-	AddTaskForAuctionStub        func(models.Task)
-	addTaskForAuctionMutex       sync.RWMutex
-	addTaskForAuctionArgsForCall []struct {
-		arg1 models.Task
+	ScheduleTasksForAuctionsStub        func([]models.Task)
+	scheduleTasksForAuctionsMutex       sync.RWMutex
+	scheduleTasksForAuctionsArgsForCall []struct {
+		arg1 []models.Task
 	}
 }
 
@@ -87,27 +87,27 @@ func (fake *FakeAuctionRunner) AddLRPStartForAuctionArgsForCall(i int) models.LR
 	return fake.addLRPStartForAuctionArgsForCall[i].arg1
 }
 
-func (fake *FakeAuctionRunner) AddTaskForAuction(arg1 models.Task) {
-	fake.addTaskForAuctionMutex.Lock()
-	fake.addTaskForAuctionArgsForCall = append(fake.addTaskForAuctionArgsForCall, struct {
-		arg1 models.Task
+func (fake *FakeAuctionRunner) ScheduleTasksForAuctions(arg1 []models.Task) {
+	fake.scheduleTasksForAuctionsMutex.Lock()
+	fake.scheduleTasksForAuctionsArgsForCall = append(fake.scheduleTasksForAuctionsArgsForCall, struct {
+		arg1 []models.Task
 	}{arg1})
-	fake.addTaskForAuctionMutex.Unlock()
-	if fake.AddTaskForAuctionStub != nil {
-		fake.AddTaskForAuctionStub(arg1)
+	fake.scheduleTasksForAuctionsMutex.Unlock()
+	if fake.ScheduleTasksForAuctionsStub != nil {
+		fake.ScheduleTasksForAuctionsStub(arg1)
 	}
 }
 
-func (fake *FakeAuctionRunner) AddTaskForAuctionCallCount() int {
-	fake.addTaskForAuctionMutex.RLock()
-	defer fake.addTaskForAuctionMutex.RUnlock()
-	return len(fake.addTaskForAuctionArgsForCall)
+func (fake *FakeAuctionRunner) ScheduleTasksForAuctionsCallCount() int {
+	fake.scheduleTasksForAuctionsMutex.RLock()
+	defer fake.scheduleTasksForAuctionsMutex.RUnlock()
+	return len(fake.scheduleTasksForAuctionsArgsForCall)
 }
 
-func (fake *FakeAuctionRunner) AddTaskForAuctionArgsForCall(i int) models.Task {
-	fake.addTaskForAuctionMutex.RLock()
-	defer fake.addTaskForAuctionMutex.RUnlock()
-	return fake.addTaskForAuctionArgsForCall[i].arg1
+func (fake *FakeAuctionRunner) ScheduleTasksForAuctionsArgsForCall(i int) []models.Task {
+	fake.scheduleTasksForAuctionsMutex.RLock()
+	defer fake.scheduleTasksForAuctionsMutex.RUnlock()
+	return fake.scheduleTasksForAuctionsArgsForCall[i].arg1
 }
 
 var _ auctiontypes.AuctionRunner = new(FakeAuctionRunner)

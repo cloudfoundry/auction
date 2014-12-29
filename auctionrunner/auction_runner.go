@@ -108,6 +108,6 @@ func (a *auctionRunner) AddLRPStartForAuction(lrpStart models.LRPStart) {
 	a.batch.AddLRPStart(lrpStart)
 }
 
-func (a *auctionRunner) AddTaskForAuction(task models.Task) {
-	a.batch.AddTask(task)
+func (a *auctionRunner) ScheduleTasksForAuctions(tasks []models.Task) {
+	a.batch.AddTasks(tasks)
 }

@@ -15,10 +15,11 @@ var ErrorStackMismatch = errors.New("stack mismatch")
 var ErrorInsufficientResources = errors.New("insufficient resources")
 var ErrorNothingToStop = errors.New("nothing to stop")
 
+//go:generate counterfeiter -o fakes/fake_auction_runner.go . AuctionRunner
 type AuctionRunner interface {
 	ifrit.Runner
 	AddLRPStartForAuction(models.LRPStart)
-	AddTaskForAuction(models.Task)
+	ScheduleTasksForAuctions([]models.Task)
 }
 
 type AuctionRunnerDelegate interface {

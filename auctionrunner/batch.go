@@ -26,14 +26,19 @@ func NewBatch(timeProvider timeprovider.TimeProvider) *Batch {
 	}
 }
 
-func (b *Batch) AddLRPStart(start models.LRPStart) {
+func (b *Batch) AddLRPStarts(starts []models.LRPStart) {
+	auctions := make([]auctiontypes.LRPStartAuction, 0, len(starts))
+	now := b.timeProvider.Now()
+	for _, start := range starts {
+		auctions = append(auctions, auctiontypes.LRPStartAuction{
+			LRPStart: start,
+			AuctionRecord: auctiontypes.AuctionRecord{
+				QueueTime: now,
+			}})
+	}
+
 	b.lock.Lock()
-	b.lrpStartAuctions = append(b.lrpStartAuctions, auctiontypes.LRPStartAuction{
-		LRPStart: start,
-		AuctionRecord: auctiontypes.AuctionRecord{
-			QueueTime: b.timeProvider.Now(),
-		},
-	})
+	b.lrpStartAuctions = append(b.lrpStartAuctions, auctions...)
 	b.claimToHaveWork()
 	b.lock.Unlock()
 }

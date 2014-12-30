@@ -32,11 +32,11 @@ func PrintReport(report *Report) {
 		return
 	}
 
-	fmt.Printf("Finished %d Auctions (%d succeeded, %d failed) among %d Cells in %s\n", report.AuctionsPerformed(), len(report.AuctionResults.SuccessfulLRPStarts), len(report.AuctionResults.FailedLRPStarts), len(report.Cells), report.AuctionDuration)
+	fmt.Printf("Finished %d Auctions (%d succeeded, %d failed) among %d Cells in %s\n", report.AuctionsPerformed(), len(report.AuctionResults.SuccessfulLRPs), len(report.AuctionResults.FailedLRPs), len(report.Cells), report.AuctionDuration)
 	fmt.Println()
 
 	auctionedInstances := map[string]bool{}
-	for _, start := range report.AuctionResults.SuccessfulLRPStarts {
+	for _, start := range report.AuctionResults.SuccessfulLRPs {
 		auctionedInstances[start.Identifier()] = true
 	}
 
@@ -83,19 +83,19 @@ func PrintReport(report *Report) {
 		fmt.Printf("%s!!!!MISSING INSTANCES!!!!  Expected %d, got %d (%.3f %% failure rate)%s\n", redColor, report.NumAuctions, numNew, float64(report.NumAuctions-numNew)/float64(report.NumAuctions), defaultStyle)
 	}
 
-	for _, start := range report.AuctionResults.FailedLRPStarts {
-		fmt.Printf("Failed: %s %d %d\n", start.Identifier(), start.LRPStart.DesiredLRP.MemoryMB, start.LRPStart.DesiredLRP.DiskMB)
+	for _, start := range report.AuctionResults.FailedLRPs {
+		fmt.Printf("Failed: %s %d %d\n", start.Identifier(), start.DesiredLRP.MemoryMB, start.DesiredLRP.DiskMB)
 	}
 
 	waitDurations := []time.Duration{}
-	for _, start := range report.AuctionResults.SuccessfulLRPStarts {
+	for _, start := range report.AuctionResults.SuccessfulLRPs {
 		waitDurations = append(waitDurations, start.WaitDuration)
 	}
 	minTime, maxTime, meanTime := StatsForDurations(waitDurations)
 	fmt.Printf("%14s  Min: %16s | Max: %16s | Mean: %16s\n", "Wait Times:", minTime, maxTime, meanTime)
 
 	minAttempts, maxAttempts, totalAttempts, meanAttempts := 100000000, 0, 0, float64(0)
-	for _, start := range report.AuctionResults.SuccessfulLRPStarts {
+	for _, start := range report.AuctionResults.SuccessfulLRPs {
 		if start.Attempts < minAttempts {
 			minAttempts = start.Attempts
 		}
@@ -106,7 +106,7 @@ func PrintReport(report *Report) {
 		meanAttempts += float64(start.Attempts)
 	}
 
-	for _, start := range report.AuctionResults.FailedLRPStarts {
+	for _, start := range report.AuctionResults.FailedLRPs {
 		if start.Attempts < minAttempts {
 			minAttempts = start.Attempts
 		}

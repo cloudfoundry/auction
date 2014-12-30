@@ -8,15 +8,15 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func BuildLRPStart(processGuid string, index int, stack string, memoryMB, diskMB int) models.LRPStart {
-	return models.LRPStart{
+func BuildLRPStartRequest(processGuid string, indices []uint, stack string, memoryMB, diskMB int) models.LRPStartRequest {
+	return models.LRPStartRequest{
 		DesiredLRP: models.DesiredLRP{
 			ProcessGuid: processGuid,
 			MemoryMB:    memoryMB,
 			DiskMB:      diskMB,
 			Stack:       stack,
 		},
-		Index: index,
+		Indices: indices,
 	}
 }
 
@@ -29,13 +29,34 @@ func BuildTask(taskGuid, stack string, memoryMB, diskMB int) models.Task {
 	}
 }
 
-func BuildStartAuction(start models.LRPStart, queueTime time.Time) auctiontypes.LRPStartAuction {
-	return auctiontypes.LRPStartAuction{
-		LRPStart: start,
+func BuildLRPAuction(processGuid string, index int, stack string, memoryMB, diskMB int, queueTime time.Time) auctiontypes.LRPAuction {
+	return auctiontypes.LRPAuction{
+		DesiredLRP: models.DesiredLRP{
+			ProcessGuid: processGuid,
+			MemoryMB:    memoryMB,
+			DiskMB:      diskMB,
+			Stack:       stack,
+		},
+		Index: index,
 		AuctionRecord: auctiontypes.AuctionRecord{
 			QueueTime: queueTime,
 		},
 	}
+}
+
+func BuildLRPAuctions(lrpStart models.LRPStartRequest, queueTime time.Time) []auctiontypes.LRPAuction {
+	auctions := make([]auctiontypes.LRPAuction, 0, len(lrpStart.Indices))
+	for _, i := range lrpStart.Indices {
+		auctions = append(auctions, auctiontypes.LRPAuction{
+			DesiredLRP: lrpStart.DesiredLRP,
+			Index:      int(i),
+			AuctionRecord: auctiontypes.AuctionRecord{
+				QueueTime: queueTime,
+			},
+		})
+	}
+
+	return auctions
 }
 
 func BuildTaskAuction(task models.Task, queueTime time.Time) auctiontypes.TaskAuction {

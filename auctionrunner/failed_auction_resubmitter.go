@@ -1,18 +1,21 @@
 package auctionrunner
 
-import "github.com/cloudfoundry-incubator/auction/auctiontypes"
+import (
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auctioneer"
+)
 
 func ResubmitFailedAuctions(batch *Batch, results auctiontypes.AuctionResults, maxRetries int) auctiontypes.AuctionResults {
-	retryableLRPStarts := []auctiontypes.LRPStartAuction{}
+	retryableLRPs := []auctiontypes.LRPAuction{}
 	retryableTasks := []auctiontypes.TaskAuction{}
-	failedLRPStarts := []auctiontypes.LRPStartAuction{}
+	failedLRPs := []auctiontypes.LRPAuction{}
 	failedTasks := []auctiontypes.TaskAuction{}
 
-	for _, start := range results.FailedLRPStarts {
+	for _, start := range results.FailedLRPs {
 		if start.Attempts <= maxRetries {
-			retryableLRPStarts = append(retryableLRPStarts, start)
+			retryableLRPs = append(retryableLRPs, start)
 		} else {
-			failedLRPStarts = append(failedLRPStarts, start)
+			failedLRPs = append(failedLRPs, start)
 		}
 	}
 
@@ -24,14 +27,18 @@ func ResubmitFailedAuctions(batch *Batch, results auctiontypes.AuctionResults, m
 		}
 	}
 
-	results.FailedLRPStarts = failedLRPStarts
-	results.FailedTasks = failedTasks
-
-	if len(retryableLRPStarts) > 0 {
-		batch.ResubmitStartAuctions(retryableLRPStarts)
+	if len(retryableLRPs) > 0 {
+		batch.ResubmitStartAuctions(retryableLRPs)
 	}
 	if len(retryableTasks) > 0 {
 		batch.ResubmitTaskAuctions(retryableTasks)
 	}
+
+	auctioneer.LRPAuctionsFailed.Add(uint64(len(failedLRPs)))
+	auctioneer.TaskAuctionsFailed.Add(uint64(len(failedTasks)))
+
+	results.FailedLRPs = failedLRPs
+	results.FailedTasks = failedTasks
+
 	return results
 }

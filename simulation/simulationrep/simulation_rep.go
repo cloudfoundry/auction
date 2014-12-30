@@ -61,7 +61,7 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 
 	availableResources := rep.availableResources()
 
-	for _, start := range work.LRPStarts {
+	for _, start := range work.LRPs {
 		hasRoom := availableResources.Containers >= 0
 		hasRoom = hasRoom && availableResources.MemoryMB >= start.DesiredLRP.MemoryMB
 		hasRoom = hasRoom && availableResources.DiskMB >= start.DesiredLRP.DiskMB
@@ -77,7 +77,7 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 			availableResources.MemoryMB -= start.DesiredLRP.MemoryMB
 			availableResources.DiskMB -= start.DesiredLRP.DiskMB
 		} else {
-			failedWork.LRPStarts = append(failedWork.LRPStarts, start)
+			failedWork.LRPs = append(failedWork.LRPs, start)
 		}
 	}
 

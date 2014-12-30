@@ -18,7 +18,7 @@ var ErrorNothingToStop = errors.New("nothing to stop")
 //go:generate counterfeiter -o fakes/fake_auction_runner.go . AuctionRunner
 type AuctionRunner interface {
 	ifrit.Runner
-	ScheduleLRPStartsForAuctions([]models.LRPStart)
+	ScheduleLRPsForAuctions([]models.LRPStartRequest)
 	ScheduleTasksForAuctions([]models.Task)
 }
 
@@ -28,15 +28,15 @@ type AuctionRunnerDelegate interface {
 }
 
 type AuctionRequest struct {
-	LRPStarts []LRPStartAuction
-	Tasks     []TaskAuction
+	LRPs  []LRPAuction
+	Tasks []TaskAuction
 }
 
 type AuctionResults struct {
-	SuccessfulLRPStarts []LRPStartAuction
-	SuccessfulTasks     []TaskAuction
-	FailedLRPStarts     []LRPStartAuction
-	FailedTasks         []TaskAuction
+	SuccessfulLRPs  []LRPAuction
+	SuccessfulTasks []TaskAuction
+	FailedLRPs      []LRPAuction
+	FailedTasks     []TaskAuction
 }
 
 // LRPStart and Task Auctions
@@ -49,17 +49,14 @@ type AuctionRecord struct {
 	WaitDuration time.Duration
 }
 
-type LRPStartAuction struct {
-	LRPStart models.LRPStart
+type LRPAuction struct {
+	DesiredLRP models.DesiredLRP
+	Index      int
 	AuctionRecord
 }
 
-func (s LRPStartAuction) Identifier() string {
-	return IdentifierForLRPStartAuction(s.LRPStart)
-}
-
-func IdentifierForLRPStartAuction(start models.LRPStart) string {
-	return IdentifierForLRP(start.DesiredLRP.ProcessGuid, start.Index)
+func (s LRPAuction) Identifier() string {
+	return IdentifierForLRP(s.DesiredLRP.ProcessGuid, s.Index)
 }
 
 func IdentifierForLRP(processGuid string, index int) string {
@@ -93,8 +90,8 @@ type SimulationCellRep interface {
 }
 
 type Work struct {
-	LRPStarts []models.LRPStart
-	Tasks     []models.Task
+	LRPs  []LRPAuction
+	Tasks []models.Task
 }
 
 type CellState struct {

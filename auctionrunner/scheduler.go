@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/auctioneer"
 
 	"github.com/cloudfoundry/gunk/timeprovider"
 	"github.com/cloudfoundry/gunk/workpool"
@@ -26,23 +27,23 @@ func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider 
 	results := auctiontypes.AuctionResults{}
 
 	if len(cells) == 0 {
-		results.FailedLRPStarts = auctionRequest.LRPStarts
+		results.FailedLRPs = auctionRequest.LRPs
 		results.FailedTasks = auctionRequest.Tasks
 		return markResults(results, timeProvider)
 	}
 
-	var successfulLRPStarts = map[string]auctiontypes.LRPStartAuction{}
-	var lrpStartAuctionLookup = map[string]auctiontypes.LRPStartAuction{}
+	var successfulLRPs = map[string]auctiontypes.LRPAuction{}
+	var lrpStartAuctionLookup = map[string]auctiontypes.LRPAuction{}
 
-	sort.Sort(sort.Reverse(SortableAuctions(auctionRequest.LRPStarts)))
-	for _, startAuction := range auctionRequest.LRPStarts {
+	sort.Sort(sort.Reverse(SortableAuctions(auctionRequest.LRPs)))
+	for _, startAuction := range auctionRequest.LRPs {
 		lrpStartAuctionLookup[startAuction.Identifier()] = startAuction
 
-		successfulStart, err := scheduleLRPStartAuction(cells, startAuction, randomizer)
+		successfulStart, err := scheduleLRPAuction(cells, startAuction, randomizer)
 		if err != nil {
-			results.FailedLRPStarts = append(results.FailedLRPStarts, startAuction)
+			results.FailedLRPs = append(results.FailedLRPs, startAuction)
 		} else {
-			successfulLRPStarts[successfulStart.Identifier()] = successfulStart
+			successfulLRPs[successfulStart.Identifier()] = successfulStart
 		}
 	}
 
@@ -60,10 +61,10 @@ func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider 
 
 	failedWorks := commitCells(workPool, cells)
 	for _, failedWork := range failedWorks {
-		for _, failedStart := range failedWork.LRPStarts {
-			identifier := auctiontypes.IdentifierForLRPStartAuction(failedStart)
-			delete(successfulLRPStarts, identifier)
-			results.FailedLRPStarts = append(results.FailedLRPStarts, lrpStartAuctionLookup[identifier])
+		for _, failedStart := range failedWork.LRPs {
+			identifier := failedStart.Identifier()
+			delete(successfulLRPs, identifier)
+			results.FailedLRPs = append(results.FailedLRPs, lrpStartAuctionLookup[identifier])
 		}
 
 		for _, failedTask := range failedWork.Tasks {
@@ -73,27 +74,30 @@ func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider 
 		}
 	}
 
-	for _, successfulStart := range successfulLRPStarts {
-		results.SuccessfulLRPStarts = append(results.SuccessfulLRPStarts, successfulStart)
+	for _, successfulStart := range successfulLRPs {
+		results.SuccessfulLRPs = append(results.SuccessfulLRPs, successfulStart)
 	}
 	for _, successfulTask := range successfulTasks {
 		results.SuccessfulTasks = append(results.SuccessfulTasks, successfulTask)
 	}
+
+	auctioneer.LRPAuctionsStarted.Add(uint64(len(successfulLRPs)))
+	auctioneer.TaskAuctionsStarted.Add(uint64(len(successfulTasks)))
 
 	return markResults(results, timeProvider)
 }
 
 func markResults(results auctiontypes.AuctionResults, timeProvider timeprovider.TimeProvider) auctiontypes.AuctionResults {
 	now := timeProvider.Now()
-	for i := range results.FailedLRPStarts {
-		results.FailedLRPStarts[i].Attempts++
+	for i := range results.FailedLRPs {
+		results.FailedLRPs[i].Attempts++
 	}
 	for i := range results.FailedTasks {
 		results.FailedTasks[i].Attempts++
 	}
-	for i := range results.SuccessfulLRPStarts {
-		results.SuccessfulLRPStarts[i].Attempts++
-		results.SuccessfulLRPStarts[i].WaitDuration = now.Sub(results.SuccessfulLRPStarts[i].QueueTime)
+	for i := range results.SuccessfulLRPs {
+		results.SuccessfulLRPs[i].Attempts++
+		results.SuccessfulLRPs[i].WaitDuration = now.Sub(results.SuccessfulLRPs[i].QueueTime)
 	}
 	for i := range results.SuccessfulTasks {
 		results.SuccessfulTasks[i].Attempts++
@@ -127,12 +131,12 @@ func commitCells(workPool *workpool.WorkPool, cells map[string]*Cell) []auctiont
 	return failedWorks
 }
 
-func scheduleLRPStartAuction(cells map[string]*Cell, lrpStartAuction auctiontypes.LRPStartAuction, randomizer *rand.Rand) (auctiontypes.LRPStartAuction, error) {
+func scheduleLRPAuction(cells map[string]*Cell, lrpAuction auctiontypes.LRPAuction, randomizer *rand.Rand) (auctiontypes.LRPAuction, error) {
 	winnerGuids := []string{}
 	winnerScore := 1e20
 
 	for guid, cell := range cells {
-		score, err := cell.ScoreForLRPStartAuction(lrpStartAuction.LRPStart)
+		score, err := cell.ScoreForLRPAuction(lrpAuction)
 		if err != nil {
 			continue
 		}
@@ -146,19 +150,19 @@ func scheduleLRPStartAuction(cells map[string]*Cell, lrpStartAuction auctiontype
 	}
 
 	if len(winnerGuids) == 0 {
-		return auctiontypes.LRPStartAuction{}, auctiontypes.ErrorInsufficientResources
+		return auctiontypes.LRPAuction{}, auctiontypes.ErrorInsufficientResources
 	}
 
 	winnerGuid := winnerGuids[randomizer.Intn(len(winnerGuids))]
 
-	err := cells[winnerGuid].StartLRP(lrpStartAuction.LRPStart)
+	err := cells[winnerGuid].StartLRP(lrpAuction)
 	if err != nil {
-		return auctiontypes.LRPStartAuction{}, err
+		return auctiontypes.LRPAuction{}, err
 	}
 
-	lrpStartAuction.Winner = winnerGuid
+	lrpAuction.Winner = winnerGuid
 
-	return lrpStartAuction, nil
+	return lrpAuction, nil
 }
 
 func scheduleTaskAuction(cells map[string]*Cell, taskAuction auctiontypes.TaskAuction, randomizer *rand.Rand) (auctiontypes.TaskAuction, error) {
@@ -195,10 +199,10 @@ func scheduleTaskAuction(cells map[string]*Cell, taskAuction auctiontypes.TaskAu
 	return taskAuction, nil
 }
 
-type SortableAuctions []auctiontypes.LRPStartAuction
+type SortableAuctions []auctiontypes.LRPAuction
 
 func (a SortableAuctions) Len() int      { return len(a) }
 func (a SortableAuctions) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a SortableAuctions) Less(i, j int) bool {
-	return a[i].LRPStart.DesiredLRP.MemoryMB < a[j].LRPStart.DesiredLRP.MemoryMB
+	return a[i].DesiredLRP.MemoryMB < a[j].DesiredLRP.MemoryMB
 }

@@ -2,11 +2,11 @@ package auctionrunner_test
 
 import (
 	"errors"
+	"time"
 
 	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -31,49 +31,49 @@ var _ = Describe("Cell", func() {
 		cell = NewCell(client, state)
 	})
 
-	Describe("ScoreForLRPStartAuction", func() {
+	Describe("ScoreForLRPAuction", func() {
 		It("factors in memory usage", func() {
-			bigInstance := BuildLRPStart("pg-big", 0, "lucid64", 20, 10)
-			smallInstance := BuildLRPStart("pg-small", 0, "lucid64", 10, 10)
+			bigInstance := BuildLRPAuction("pg-big", 0, "lucid64", 20, 10, time.Now())
+			smallInstance := BuildLRPAuction("pg-small", 0, "lucid64", 10, 10, time.Now())
 
 			By("factoring in the amount of memory taken up by the instance")
-			bigScore, err := emptyCell.ScoreForLRPStartAuction(bigInstance)
+			bigScore, err := emptyCell.ScoreForLRPAuction(bigInstance)
 			Ω(err).ShouldNot(HaveOccurred())
-			smallScore, err := emptyCell.ScoreForLRPStartAuction(smallInstance)
+			smallScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(smallScore).Should(BeNumerically("<", bigScore))
 
 			By("factoring in the relative emptiness of Cells")
-			emptyScore, err := emptyCell.ScoreForLRPStartAuction(smallInstance)
+			emptyScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
-			score, err := cell.ScoreForLRPStartAuction(smallInstance)
+			score, err := cell.ScoreForLRPAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(emptyScore).Should(BeNumerically("<", score))
 		})
 
 		It("factors in disk usage", func() {
-			bigInstance := BuildLRPStart("pg-big", 0, "lucid64", 10, 20)
-			smallInstance := BuildLRPStart("pg-small", 0, "lucid64", 10, 10)
+			bigInstance := BuildLRPAuction("pg-big", 0, "lucid64", 10, 20, time.Now())
+			smallInstance := BuildLRPAuction("pg-small", 0, "lucid64", 10, 10, time.Now())
 
 			By("factoring in the amount of memory taken up by the instance")
-			bigScore, err := emptyCell.ScoreForLRPStartAuction(bigInstance)
+			bigScore, err := emptyCell.ScoreForLRPAuction(bigInstance)
 			Ω(err).ShouldNot(HaveOccurred())
-			smallScore, err := emptyCell.ScoreForLRPStartAuction(smallInstance)
+			smallScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(smallScore).Should(BeNumerically("<", bigScore))
 
 			By("factoring in the relative emptiness of Cells")
-			emptyScore, err := emptyCell.ScoreForLRPStartAuction(smallInstance)
+			emptyScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
-			score, err := cell.ScoreForLRPStartAuction(smallInstance)
+			score, err := cell.ScoreForLRPAuction(smallInstance)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(emptyScore).Should(BeNumerically("<", score))
 		})
 
 		It("factors in container usage", func() {
-			instance := BuildLRPStart("pg-big", 0, "lucid64", 20, 20)
+			instance := BuildLRPAuction("pg-big", 0, "lucid64", 20, 20, time.Now())
 
 			bigState := BuildCellState(100, 200, 50, nil)
 			bigCell := NewCell(client, bigState)
@@ -81,23 +81,23 @@ var _ = Describe("Cell", func() {
 			smallState := BuildCellState(100, 200, 20, nil)
 			smallCell := NewCell(client, smallState)
 
-			bigScore, err := bigCell.ScoreForLRPStartAuction(instance)
+			bigScore, err := bigCell.ScoreForLRPAuction(instance)
 			Ω(err).ShouldNot(HaveOccurred())
-			smallScore, err := smallCell.ScoreForLRPStartAuction(instance)
+			smallScore, err := smallCell.ScoreForLRPAuction(instance)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(bigScore).Should(BeNumerically("<", smallScore), "prefer Cells with more resources")
 		})
 
 		It("factors in process-guids that are already present", func() {
-			instanceWithTwoMatches := BuildLRPStart("pg-1", 2, "lucid64", 10, 10)
-			instanceWithOneMatch := BuildLRPStart("pg-2", 1, "lucid64", 10, 10)
-			instanceWithNoMatches := BuildLRPStart("pg-new", 0, "lucid64", 10, 10)
+			instanceWithTwoMatches := BuildLRPAuction("pg-1", 2, "lucid64", 10, 10, time.Now())
+			instanceWithOneMatch := BuildLRPAuction("pg-2", 1, "lucid64", 10, 10, time.Now())
+			instanceWithNoMatches := BuildLRPAuction("pg-new", 0, "lucid64", 10, 10, time.Now())
 
-			twoMatchesScore, err := cell.ScoreForLRPStartAuction(instanceWithTwoMatches)
+			twoMatchesScore, err := cell.ScoreForLRPAuction(instanceWithTwoMatches)
 			Ω(err).ShouldNot(HaveOccurred())
-			oneMatchesScore, err := cell.ScoreForLRPStartAuction(instanceWithOneMatch)
+			oneMatchesScore, err := cell.ScoreForLRPAuction(instanceWithOneMatch)
 			Ω(err).ShouldNot(HaveOccurred())
-			noMatchesScore, err := cell.ScoreForLRPStartAuction(instanceWithNoMatches)
+			noMatchesScore, err := cell.ScoreForLRPAuction(instanceWithNoMatches)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(noMatchesScore).Should(BeNumerically("<", oneMatchesScore))
@@ -107,8 +107,8 @@ var _ = Describe("Cell", func() {
 		Context("when the LRP does not fit", func() {
 			Context("because of memory constraints", func() {
 				It("should error", func() {
-					massiveMemoryInstance := BuildLRPStart("pg-new", 0, "lucid64", 10000, 10)
-					score, err := cell.ScoreForLRPStartAuction(massiveMemoryInstance)
+					massiveMemoryInstance := BuildLRPAuction("pg-new", 0, "lucid64", 10000, 10, time.Now())
+					score, err := cell.ScoreForLRPAuction(massiveMemoryInstance)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
@@ -116,8 +116,8 @@ var _ = Describe("Cell", func() {
 
 			Context("because of disk constraints", func() {
 				It("should error", func() {
-					massiveDiskInstance := BuildLRPStart("pg-new", 0, "lucid64", 10, 10000)
-					score, err := cell.ScoreForLRPStartAuction(massiveDiskInstance)
+					massiveDiskInstance := BuildLRPAuction("pg-new", 0, "lucid64", 10, 10000, time.Now())
+					score, err := cell.ScoreForLRPAuction(massiveDiskInstance)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
@@ -125,10 +125,10 @@ var _ = Describe("Cell", func() {
 
 			Context("because of container constraints", func() {
 				It("should error", func() {
-					instance := BuildLRPStart("pg-new", 0, "lucid64", 10, 10)
+					instance := BuildLRPAuction("pg-new", 0, "lucid64", 10, 10, time.Now())
 					zeroState := BuildCellState(100, 100, 0, nil)
 					zeroCell := NewCell(client, zeroState)
-					score, err := zeroCell.ScoreForLRPStartAuction(instance)
+					score, err := zeroCell.ScoreForLRPAuction(instance)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
@@ -137,8 +137,8 @@ var _ = Describe("Cell", func() {
 
 		Context("when the LRP doesn't match the stack", func() {
 			It("should error", func() {
-				nonMatchingInstance := BuildLRPStart("pg-new", 0, ".net", 10, 10)
-				score, err := cell.ScoreForLRPStartAuction(nonMatchingInstance)
+				nonMatchingInstance := BuildLRPAuction("pg-new", 0, ".net", 10, 10, time.Now())
+				score, err := cell.ScoreForLRPAuction(nonMatchingInstance)
 				Ω(score).Should(BeZero())
 				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
 			})
@@ -246,38 +246,38 @@ var _ = Describe("Cell", func() {
 	Describe("StartLRP", func() {
 		Context("when there is room for the LRP", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
-				instance := BuildLRPStart("pg-test", 0, "lucid64", 10, 10)
-				instanceToAdd := BuildLRPStart("pg-new", 0, "lucid64", 10, 10)
+				instance := BuildLRPAuction("pg-test", 0, "lucid64", 10, 10, time.Now())
+				instanceToAdd := BuildLRPAuction("pg-new", 0, "lucid64", 10, 10, time.Now())
 
-				initialScore, err := cell.ScoreForLRPStartAuction(instance)
+				initialScore, err := cell.ScoreForLRPAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(cell.StartLRP(instanceToAdd)).Should(Succeed())
 
-				subsequentScore, err := cell.ScoreForLRPStartAuction(instance)
+				subsequentScore, err := cell.ScoreForLRPAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(initialScore).Should(BeNumerically("<", subsequentScore), "the score should have gotten worse")
 			})
 
 			It("should register the LRP and keep it in mind when handling future requests", func() {
-				instance := BuildLRPStart("pg-test", 0, "lucid64", 10, 10)
-				instanceWithMatchingProcessGuid := BuildLRPStart("pg-new", 1, "lucid64", 10, 10)
-				instanceToAdd := BuildLRPStart("pg-new", 0, "lucid64", 10, 10)
+				instance := BuildLRPAuction("pg-test", 0, "lucid64", 10, 10, time.Now())
+				instanceWithMatchingProcessGuid := BuildLRPAuction("pg-new", 1, "lucid64", 10, 10, time.Now())
+				instanceToAdd := BuildLRPAuction("pg-new", 0, "lucid64", 10, 10, time.Now())
 
-				initialScore, err := cell.ScoreForLRPStartAuction(instance)
+				initialScore, err := cell.ScoreForLRPAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				initialScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRPStartAuction(instanceWithMatchingProcessGuid)
+				initialScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRPAuction(instanceWithMatchingProcessGuid)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(initialScore).Should(BeNumerically("==", initialScoreForInstanceWithMatchingProcessGuid))
 
 				Ω(cell.StartLRP(instanceToAdd)).Should(Succeed())
 
-				subsequentScore, err := cell.ScoreForLRPStartAuction(instance)
+				subsequentScore, err := cell.ScoreForLRPAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				subsequentScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRPStartAuction(instanceWithMatchingProcessGuid)
+				subsequentScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRPAuction(instanceWithMatchingProcessGuid)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(initialScore).Should(BeNumerically("<", subsequentScore), "the score should have gotten worse")
@@ -289,7 +289,7 @@ var _ = Describe("Cell", func() {
 
 		Context("when there is a stack mismatch", func() {
 			It("should error", func() {
-				instance := BuildLRPStart("pg-test", 0, ".net", 10, 10)
+				instance := BuildLRPAuction("pg-test", 0, ".net", 10, 10, time.Now())
 				err := cell.StartLRP(instance)
 				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
 			})
@@ -297,7 +297,7 @@ var _ = Describe("Cell", func() {
 
 		Context("when there is no room for the LRP", func() {
 			It("should error", func() {
-				instance := BuildLRPStart("pg-test", 0, "lucid64", 10000, 10)
+				instance := BuildLRPAuction("pg-test", 0, "lucid64", 10000, 10, time.Now())
 				err := cell.StartLRP(instance)
 				Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
@@ -348,26 +348,26 @@ var _ = Describe("Cell", func() {
 		})
 
 		Context("with work to commit", func() {
-			var instanceToStart models.LRPStart
+			var lrpAuction auctiontypes.LRPAuction
 
 			BeforeEach(func() {
-				instanceToStart = BuildLRPStart("pg-new", 0, "lucid64", 20, 10)
+				lrpAuction = BuildLRPAuction("pg-new", 0, "lucid64", 20, 10, time.Now())
 
-				Ω(cell.StartLRP(instanceToStart)).Should(Succeed())
+				Ω(cell.StartLRP(lrpAuction)).Should(Succeed())
 			})
 
 			It("asks the client to perform", func() {
 				cell.Commit()
 				Ω(client.PerformCallCount()).Should(Equal(1))
 				Ω(client.PerformArgsForCall(0)).Should(Equal(auctiontypes.Work{
-					LRPStarts: []models.LRPStart{instanceToStart},
+					LRPs: []auctiontypes.LRPAuction{lrpAuction},
 				}))
 			})
 
 			Context("when the client returns some failed work", func() {
 				It("forwards the failed work", func() {
 					failedWork := auctiontypes.Work{
-						LRPStarts: []models.LRPStart{instanceToStart},
+						LRPs: []auctiontypes.LRPAuction{lrpAuction},
 					}
 					client.PerformReturns(failedWork, nil)
 					Ω(cell.Commit()).Should(Equal(failedWork))

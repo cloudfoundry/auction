@@ -75,7 +75,7 @@ func (c *AuctionHTTPClient) State() (auctiontypes.CellState, error) {
 func (c *AuctionHTTPClient) Perform(work auctiontypes.Work) (auctiontypes.Work, error) {
 	logger := c.logger.Session("sending-work", lager.Data{
 		"rep":    c.repGuid,
-		"starts": len(work.LRPStarts),
+		"starts": len(work.LRPs),
 	})
 
 	logger.Debug("requesting")

@@ -2,6 +2,7 @@ package auctionrunner_test
 
 import (
 	"errors"
+	"time"
 
 	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
@@ -41,11 +42,10 @@ var _ = Describe("CellBuilder", func() {
 		Ω(cells).Should(HaveKey("A"))
 		Ω(cells).Should(HaveKey("B"))
 
-		instance := BuildLRPStart("pg-1", 0, "lucid64", 20, 20)
-		_, err := cells["A"].ScoreForLRPStartAuction(instance)
+		_, err := cells["A"].ScoreForLRPAuction(BuildLRPAuction("pg-1", 0, "lucid64", 20, 20, time.Now()))
 		Ω(err).ShouldNot(HaveOccurred())
 
-		_, err = cells["B"].ScoreForLRPStartAuction(instance)
+		_, err = cells["B"].ScoreForLRPAuction(BuildLRPAuction("pg-1", 0, "lucid64", 20, 20, time.Now()))
 		Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 	})
 

@@ -7,9 +7,9 @@ import (
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
-func FetchStateAndBuildCells(workPool *workpool.WorkPool, clients map[string]auctiontypes.CellRep) map[string]*Cell {
+func FetchStateAndBuildZones(workPool *workpool.WorkPool, clients map[string]auctiontypes.CellRep) map[string][]*Cell {
 	wg := &sync.WaitGroup{}
-	cells := map[string]*Cell{}
+	zones := map[string][]*Cell{}
 	lock := &sync.Mutex{}
 
 	wg.Add(len(clients))
@@ -21,14 +21,20 @@ func FetchStateAndBuildCells(workPool *workpool.WorkPool, clients map[string]auc
 			if err != nil {
 				return
 			}
-			cell := NewCell(client, state)
+			cell := NewCell(guid, client, state)
 			lock.Lock()
-			cells[guid] = cell
+			cells, found := zones[state.Zone]
+			if found {
+				cells = append(cells, cell)
+			} else {
+				cells = []*Cell{cell}
+			}
+			zones[state.Zone] = cells
 			lock.Unlock()
 		})
 	}
 
 	wg.Wait()
 
-	return cells
+	return zones
 }

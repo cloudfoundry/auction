@@ -1,10 +1,8 @@
 package auctionrunner
 
 import (
-	"math/rand"
 	"sort"
 	"sync"
-	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auctioneer"
@@ -12,6 +10,24 @@ import (
 	"github.com/cloudfoundry/gunk/timeprovider"
 	"github.com/cloudfoundry/gunk/workpool"
 )
+
+type Scheduler struct {
+	workPool     *workpool.WorkPool
+	zones        map[string][]*Cell
+	timeProvider timeprovider.TimeProvider
+}
+
+func NewScheduler(
+	workPool *workpool.WorkPool,
+	zones map[string][]*Cell,
+	timeProvider timeprovider.TimeProvider,
+) *Scheduler {
+	return &Scheduler{
+		workPool:     workPool,
+		zones:        zones,
+		timeProvider: timeProvider,
+	}
+}
 
 /*
 Schedule takes in a set of job requests (LRP start auctions and task starts) and
@@ -21,25 +37,23 @@ that each calculation reflects available resources correctly.  It commits the
 work in batches at the end, for better network performance.  Schedule returns
 AuctionResults, indicating the success or failure of each requested job.
 */
-func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider timeprovider.TimeProvider, auctionRequest auctiontypes.AuctionRequest) auctiontypes.AuctionResults {
-	randomizer := rand.New(rand.NewSource(time.Now().UnixNano()))
-
+func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auctiontypes.AuctionResults {
 	results := auctiontypes.AuctionResults{}
 
-	if len(cells) == 0 {
+	if len(s.zones) == 0 {
 		results.FailedLRPs = auctionRequest.LRPs
 		results.FailedTasks = auctionRequest.Tasks
-		return markResults(results, timeProvider)
+		return s.markResults(results)
 	}
 
 	var successfulLRPs = map[string]auctiontypes.LRPAuction{}
 	var lrpStartAuctionLookup = map[string]auctiontypes.LRPAuction{}
 
-	sort.Sort(sort.Reverse(SortableAuctions(auctionRequest.LRPs)))
+	sort.Sort(SortableAuctions(auctionRequest.LRPs))
 	for _, startAuction := range auctionRequest.LRPs {
 		lrpStartAuctionLookup[startAuction.Identifier()] = startAuction
 
-		successfulStart, err := scheduleLRPAuction(cells, startAuction, randomizer)
+		successfulStart, err := s.scheduleLRPAuction(startAuction)
 		if err != nil {
 			results.FailedLRPs = append(results.FailedLRPs, startAuction)
 		} else {
@@ -51,7 +65,7 @@ func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider 
 	var taskAuctionLookup = map[string]auctiontypes.TaskAuction{}
 	for _, taskAuction := range auctionRequest.Tasks {
 		taskAuctionLookup[taskAuction.Identifier()] = taskAuction
-		successfulTask, err := scheduleTaskAuction(cells, taskAuction, randomizer)
+		successfulTask, err := s.scheduleTaskAuction(taskAuction)
 		if err != nil {
 			results.FailedTasks = append(results.FailedTasks, taskAuction)
 		} else {
@@ -59,7 +73,7 @@ func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider 
 		}
 	}
 
-	failedWorks := commitCells(workPool, cells)
+	failedWorks := s.commitCells()
 	for _, failedWork := range failedWorks {
 		for _, failedStart := range failedWork.LRPs {
 			identifier := failedStart.Identifier()
@@ -84,12 +98,13 @@ func Schedule(workPool *workpool.WorkPool, cells map[string]*Cell, timeProvider 
 	auctioneer.LRPAuctionsStarted.Add(uint64(len(successfulLRPs)))
 	auctioneer.TaskAuctionsStarted.Add(uint64(len(successfulTasks)))
 
-	return markResults(results, timeProvider)
+	return s.markResults(results)
 }
 
-func markResults(results auctiontypes.AuctionResults, timeProvider timeprovider.TimeProvider) auctiontypes.AuctionResults {
-	now := timeProvider.Now()
+func (s *Scheduler) markResults(results auctiontypes.AuctionResults) auctiontypes.AuctionResults {
+	now := s.timeProvider.Now()
 	for i := range results.FailedLRPs {
+
 		results.FailedLRPs[i].Attempts++
 	}
 	for i := range results.FailedTasks {
@@ -107,95 +122,103 @@ func markResults(results auctiontypes.AuctionResults, timeProvider timeprovider.
 	return results
 }
 
-func commitCells(workPool *workpool.WorkPool, cells map[string]*Cell) []auctiontypes.Work {
+func (s *Scheduler) commitCells() []auctiontypes.Work {
 	wg := &sync.WaitGroup{}
-	wg.Add(len(cells))
+	for _, cells := range s.zones {
+		wg.Add(len(cells))
+	}
 
 	lock := &sync.Mutex{}
 	failedWorks := []auctiontypes.Work{}
 
-	for _, cell := range cells {
-		cell := cell
-		workPool.Submit(func() {
-			failedWork := cell.Commit()
+	for _, cells := range s.zones {
+		for _, cell := range cells {
+			cell := cell
+			s.workPool.Submit(func() {
+				defer wg.Done()
+				failedWork := cell.Commit()
 
-			lock.Lock()
-			failedWorks = append(failedWorks, failedWork)
-			lock.Unlock()
-
-			wg.Done()
-		})
+				lock.Lock()
+				failedWorks = append(failedWorks, failedWork)
+				lock.Unlock()
+			})
+		}
 	}
 
 	wg.Wait()
 	return failedWorks
 }
 
-func scheduleLRPAuction(cells map[string]*Cell, lrpAuction auctiontypes.LRPAuction, randomizer *rand.Rand) (auctiontypes.LRPAuction, error) {
-	winnerGuids := []string{}
+func (s *Scheduler) scheduleLRPAuction(lrpAuction auctiontypes.LRPAuction) (auctiontypes.LRPAuction, error) {
+	var winnerCell *Cell
 	winnerScore := 1e20
 
-	for guid, cell := range cells {
-		score, err := cell.ScoreForLRPAuction(lrpAuction)
-		if err != nil {
+	sortedZones := sortZonesByInstances(s.zones, lrpAuction)
+
+	for zoneIndex, zone := range sortedZones {
+		for _, cell := range zone.cells {
+			score, err := cell.ScoreForLRPAuction(lrpAuction)
+			if err != nil {
+				continue
+			}
+
+			if score < winnerScore {
+				winnerScore = score
+				winnerCell = cell
+			}
+		}
+
+		if zoneIndex+1 < len(sortedZones) &&
+			zone.instances == sortedZones[zoneIndex+1].instances {
 			continue
 		}
 
-		if score == winnerScore {
-			winnerGuids = append(winnerGuids, guid)
-		} else if score < winnerScore {
-			winnerScore = score
-			winnerGuids = []string{guid}
+		if winnerCell != nil {
+			break
 		}
 	}
 
-	if len(winnerGuids) == 0 {
+	if winnerCell == nil {
 		return auctiontypes.LRPAuction{}, auctiontypes.ErrorInsufficientResources
 	}
 
-	winnerGuid := winnerGuids[randomizer.Intn(len(winnerGuids))]
-
-	err := cells[winnerGuid].StartLRP(lrpAuction)
+	err := winnerCell.StartLRP(lrpAuction)
 	if err != nil {
 		return auctiontypes.LRPAuction{}, err
 	}
 
-	lrpAuction.Winner = winnerGuid
-
+	lrpAuction.Winner = winnerCell.Guid
 	return lrpAuction, nil
 }
 
-func scheduleTaskAuction(cells map[string]*Cell, taskAuction auctiontypes.TaskAuction, randomizer *rand.Rand) (auctiontypes.TaskAuction, error) {
-	winnerGuids := []string{}
+func (s *Scheduler) scheduleTaskAuction(taskAuction auctiontypes.TaskAuction) (auctiontypes.TaskAuction, error) {
+	var winnerCell *Cell
 	winnerScore := 1e20
 
-	for guid, cell := range cells {
-		score, err := cell.ScoreForTask(taskAuction.Task)
-		if err != nil {
-			continue
-		}
+	for _, cells := range s.zones {
+		for _, cell := range cells {
+			score, err := cell.ScoreForTask(taskAuction.Task)
+			if err != nil {
+				continue
+			}
 
-		if score == winnerScore {
-			winnerGuids = append(winnerGuids, guid)
-		} else if score < winnerScore {
-			winnerScore = score
-			winnerGuids = []string{guid}
+			if score < winnerScore {
+				winnerScore = score
+				winnerCell = cell
+			}
 		}
 	}
 
-	if len(winnerGuids) == 0 {
+	if winnerCell == nil {
 		return auctiontypes.TaskAuction{}, auctiontypes.ErrorInsufficientResources
 	}
 
-	winnerGuid := winnerGuids[randomizer.Intn(len(winnerGuids))]
-
-	err := cells[winnerGuid].StartTask(taskAuction.Task)
+	err := winnerCell.StartTask(taskAuction.Task)
 	if err != nil {
 		return auctiontypes.TaskAuction{}, err
 	}
 
-	taskAuction.Winner = winnerGuid
-
+	taskAuction.Winner = winnerCell.Guid
 	return taskAuction, nil
 }
 
@@ -204,5 +227,5 @@ type SortableAuctions []auctiontypes.LRPAuction
 func (a SortableAuctions) Len() int      { return len(a) }
 func (a SortableAuctions) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a SortableAuctions) Less(i, j int) bool {
-	return a[i].DesiredLRP.MemoryMB < a[j].DesiredLRP.MemoryMB
+	return a[i].DesiredLRP.MemoryMB > a[j].DesiredLRP.MemoryMB
 }

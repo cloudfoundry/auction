@@ -18,17 +18,17 @@ var _ = Describe("Cell", func() {
 
 	BeforeEach(func() {
 		client = &fakes.FakeSimulationCellRep{}
-		emptyState := BuildCellState(100, 200, 50, nil)
-		emptyCell = NewCell(client, emptyState)
+		emptyState := BuildCellState("the-zone", 100, 200, 50, nil)
+		emptyCell = NewCell("empty-cell", client, emptyState)
 
-		state := BuildCellState(100, 200, 50, []auctiontypes.LRP{
+		state := BuildCellState("the-zone", 100, 200, 50, []auctiontypes.LRP{
 			{"pg-1", 0, 10, 20},
 			{"pg-1", 1, 10, 20},
 			{"pg-2", 0, 10, 20},
 			{"pg-3", 0, 10, 20},
 			{"pg-4", 0, 10, 20},
 		})
-		cell = NewCell(client, state)
+		cell = NewCell("the-cell", client, state)
 	})
 
 	Describe("ScoreForLRPAuction", func() {
@@ -75,11 +75,11 @@ var _ = Describe("Cell", func() {
 		It("factors in container usage", func() {
 			instance := BuildLRPAuction("pg-big", 0, "lucid64", 20, 20, time.Now())
 
-			bigState := BuildCellState(100, 200, 50, nil)
-			bigCell := NewCell(client, bigState)
+			bigState := BuildCellState("the-zone", 100, 200, 50, nil)
+			bigCell := NewCell("big-cell", client, bigState)
 
-			smallState := BuildCellState(100, 200, 20, nil)
-			smallCell := NewCell(client, smallState)
+			smallState := BuildCellState("the-zone", 100, 200, 20, nil)
+			smallCell := NewCell("small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForLRPAuction(instance)
 			Ω(err).ShouldNot(HaveOccurred())
@@ -126,8 +126,8 @@ var _ = Describe("Cell", func() {
 			Context("because of container constraints", func() {
 				It("should error", func() {
 					instance := BuildLRPAuction("pg-new", 0, "lucid64", 10, 10, time.Now())
-					zeroState := BuildCellState(100, 100, 0, nil)
-					zeroCell := NewCell(client, zeroState)
+					zeroState := BuildCellState("the-zone", 100, 100, 0, nil)
+					zeroCell := NewCell("zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForLRPAuction(instance)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
@@ -189,11 +189,11 @@ var _ = Describe("Cell", func() {
 		It("factors in container usage", func() {
 			task := BuildTask("tg-big", "lucid64", 20, 20)
 
-			bigState := BuildCellState(100, 200, 50, nil)
-			bigCell := NewCell(client, bigState)
+			bigState := BuildCellState("the-zone", 100, 200, 50, nil)
+			bigCell := NewCell("big-cell", client, bigState)
 
-			smallState := BuildCellState(100, 200, 20, nil)
-			smallCell := NewCell(client, smallState)
+			smallState := BuildCellState("the-zone", 100, 200, 20, nil)
+			smallCell := NewCell("small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForTask(task)
 			Ω(err).ShouldNot(HaveOccurred())
@@ -224,8 +224,8 @@ var _ = Describe("Cell", func() {
 			Context("because of container constraints", func() {
 				It("should error", func() {
 					task := BuildTask("pg-new", "lucid64", 10, 10)
-					zeroState := BuildCellState(100, 100, 0, nil)
-					zeroCell := NewCell(client, zeroState)
+					zeroState := BuildCellState("the-zone", 100, 100, 0, nil)
+					zeroCell := NewCell("zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForTask(task)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))

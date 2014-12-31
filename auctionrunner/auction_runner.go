@@ -56,9 +56,14 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 
 			hasWork = a.batch.HasWork
 
-			logger.Info("fetching-cell-state")
-			cells := FetchStateAndBuildCells(a.workPool, clients)
-			logger.Info("fetched-cell-state", lager.Data{"cell-state-count": len(cells), "num-failed-requests": len(clients) - len(cells)})
+			logger.Info("fetching-zone-state")
+			zones := FetchStateAndBuildZones(a.workPool, clients)
+			cellCount := 0
+			for zone, cells := range zones {
+				logger.Info("zone-state", lager.Data{"zone": zone, "cell-count": len(cells)})
+				cellCount += len(cells)
+			}
+			logger.Info("fetched-zone-state", lager.Data{"cell-state-count": cellCount, "num-failed-requests": len(clients) - cellCount})
 
 			logger.Info("fetching-auctions")
 			lrpAuctions, taskAuctions := a.batch.DedupeAndDrain()
@@ -76,7 +81,9 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				LRPs:  lrpAuctions,
 				Tasks: taskAuctions,
 			}
-			auctionResults := Schedule(a.workPool, cells, a.timeProvider, auctionRequest)
+
+			scheduler := NewScheduler(a.workPool, zones, a.timeProvider)
+			auctionResults := scheduler.Schedule(auctionRequest)
 			logger.Info("scheduled", lager.Data{
 				"successful-lrp-start-auctions": len(auctionResults.SuccessfulLRPs),
 				"successful-task-auctions":      len(auctionResults.SuccessfulTasks),

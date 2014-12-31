@@ -68,7 +68,7 @@ func BuildTaskAuction(task models.Task, queueTime time.Time) auctiontypes.TaskAu
 	}
 }
 
-func BuildCellState(memoryMB int, diskMB int, containers int, lrps []auctiontypes.LRP) auctiontypes.CellState {
+func BuildCellState(zone string, memoryMB int, diskMB int, containers int, lrps []auctiontypes.LRP) auctiontypes.CellState {
 	totalResources := auctiontypes.Resources{
 		MemoryMB:   memoryMB,
 		DiskMB:     diskMB,
@@ -91,5 +91,6 @@ func BuildCellState(memoryMB int, diskMB int, containers int, lrps []auctiontype
 		AvailableResources: availableResources,
 		TotalResources:     totalResources,
 		LRPs:               lrps,
+		Zone:               zone,
 	}
 }

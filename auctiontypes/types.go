@@ -100,6 +100,7 @@ type CellState struct {
 	TotalResources     Resources
 	LRPs               []LRP
 	Tasks              []Task
+	Zone               string
 }
 
 type LRP struct {

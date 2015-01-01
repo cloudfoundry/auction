@@ -23,13 +23,7 @@ func FetchStateAndBuildZones(workPool *workpool.WorkPool, clients map[string]auc
 			}
 			cell := NewCell(guid, client, state)
 			lock.Lock()
-			cells, found := zones[state.Zone]
-			if found {
-				cells = append(cells, cell)
-			} else {
-				cells = []*Cell{cell}
-			}
-			zones[state.Zone] = cells
+			zones[state.Zone] = append(zones[state.Zone], cell)
 			lock.Unlock()
 		})
 	}

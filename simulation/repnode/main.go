@@ -24,6 +24,7 @@ var diskMB = flag.Int("diskMB", 100, "total available disk in MB")
 var containers = flag.Int("containers", 100, "total available containers")
 var repGuid = flag.String("repGuid", "", "rep-guid")
 var httpAddr = flag.String("httpAddr", "", "http server addres")
+var zone = flag.String("zone", "Z0", "availability zone")
 
 func main() {
 	flag.Parse()
@@ -36,7 +37,7 @@ func main() {
 		panic("need http addr")
 	}
 
-	simulationRep := simulationrep.New("lucid64", auctiontypes.Resources{
+	simulationRep := simulationrep.New("lucid64", *zone, auctiontypes.Resources{
 		MemoryMB:   *memoryMB,
 		DiskMB:     *diskMB,
 		Containers: *containers,

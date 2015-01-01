@@ -8,6 +8,7 @@ import (
 
 type SimulationRep struct {
 	stack          string
+	zone           string
 	totalResources auctiontypes.Resources
 	lrps           map[string]auctiontypes.LRP
 	tasks          map[string]auctiontypes.Task
@@ -15,12 +16,13 @@ type SimulationRep struct {
 	lock *sync.Mutex
 }
 
-func New(stack string, totalResources auctiontypes.Resources) auctiontypes.SimulationCellRep {
+func New(stack string, zone string, totalResources auctiontypes.Resources) auctiontypes.SimulationCellRep {
 	return &SimulationRep{
 		stack:          stack,
 		totalResources: totalResources,
 		lrps:           map[string]auctiontypes.LRP{},
 		tasks:          map[string]auctiontypes.Task{},
+		zone:           zone,
 
 		lock: &sync.Mutex{},
 	}
@@ -50,6 +52,7 @@ func (rep *SimulationRep) State() (auctiontypes.CellState, error) {
 		TotalResources:     rep.totalResources,
 		LRPs:               lrps,
 		Tasks:              tasks,
+		Zone:               rep.zone,
 	}, nil
 }
 

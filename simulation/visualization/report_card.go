@@ -84,12 +84,24 @@ func (r *SVGReport) DrawReportCard(x, y int, report *Report) {
 	r.SVG.Gend()
 }
 
+func (r *SVGReport) backgroundColorForZone(zone string) string {
+	switch zone {
+	case "Z0":
+		return "fill:#ffdddd"
+	case "Z1":
+		return "fill:#ddddff"
+	default:
+		return "fill:#f7f7f7"
+	}
+}
+
 func (r *SVGReport) drawInstances(report *Report) {
 	y := border
 	for i := 0; i < len(report.Cells); i++ {
 		guid := cellID(i)
 		x := border
-		r.SVG.Rect(x, y, instanceBoxWidth, instanceSize, "fill:#f7f7f7")
+		bgColor := r.backgroundColorForZone(report.CellStates[cellID(i)].Zone)
+		r.SVG.Rect(x, y, instanceBoxWidth, instanceSize, bgColor)
 		instances := report.InstancesByRep[guid]
 		for _, instance := range instances {
 			instanceWidth := instanceSize*instance.MemoryMB + instanceSpacing*(instance.MemoryMB-1)

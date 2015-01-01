@@ -114,7 +114,7 @@ var _ = BeforeEach(func() {
 	util.ResetGuids()
 
 	auctionRunnerDelegate = NewAuctionRunnerDelegate(cells)
-	auctionRunner = auctionrunner.New(auctionRunnerDelegate, timeprovider.NewTimeProvider(), 10, auctionWorkPool, logger)
+	auctionRunner = auctionrunner.New(auctionRunnerDelegate, timeprovider.NewTimeProvider(), auctionWorkPool, logger)
 	auctionRunnerProcess = ifrit.Invoke(auctionRunner)
 })
 
@@ -138,11 +138,15 @@ func cellGuid(index int) string {
 	return fmt.Sprintf("REP-%d", index+1)
 }
 
+func zone(index int) string {
+	return fmt.Sprintf("Z%d", index%2)
+}
+
 func buildInProcessReps() map[string]auctiontypes.SimulationCellRep {
 	cells := map[string]auctiontypes.SimulationCellRep{}
 
 	for i := 0; i < numCells; i++ {
-		cells[cellGuid(i)] = simulationrep.New("lucid64", repResources)
+		cells[cellGuid(i)] = simulationrep.New("lucid64", zone(i), repResources)
 	}
 
 	return cells
@@ -168,6 +172,7 @@ func launchExternalHTTPReps() map[string]auctiontypes.SimulationCellRep {
 			"-memoryMB", fmt.Sprintf("%d", repResources.MemoryMB),
 			"-diskMB", fmt.Sprintf("%d", repResources.DiskMB),
 			"-containers", fmt.Sprintf("%d", repResources.Containers),
+			"-zone", zone(i),
 		)
 
 		sess, err := gexec.Start(serverCmd, GinkgoWriter, GinkgoWriter)

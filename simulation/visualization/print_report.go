@@ -76,7 +76,7 @@ func PrintReport(report *Report) {
 		}
 		instanceString += strings.Repeat(grayColor+"."+defaultStyle, report.CellStates[cellID(i)].TotalResources.MemoryMB-totalUsage)
 
-		fmt.Printf("  %s: %s\n", cellIDString, instanceString)
+		fmt.Printf("  [%s] %s: %s\n", report.CellStates[cellID(i)].Zone, cellIDString, instanceString)
 	}
 
 	if numNew < report.NumAuctions {

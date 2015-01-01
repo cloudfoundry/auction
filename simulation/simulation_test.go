@@ -91,7 +91,7 @@ var _ = Describe("Auction", func() {
 		return work
 	}
 
-	runStartAuction := func(lrpStartAuctions []models.LRPStartRequest, numCells int, i int, j int) {
+	runStartAuction := func(lrpStartAuctions []models.LRPStartRequest, numCells int, i int, j int) *visualization.Report {
 		t := time.Now()
 		auctionRunnerDelegate.SetCellLimit(numCells)
 		auctionRunner.ScheduleLRPsForAuctions(lrpStartAuctions)
@@ -106,6 +106,7 @@ var _ = Describe("Auction", func() {
 		svgReport.DrawReportCard(i, j, report)
 		reports = append(reports, report)
 		fmt.Println("Done...")
+		return report
 	}
 
 	BeforeEach(func() {
@@ -194,9 +195,34 @@ var _ = Describe("Auction", func() {
 			}
 		})
 
+		Context("AZ distribution", func() {
+			ncells := 3
+			napps := 40
+			initialAppsOnZone0 := 50
+
+			BeforeEach(func() {
+				initialDistributions[1] = generateUniqueLRPs(initialAppsOnZone0, 0, 1)
+			})
+
+			It("should distribute across the zones", func() {
+				instances := generateLRPStartAuctionsForProcessGuid(napps, "red", 1)
+
+				report := runStartAuction(instances, ncells, 0, 2)
+
+				By("populating the lone cell in Z1 even though it is heavily-loaded ")
+				numOnZone0 := 0
+				numOnZone0 += len(report.InstancesByRep[cellGuid(0)])
+				numOnZone0 += len(report.InstancesByRep[cellGuid(2)])
+
+				numOnZone1 := len(report.InstancesByRep[cellGuid(1)]) - initialAppsOnZone0
+
+				Ω(numOnZone0).Should(Equal(numOnZone1))
+			})
+		})
+
 		Context("The Watters demo", func() {
-			ncells := []int{4, 10, 30, 100}
-			napps := []int{20, 80, 200, 400}
+			ncells := []int{10, 30, 100}
+			napps := []int{80, 200, 400}
 
 			for i := range ncells {
 				i := i
@@ -211,7 +237,7 @@ var _ = Describe("Auction", func() {
 					It("should distribute evenly", func() {
 						instances := generateLRPStartAuctionsForProcessGuid(napps[i], "red", 1)
 
-						runStartAuction(instances, ncells[i], i, 2)
+						runStartAuction(instances, ncells[i], i+1, 2)
 					})
 				})
 			}

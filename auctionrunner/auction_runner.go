@@ -106,7 +106,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				"will-retry-task-auctions":          numTasksFailed - len(auctionResults.FailedTasks),
 			})
 
-			a.delegate.DistributedBatch(auctionResults)
+			a.delegate.AuctionCompleted(auctionResults)
 		case <-signals:
 			return nil
 		}

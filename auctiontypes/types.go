@@ -24,7 +24,7 @@ type AuctionRunner interface {
 
 type AuctionRunnerDelegate interface {
 	FetchCellReps() (map[string]CellRep, error)
-	DistributedBatch(AuctionResults)
+	AuctionCompleted(AuctionResults)
 }
 
 type AuctionRequest struct {

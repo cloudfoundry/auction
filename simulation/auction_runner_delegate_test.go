@@ -37,7 +37,7 @@ func (a *AuctionRunnerDelegate) FetchCellReps() (map[string]auctiontypes.CellRep
 	return subset, nil
 }
 
-func (a *AuctionRunnerDelegate) DistributedBatch(work auctiontypes.AuctionResults) {
+func (a *AuctionRunnerDelegate) AuctionCompleted(work auctiontypes.AuctionResults) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.workResults.FailedLRPs = append(a.workResults.FailedLRPs, work.FailedLRPs...)

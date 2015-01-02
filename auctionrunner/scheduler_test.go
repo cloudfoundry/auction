@@ -3,8 +3,6 @@ package auctionrunner_test
 import (
 	"time"
 
-	"github.com/cloudfoundry/dropsonde/metric_sender/fake"
-	"github.com/cloudfoundry/dropsonde/metrics"
 	"github.com/cloudfoundry/gunk/timeprovider/faketimeprovider"
 	"github.com/cloudfoundry/gunk/workpool"
 
@@ -23,12 +21,8 @@ var _ = Describe("Scheduler", func() {
 	var timeProvider *faketimeprovider.FakeTimeProvider
 	var workPool *workpool.WorkPool
 	var results auctiontypes.AuctionResults
-	var metricSender *fake.FakeMetricSender
 
 	BeforeEach(func() {
-		metricSender = fake.NewFakeMetricSender()
-		metrics.Initialize(metricSender)
-
 		timeProvider = faketimeprovider.New(time.Now())
 		workPool = workpool.NewWorkPool(5)
 
@@ -39,13 +33,6 @@ var _ = Describe("Scheduler", func() {
 	AfterEach(func() {
 		workPool.Stop()
 	})
-
-	itBumpsTheStartedCounters := func(lrps int, tasks int) {
-		By("successful starts", func() {
-			Ω(metricSender.GetCounter("AuctioneerLRPAuctionsStarted")).Should(BeNumerically("==", lrps))
-			Ω(metricSender.GetCounter("AuctioneerTaskAuctionsStarted")).Should(BeNumerically("==", tasks))
-		})
-	}
 
 	Context("when the cells are empty", func() {
 		It("immediately returns everything as having failed, incrementing the attempt number", func() {
@@ -75,8 +62,6 @@ var _ = Describe("Scheduler", func() {
 			failedTask := results.FailedTasks[0]
 			Ω(failedTask.Identifier()).Should(Equal(taskAuction.Identifier()))
 			Ω(failedTask.Attempts).Should(Equal(taskAuction.Attempts + 1))
-
-			itBumpsTheStartedCounters(0, 0)
 		})
 
 	})
@@ -125,8 +110,6 @@ var _ = Describe("Scheduler", func() {
 					startAuction.WaitDuration = time.Minute
 					Ω(results.SuccessfulLRPs).Should(ConsistOf(startAuction))
 					Ω(results.FailedLRPs).Should(BeEmpty())
-
-					itBumpsTheStartedCounters(1, 0)
 				})
 			})
 		})
@@ -158,8 +141,6 @@ var _ = Describe("Scheduler", func() {
 					startAuction.WaitDuration = time.Minute
 					Ω(results.SuccessfulLRPs).Should(ConsistOf(startAuction))
 					Ω(results.FailedLRPs).Should(BeEmpty())
-
-					itBumpsTheStartedCounters(1, 0)
 				})
 			})
 		})
@@ -180,8 +161,6 @@ var _ = Describe("Scheduler", func() {
 				startAuction.Attempts = 1
 				Ω(results.SuccessfulLRPs).Should(BeEmpty())
 				Ω(results.FailedLRPs).Should(ConsistOf(startAuction))
-
-				itBumpsTheStartedCounters(0, 0)
 			})
 		})
 
@@ -202,8 +181,6 @@ var _ = Describe("Scheduler", func() {
 				startAuction.Attempts = 1
 				Ω(results.SuccessfulLRPs).Should(BeEmpty())
 				Ω(results.FailedLRPs).Should(ConsistOf(startAuction))
-
-				itBumpsTheStartedCounters(0, 0)
 			})
 		})
 	})
@@ -252,8 +229,6 @@ var _ = Describe("Scheduler", func() {
 				Ω(successfulTask.WaitDuration).Should(Equal(time.Minute))
 
 				Ω(results.FailedTasks).Should(BeEmpty())
-
-				itBumpsTheStartedCounters(0, 1)
 			})
 		})
 
@@ -270,8 +245,6 @@ var _ = Describe("Scheduler", func() {
 				Ω(results.FailedTasks).Should(HaveLen(1))
 				failedTask := results.FailedTasks[0]
 				Ω(failedTask.Attempts).Should(Equal(1))
-
-				itBumpsTheStartedCounters(0, 0)
 			})
 		})
 
@@ -294,8 +267,6 @@ var _ = Describe("Scheduler", func() {
 				Ω(results.FailedTasks).Should(HaveLen(1))
 				failedTask := results.FailedTasks[0]
 				Ω(failedTask.Attempts).Should(Equal(1))
-
-				itBumpsTheStartedCounters(0, 0)
 			})
 		})
 	})
@@ -388,8 +359,6 @@ var _ = Describe("Scheduler", func() {
 			failedTask := results.FailedTasks[0]
 			Ω(failedTask.Identifier()).Should(Equal(taskAuctionNope.Identifier()))
 			Ω(failedTask.Attempts).Should(Equal(1))
-
-			itBumpsTheStartedCounters(2, 2)
 		})
 	})
 
@@ -431,8 +400,6 @@ var _ = Describe("Scheduler", func() {
 			startLarge.Winner = "B-cell"
 			startLarge.Attempts = 1
 			Ω(results.SuccessfulLRPs).Should(ConsistOf(startMedium, startLarge))
-
-			itBumpsTheStartedCounters(2, 0)
 		})
 	})
 })

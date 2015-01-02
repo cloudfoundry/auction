@@ -82,12 +82,5 @@ var _ = Describe("ResubmitFailedAuctions", func() {
 			Ω(resubmittedStarts).Should(ConsistOf(retryableStartAuction))
 			Ω(resubmittedTasks).Should(ConsistOf(retryableTaskAuction))
 		})
-
-		It("should increment fail metrics for the failed auctions", func() {
-			ResubmitFailedAuctions(batch, results, maxRetries)
-
-			Ω(metricSender.GetCounter("AuctioneerLRPAuctionsFailed")).Should(BeNumerically("==", 1))
-			Ω(metricSender.GetCounter("AuctioneerTaskAuctionsFailed")).Should(BeNumerically("==", 1))
-		})
 	})
 })

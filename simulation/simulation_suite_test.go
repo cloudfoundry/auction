@@ -114,7 +114,7 @@ var _ = BeforeEach(func() {
 	util.ResetGuids()
 
 	auctionRunnerDelegate = NewAuctionRunnerDelegate(cells)
-	auctionRunner = auctionrunner.New(auctionRunnerDelegate, timeprovider.NewTimeProvider(), 10, auctionWorkPool, logger)
+	auctionRunner = auctionrunner.New(auctionRunnerDelegate, timeprovider.NewTimeProvider(), auctionWorkPool, logger)
 	auctionRunnerProcess = ifrit.Invoke(auctionRunner)
 })
 

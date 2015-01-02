@@ -1,9 +1,6 @@
 package auctionrunner
 
-import (
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auctioneer"
-)
+import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
 func ResubmitFailedAuctions(batch *Batch, results auctiontypes.AuctionResults, maxRetries int) auctiontypes.AuctionResults {
 	retryableLRPs := []auctiontypes.LRPAuction{}
@@ -33,9 +30,6 @@ func ResubmitFailedAuctions(batch *Batch, results auctiontypes.AuctionResults, m
 	if len(retryableTasks) > 0 {
 		batch.ResubmitTaskAuctions(retryableTasks)
 	}
-
-	auctioneer.LRPAuctionsFailed.Add(uint64(len(failedLRPs)))
-	auctioneer.TaskAuctionsFailed.Add(uint64(len(failedTasks)))
 
 	results.FailedLRPs = failedLRPs
 	results.FailedTasks = failedTasks

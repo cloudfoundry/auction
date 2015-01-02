@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auctioneer"
 
 	"github.com/cloudfoundry/gunk/timeprovider"
 	"github.com/cloudfoundry/gunk/workpool"
@@ -94,9 +93,6 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 	for _, successfulTask := range successfulTasks {
 		results.SuccessfulTasks = append(results.SuccessfulTasks, successfulTask)
 	}
-
-	auctioneer.LRPAuctionsStarted.Add(uint64(len(successfulLRPs)))
-	auctioneer.TaskAuctionsStarted.Add(uint64(len(successfulTasks)))
 
 	return s.markResults(results)
 }

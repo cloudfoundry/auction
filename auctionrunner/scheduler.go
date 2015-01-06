@@ -50,7 +50,7 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 	var successfulTasks = map[string]auctiontypes.TaskAuction{}
 	var taskAuctionLookup = map[string]auctiontypes.TaskAuction{}
 
-	sort.Sort(SortableAuctions(auctionRequest.LRPs))
+	sort.Sort(SortableLRPAuctions(auctionRequest.LRPs))
 
 	lrpsBeforeTasks, lrpsAfterTasks := splitLRPS(auctionRequest.LRPs)
 

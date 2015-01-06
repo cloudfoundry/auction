@@ -2,17 +2,17 @@ package auctionrunner
 
 import "github.com/cloudfoundry-incubator/auction/auctiontypes"
 
-type SortableAuctions []auctiontypes.LRPAuction
+type SortableLRPAuctions []auctiontypes.LRPAuction
 
-func (a SortableAuctions) Len() int {
+func (a SortableLRPAuctions) Len() int {
 	return len(a)
 }
 
-func (a SortableAuctions) Swap(i, j int) {
+func (a SortableLRPAuctions) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
 
-func (a SortableAuctions) Less(i, j int) bool {
+func (a SortableLRPAuctions) Less(i, j int) bool {
 	if a[i].Index == a[j].Index {
 		return a[i].DesiredLRP.MemoryMB > a[j].DesiredLRP.MemoryMB
 	}

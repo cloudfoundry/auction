@@ -51,4 +51,27 @@ var _ = Describe("Sortable Auctions", func() {
 			})
 		})
 	})
+
+	Describe("Task Auctions", func() {
+		var tasks []auctiontypes.TaskAuction
+
+		BeforeEach(func() {
+			tasks = []auctiontypes.TaskAuction{
+				BuildTaskAuction(BuildTask("tg-6", "lucid64", 10, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-7", "lucid64", 20, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-8", "lucid64", 30, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-9", "lucid64", 40, 10), time.Time{}),
+			}
+
+			sort.Sort(auctionrunner.SortableTaskAuctions(tasks))
+		})
+
+		It("sorts boulders before pebbles", func() {
+			Ω(tasks[0].Task.TaskGuid).Should((Equal("tg-9")))
+			Ω(tasks[1].Task.TaskGuid).Should((Equal("tg-8")))
+			Ω(tasks[2].Task.TaskGuid).Should((Equal("tg-7")))
+			Ω(tasks[3].Task.TaskGuid).Should((Equal("tg-6")))
+		})
+
+	})
 })

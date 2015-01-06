@@ -19,3 +19,17 @@ func (a SortableLRPAuctions) Less(i, j int) bool {
 
 	return a[i].Index < a[j].Index
 }
+
+type SortableTaskAuctions []auctiontypes.TaskAuction
+
+func (a SortableTaskAuctions) Len() int {
+	return len(a)
+}
+
+func (a SortableTaskAuctions) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a SortableTaskAuctions) Less(i, j int) bool {
+	return a[i].Task.MemoryMB > a[j].Task.MemoryMB
+}

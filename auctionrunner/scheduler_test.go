@@ -359,9 +359,14 @@ var _ = Describe("Scheduler", func() {
 	})
 
 	Describe("ordering work", func() {
-		var pg70, pg71, pg81, pg82 auctiontypes.LRPAuction
-		var tg1, tg2 auctiontypes.TaskAuction
-		var memory int
+		var (
+			pg70, pg71, pg81, pg82 auctiontypes.LRPAuction
+			tg1, tg2               auctiontypes.TaskAuction
+			memory                 int
+
+			lrps  []auctiontypes.LRPAuction
+			tasks []auctiontypes.TaskAuction
+		)
 
 		BeforeEach(func() {
 			clients["cell"] = &fakes.FakeSimulationCellRep{}
@@ -370,8 +375,11 @@ var _ = Describe("Scheduler", func() {
 			pg71 = BuildLRPAuction("pg-7", 1, "lucid64", 10, 10, timeProvider.Now())
 			pg81 = BuildLRPAuction("pg-8", 1, "lucid64", 40, 40, timeProvider.Now())
 			pg82 = BuildLRPAuction("pg-8", 2, "lucid64", 40, 40, timeProvider.Now())
+			lrps = []auctiontypes.LRPAuction{pg70, pg71, pg81, pg82}
+
 			tg1 = BuildTaskAuction(BuildTask("tg-1", "lucid64", 10, 10), timeProvider.Now())
 			tg2 = BuildTaskAuction(BuildTask("tg-2", "lucid64", 20, 20), timeProvider.Now())
+			tasks = []auctiontypes.TaskAuction{tg1, tg2}
 
 			memory = 100
 		})
@@ -382,8 +390,8 @@ var _ = Describe("Scheduler", func() {
 			}
 
 			auctionRequest := auctiontypes.AuctionRequest{
-				LRPs:  []auctiontypes.LRPAuction{pg70, pg71, pg81, pg82},
-				Tasks: []auctiontypes.TaskAuction{tg1, tg2},
+				LRPs:  lrps,
+				Tasks: tasks,
 			}
 
 			scheduler := NewScheduler(workPool, zones, timeProvider)
@@ -456,6 +464,22 @@ var _ = Describe("Scheduler", func() {
 
 				Ω(results.SuccessfulLRPs).Should(ConsistOf(pg70, pg81))
 				Ω(results.SuccessfulTasks).Should(ConsistOf(tg1, tg2))
+			})
+		})
+
+		Context("when dealing with tasks", func() {
+			var tg3 auctiontypes.TaskAuction
+
+			BeforeEach(func() {
+				tg3 = BuildTaskAuction(BuildTask("tg-3", "lucid64", 30, 30), timeProvider.Now())
+				lrps = []auctiontypes.LRPAuction{}
+				tasks = append(tasks, tg3)
+				memory = tg3.Task.MemoryMB + 1
+			})
+
+			It("schedules boulders before pebbles", func() {
+				setTaskWinner("cell", &tg3)
+				Ω(results.SuccessfulTasks).Should(ConsistOf(tg3))
 			})
 		})
 	})

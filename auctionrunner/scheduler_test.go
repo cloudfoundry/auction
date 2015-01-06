@@ -105,8 +105,7 @@ var _ = Describe("Scheduler", func() {
 				})
 
 				It("marks the start auction as succeeded", func() {
-					startAuction.Winner = "A-cell"
-					startAuction.Attempts = 1
+					setLRPWinner("A-cell", &startAuction)
 					startAuction.WaitDuration = time.Minute
 					Ω(results.SuccessfulLRPs).Should(ConsistOf(startAuction))
 					Ω(results.FailedLRPs).Should(BeEmpty())
@@ -136,8 +135,7 @@ var _ = Describe("Scheduler", func() {
 				})
 
 				It("marks the start auction as succeeded", func() {
-					startAuction.Winner = "B-cell"
-					startAuction.Attempts = 1
+					setLRPWinner("B-cell", &startAuction)
 					startAuction.WaitDuration = time.Minute
 					Ω(results.SuccessfulLRPs).Should(ConsistOf(startAuction))
 					Ω(results.FailedLRPs).Should(BeEmpty())
@@ -327,13 +325,11 @@ var _ = Describe("Scheduler", func() {
 			Ω(clients["A-cell"].PerformArgsForCall(0).LRPs).Should(ConsistOf(startPG3))
 			Ω(clients["B-cell"].PerformArgsForCall(0).LRPs).Should(ConsistOf(startPG2))
 
-			Ω(clients["A-cell"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction2.Task))
-			Ω(clients["B-cell"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction1.Task))
+			Ω(clients["A-cell"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction1.Task))
+			Ω(clients["B-cell"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction2.Task))
 
-			startPG3.Winner = "A-cell"
-			startPG3.Attempts = 1
-			startPG2.Winner = "B-cell"
-			startPG2.Attempts = 1
+			setLRPWinner("A-cell", &startPG3)
+			setLRPWinner("B-cell", &startPG2)
 			Ω(results.SuccessfulLRPs).Should(ConsistOf(startPG3, startPG2))
 
 			Ω(results.SuccessfulTasks).Should(HaveLen(2))
@@ -347,10 +343,10 @@ var _ = Describe("Scheduler", func() {
 			}
 			Ω(successfulTaskAuction1).ShouldNot(BeNil())
 			Ω(successfulTaskAuction1.Attempts).Should(Equal(1))
-			Ω(successfulTaskAuction1.Winner).Should(Equal("B-cell"))
+			Ω(successfulTaskAuction1.Winner).Should(Equal("A-cell"))
 			Ω(successfulTaskAuction2).ShouldNot(BeNil())
 			Ω(successfulTaskAuction2.Attempts).Should(Equal(1))
-			Ω(successfulTaskAuction2.Winner).Should(Equal("A-cell"))
+			Ω(successfulTaskAuction2.Winner).Should(Equal("B-cell"))
 
 			startPGNope.Attempts = 1
 			Ω(results.FailedLRPs).Should(ConsistOf(startPGNope))
@@ -363,43 +359,118 @@ var _ = Describe("Scheduler", func() {
 	})
 
 	Describe("ordering work", func() {
-		BeforeEach(func() {
-			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = []*Cell{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, []auctiontypes.LRP{
-				{"pg-1", 0, 30, 30},
-			}))}
+		var pg70, pg71, pg81, pg82 auctiontypes.LRPAuction
+		var tg1, tg2 auctiontypes.TaskAuction
+		var memory int
 
-			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = []*Cell{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, []auctiontypes.LRP{}))}
+		BeforeEach(func() {
+			clients["cell"] = &fakes.FakeSimulationCellRep{}
+
+			pg70 = BuildLRPAuction("pg-7", 0, "lucid64", 10, 10, timeProvider.Now())
+			pg71 = BuildLRPAuction("pg-7", 1, "lucid64", 10, 10, timeProvider.Now())
+			pg81 = BuildLRPAuction("pg-8", 1, "lucid64", 40, 40, timeProvider.Now())
+			pg82 = BuildLRPAuction("pg-8", 2, "lucid64", 40, 40, timeProvider.Now())
+			tg1 = BuildTaskAuction(BuildTask("tg-1", "lucid64", 10, 10), timeProvider.Now())
+			tg2 = BuildTaskAuction(BuildTask("tg-2", "lucid64", 20, 20), timeProvider.Now())
+
+			memory = 100
 		})
 
-		It("orders work such that large start auctions occur first", func() {
-			startMedium := BuildLRPAuction(
-				"pg-medium", 1, "lucid64", 40, 40,
-				timeProvider.Now(),
-			)
-			startLarge := BuildLRPAuction(
-				"pg-large", 1, "lucid64", 80, 80,
-				timeProvider.Now(),
-			)
-			lrpStartAuctions := []auctiontypes.LRPAuction{startLarge, startMedium} //note we're submitting the smaller one first
+		JustBeforeEach(func() {
+			zones["zone"] = []*Cell{
+				NewCell("cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, []auctiontypes.LRP{})),
+			}
 
-			s := NewScheduler(workPool, zones, timeProvider)
-			results = s.Schedule(auctiontypes.AuctionRequest{LRPs: lrpStartAuctions})
+			auctionRequest := auctiontypes.AuctionRequest{
+				LRPs:  []auctiontypes.LRPAuction{pg70, pg71, pg81, pg82},
+				Tasks: []auctiontypes.TaskAuction{tg1, tg2},
+			}
 
-			Ω(results.FailedLRPs).Should(BeEmpty())
+			scheduler := NewScheduler(workPool, zones, timeProvider)
+			results = scheduler.Schedule(auctionRequest)
+		})
 
-			Ω(clients["A-cell"].PerformCallCount()).Should(Equal(1))
-			Ω(clients["B-cell"].PerformCallCount()).Should(Equal(1))
+		Context("where there are sufficient resources", func() {
+			BeforeEach(func() {
+				memory = 130
+			})
 
-			Ω(clients["A-cell"].PerformArgsForCall(0).LRPs).Should(ConsistOf(startMedium))
-			Ω(clients["B-cell"].PerformArgsForCall(0).LRPs).Should(ConsistOf(startLarge))
+			It("schedules all LPRs and tasks", func() {
+				setLRPWinner("cell", &pg70, &pg71, &pg81, &pg82)
+				setTaskWinner("cell", &tg1, &tg2)
 
-			startMedium.Winner = "A-cell"
-			startMedium.Attempts = 1
-			startLarge.Winner = "B-cell"
-			startLarge.Attempts = 1
-			Ω(results.SuccessfulLRPs).Should(ConsistOf(startMedium, startLarge))
+				Ω(results.SuccessfulLRPs).Should(ConsistOf(pg70, pg71, pg81, pg82))
+				Ω(results.SuccessfulTasks).Should(ConsistOf(tg1, tg2))
+			})
+		})
+
+		Context("when there are insufficient resources", func() {
+			BeforeEach(func() {
+				memory = 10
+			})
+
+			It("schedules LRP instances with index 0 first", func() {
+				setLRPWinner("cell", &pg70)
+
+				Ω(results.SuccessfulLRPs).Should(ConsistOf(pg70))
+				Ω(results.SuccessfulTasks).Should(BeEmpty())
+			})
+
+			Context("with just a bit more resources", func() {
+				BeforeEach(func() {
+					memory = 45
+				})
+
+				It("schedules tasks before LRP instances with index > 0", func() {
+					setLRPWinner("cell", &pg70)
+					setTaskWinner("cell", &tg1, &tg2)
+
+					Ω(results.SuccessfulLRPs).Should(ConsistOf(pg70))
+					Ω(results.SuccessfulTasks).Should(ConsistOf(tg1, tg2))
+				})
+
+				Context("with even more resources", func() {
+					BeforeEach(func() {
+						memory = 95
+					})
+
+					It("schedules LRPs with index > 0 after tasks, by index", func() {
+						setLRPWinner("cell", &pg70, &pg71, &pg81)
+						setTaskWinner("cell", &tg1, &tg2)
+
+						Ω(results.SuccessfulLRPs).Should(ConsistOf(pg70, pg71, pg81))
+						Ω(results.SuccessfulTasks).Should(ConsistOf(tg1, tg2))
+					})
+				})
+			})
+		})
+
+		Context("when LRP indices match", func() {
+			BeforeEach(func() {
+				memory = 80
+			})
+
+			It("schedules boulders before pebbles", func() {
+				setLRPWinner("cell", &pg70, &pg81)
+				setTaskWinner("cell", &tg1, &tg2)
+
+				Ω(results.SuccessfulLRPs).Should(ConsistOf(pg70, pg81))
+				Ω(results.SuccessfulTasks).Should(ConsistOf(tg1, tg2))
+			})
 		})
 	})
 })
+
+func setLRPWinner(cellName string, lrps ...*auctiontypes.LRPAuction) {
+	for _, l := range lrps {
+		l.Winner = cellName
+		l.Attempts++
+	}
+}
+
+func setTaskWinner(cellName string, tasks ...*auctiontypes.TaskAuction) {
+	for _, t := range tasks {
+		t.Winner = cellName
+		t.Attempts++
+	}
+}

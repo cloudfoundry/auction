@@ -60,7 +60,7 @@ func (c *Cell) ScoreForTask(task models.Task) (float64, error) {
 	return resourceScore, nil
 }
 
-func (c *Cell) StartLRP(lrpAuction auctiontypes.LRPAuction) error {
+func (c *Cell) ReserveLRP(lrpAuction auctiontypes.LRPAuction) error {
 	err := c.canHandleLRPAuction(lrpAuction)
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func (c *Cell) StartLRP(lrpAuction auctiontypes.LRPAuction) error {
 	return nil
 }
 
-func (c *Cell) StartTask(task models.Task) error {
+func (c *Cell) ReserveTask(task models.Task) error {
 	err := c.canHandleTask(task)
 	if err != nil {
 		return err

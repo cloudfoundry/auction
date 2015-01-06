@@ -47,21 +47,27 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 
 	var successfulLRPs = map[string]auctiontypes.LRPAuction{}
 	var lrpStartAuctionLookup = map[string]auctiontypes.LRPAuction{}
+	var successfulTasks = map[string]auctiontypes.TaskAuction{}
+	var taskAuctionLookup = map[string]auctiontypes.TaskAuction{}
 
 	sort.Sort(SortableAuctions(auctionRequest.LRPs))
-	for _, startAuction := range auctionRequest.LRPs {
-		lrpStartAuctionLookup[startAuction.Identifier()] = startAuction
 
-		successfulStart, err := s.scheduleLRPAuction(startAuction)
-		if err != nil {
-			results.FailedLRPs = append(results.FailedLRPs, startAuction)
-		} else {
-			successfulLRPs[successfulStart.Identifier()] = successfulStart
+	lrpsBeforeTasks, lrpsAfterTasks := splitLRPS(auctionRequest.LRPs)
+
+	auctionLRP := func(lrpsToAuction []auctiontypes.LRPAuction) {
+		for _, startAuction := range lrpsToAuction {
+			lrpStartAuctionLookup[startAuction.Identifier()] = startAuction
+			successfulStart, err := s.scheduleLRPAuction(startAuction)
+			if err != nil {
+				results.FailedLRPs = append(results.FailedLRPs, startAuction)
+			} else {
+				successfulLRPs[successfulStart.Identifier()] = successfulStart
+			}
 		}
 	}
 
-	var successfulTasks = map[string]auctiontypes.TaskAuction{}
-	var taskAuctionLookup = map[string]auctiontypes.TaskAuction{}
+	auctionLRP(lrpsBeforeTasks)
+
 	for _, taskAuction := range auctionRequest.Tasks {
 		taskAuctionLookup[taskAuction.Identifier()] = taskAuction
 		successfulTask, err := s.scheduleTaskAuction(taskAuction)
@@ -71,6 +77,8 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 			successfulTasks[successfulTask.Identifier()] = successfulTask
 		}
 	}
+
+	auctionLRP(lrpsAfterTasks)
 
 	failedWorks := s.commitCells()
 	for _, failedWork := range failedWorks {
@@ -116,6 +124,18 @@ func (s *Scheduler) markResults(results auctiontypes.AuctionResults) auctiontype
 	}
 
 	return results
+}
+
+func splitLRPS(lrps []auctiontypes.LRPAuction) ([]auctiontypes.LRPAuction, []auctiontypes.LRPAuction) {
+	const pivot = 0
+
+	for idx, lrp := range lrps {
+		if lrp.Index > pivot {
+			return lrps[:idx], lrps[idx:]
+		}
+	}
+
+	return lrps[:0], lrps[0:]
 }
 
 func (s *Scheduler) commitCells() []auctiontypes.Work {
@@ -178,7 +198,7 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction auctiontypes.LRPAuction) (auct
 		return auctiontypes.LRPAuction{}, auctiontypes.ErrorInsufficientResources
 	}
 
-	err := winnerCell.StartLRP(lrpAuction)
+	err := winnerCell.ReserveLRP(lrpAuction)
 	if err != nil {
 		return auctiontypes.LRPAuction{}, err
 	}
@@ -209,7 +229,7 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction auctiontypes.TaskAuction) (a
 		return auctiontypes.TaskAuction{}, auctiontypes.ErrorInsufficientResources
 	}
 
-	err := winnerCell.StartTask(taskAuction.Task)
+	err := winnerCell.ReserveTask(taskAuction.Task)
 	if err != nil {
 		return auctiontypes.TaskAuction{}, err
 	}

@@ -243,7 +243,7 @@ var _ = Describe("Cell", func() {
 		})
 	})
 
-	Describe("StartLRP", func() {
+	Describe("ReserveLRP", func() {
 		Context("when there is room for the LRP", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
 				instance := BuildLRPAuction("pg-test", 0, "lucid64", 10, 10, time.Now())
@@ -252,7 +252,7 @@ var _ = Describe("Cell", func() {
 				initialScore, err := cell.ScoreForLRPAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				Ω(cell.StartLRP(instanceToAdd)).Should(Succeed())
+				Ω(cell.ReserveLRP(instanceToAdd)).Should(Succeed())
 
 				subsequentScore, err := cell.ScoreForLRPAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
@@ -272,7 +272,7 @@ var _ = Describe("Cell", func() {
 
 				Ω(initialScore).Should(BeNumerically("==", initialScoreForInstanceWithMatchingProcessGuid))
 
-				Ω(cell.StartLRP(instanceToAdd)).Should(Succeed())
+				Ω(cell.ReserveLRP(instanceToAdd)).Should(Succeed())
 
 				subsequentScore, err := cell.ScoreForLRPAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
@@ -290,7 +290,7 @@ var _ = Describe("Cell", func() {
 		Context("when there is a stack mismatch", func() {
 			It("should error", func() {
 				instance := BuildLRPAuction("pg-test", 0, ".net", 10, 10, time.Now())
-				err := cell.StartLRP(instance)
+				err := cell.ReserveLRP(instance)
 				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
 			})
 		})
@@ -298,13 +298,13 @@ var _ = Describe("Cell", func() {
 		Context("when there is no room for the LRP", func() {
 			It("should error", func() {
 				instance := BuildLRPAuction("pg-test", 0, "lucid64", 10000, 10, time.Now())
-				err := cell.StartLRP(instance)
+				err := cell.ReserveLRP(instance)
 				Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
 		})
 	})
 
-	Describe("StartTask", func() {
+	Describe("ReserveTask", func() {
 		Context("when there is room for the task", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
 				task := BuildTask("tg-test", "lucid64", 10, 10)
@@ -313,7 +313,7 @@ var _ = Describe("Cell", func() {
 				initialScore, err := cell.ScoreForTask(task)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				Ω(cell.StartTask(taskToAdd)).Should(Succeed())
+				Ω(cell.ReserveTask(taskToAdd)).Should(Succeed())
 
 				subsequentScore, err := cell.ScoreForTask(task)
 				Ω(err).ShouldNot(HaveOccurred())
@@ -324,7 +324,7 @@ var _ = Describe("Cell", func() {
 		Context("when there is a stack mismatch", func() {
 			It("should error", func() {
 				task := BuildTask("tg-test", ".net", 10, 10)
-				err := cell.StartTask(task)
+				err := cell.ReserveTask(task)
 				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
 			})
 		})
@@ -332,7 +332,7 @@ var _ = Describe("Cell", func() {
 		Context("when there is no room for the Task", func() {
 			It("should error", func() {
 				task := BuildTask("tg-test", "lucid64", 10000, 10)
-				err := cell.StartTask(task)
+				err := cell.ReserveTask(task)
 				Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
 		})
@@ -353,7 +353,7 @@ var _ = Describe("Cell", func() {
 			BeforeEach(func() {
 				lrpAuction = BuildLRPAuction("pg-new", 0, "lucid64", 20, 10, time.Now())
 
-				Ω(cell.StartLRP(lrpAuction)).Should(Succeed())
+				Ω(cell.ReserveLRP(lrpAuction)).Should(Succeed())
 			})
 
 			It("asks the client to perform", func() {

@@ -217,11 +217,3 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction auctiontypes.TaskAuction) (a
 	taskAuction.Winner = winnerCell.Guid
 	return taskAuction, nil
 }
-
-type SortableAuctions []auctiontypes.LRPAuction
-
-func (a SortableAuctions) Len() int      { return len(a) }
-func (a SortableAuctions) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a SortableAuctions) Less(i, j int) bool {
-	return a[i].DesiredLRP.MemoryMB > a[j].DesiredLRP.MemoryMB
-}

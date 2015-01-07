@@ -91,10 +91,16 @@ var _ = Describe("Auction", func() {
 		return work
 	}
 
-	runStartAuction := func(lrpStartAuctions []models.LRPStartRequest, numCells int, i int, j int) *visualization.Report {
-		t := time.Now()
+	runStartAuction := func(lrpStartAuctions []models.LRPStartRequest, numCells int) {
 		auctionRunnerDelegate.SetCellLimit(numCells)
 		auctionRunner.ScheduleLRPsForAuctions(lrpStartAuctions)
+
+		Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStartAuctions)))
+	}
+
+	runAndReportStartAuction := func(lrpStartAuctions []models.LRPStartRequest, numCells int, i int, j int) *visualization.Report {
+		t := time.Now()
+		runStartAuction(lrpStartAuctions, numCells)
 
 		Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStartAuctions)))
 		duration := time.Since(t)
@@ -137,7 +143,7 @@ var _ = Describe("Auction", func() {
 				It("should distribute evenly", func() {
 					instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
-					runStartAuction(instances, ncells[i], i, 0)
+					runAndReportStartAuction(instances, ncells[i], i, 0)
 				})
 			}
 		})
@@ -166,7 +172,7 @@ var _ = Describe("Auction", func() {
 							permutedInstances[i] = instances[index]
 						}
 
-						runStartAuction(permutedInstances, ncells[i], i, 1)
+						runAndReportStartAuction(permutedInstances, ncells[i], i, 1)
 					})
 				})
 			}
@@ -189,7 +195,7 @@ var _ = Describe("Auction", func() {
 					It("should distribute evenly", func() {
 						instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
-						runStartAuction(instances, ncells[i], i+2, 1)
+						runAndReportStartAuction(instances, ncells[i], i+2, 1)
 					})
 				})
 			}
@@ -207,7 +213,7 @@ var _ = Describe("Auction", func() {
 			It("should distribute across the zones", func() {
 				instances := generateLRPStartAuctionsForProcessGuid(napps, "red", 1)
 
-				report := runStartAuction(instances, ncells, 0, 2)
+				report := runAndReportStartAuction(instances, ncells, 0, 2)
 
 				By("populating the lone cell in Z1 even though it is heavily-loaded ")
 				numOnZone0 := 0
@@ -237,10 +243,41 @@ var _ = Describe("Auction", func() {
 					It("should distribute evenly", func() {
 						instances := generateLRPStartAuctionsForProcessGuid(napps[i], "red", 1)
 
-						runStartAuction(instances, ncells[i], i+1, 2)
+						runAndReportStartAuction(instances, ncells[i], i+1, 2)
 					})
 				})
 			}
+		})
+
+		Context("Packing optimally when memory is low", func() {
+			nCells := 1
+
+			It("should place boulders in before pebbles, but prevent boulders from saturating available capacity", func() {
+				instances := []models.LRPStartRequest{}
+				for i := 0; i < 80; i++ {
+					instances = append(instances, generateUniqueLRPStartAuctions(1, 1)...)
+				}
+				instances = append(instances, generateLRPStartAuctionsForProcessGuid(2, "red", 50)...)
+
+				runStartAuction(instances, nCells)
+				results := auctionRunnerDelegate.Results()
+
+				winners := []string{}
+				losers := []string{}
+
+				for _, result := range results.SuccessfulLRPs {
+					winners = append(winners, fmt.Sprintf("%s-%d", result.DesiredLRP.ProcessGuid, result.Index))
+				}
+				for _, result := range results.FailedLRPs {
+					losers = append(losers, fmt.Sprintf("%s-%d", result.DesiredLRP.ProcessGuid, result.Index))
+				}
+
+				Ω(winners).Should(HaveLen(51))
+				Ω(losers).Should(HaveLen(31))
+
+				Ω(winners).Should(ContainElement("red-0"))
+				Ω(losers).Should(ContainElement("red-1"))
+			})
 		})
 	})
 })

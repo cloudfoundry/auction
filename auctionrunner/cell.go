@@ -21,6 +21,10 @@ func NewCell(guid string, client auctiontypes.CellRep, state auctiontypes.CellSt
 	}
 }
 
+func (c *Cell) Stack() string {
+	return c.state.Stack
+}
+
 func (c *Cell) ScoreForLRPAuction(lrpAuction auctiontypes.LRPAuction) (float64, error) {
 	err := c.canHandleLRPAuction(lrpAuction)
 	if err != nil {
@@ -120,7 +124,7 @@ func (c *Cell) Commit() auctiontypes.Work {
 
 func (c *Cell) canHandleLRPAuction(lrpAuction auctiontypes.LRPAuction) error {
 	if c.state.Stack != lrpAuction.DesiredLRP.Stack {
-		return auctiontypes.ErrorStackMismatch
+		return auctiontypes.ErrorCellMismatch
 	}
 	if c.state.AvailableResources.MemoryMB < lrpAuction.DesiredLRP.MemoryMB {
 		return auctiontypes.ErrorInsufficientResources
@@ -137,7 +141,7 @@ func (c *Cell) canHandleLRPAuction(lrpAuction auctiontypes.LRPAuction) error {
 
 func (c *Cell) canHandleTask(task models.Task) error {
 	if c.state.Stack != task.Stack {
-		return auctiontypes.ErrorStackMismatch
+		return auctiontypes.ErrorCellMismatch
 	}
 	if c.state.AvailableResources.MemoryMB < task.MemoryMB {
 		return auctiontypes.ErrorInsufficientResources

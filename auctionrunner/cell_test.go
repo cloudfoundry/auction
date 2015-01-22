@@ -140,7 +140,7 @@ var _ = Describe("Cell", func() {
 				nonMatchingInstance := BuildLRPAuction("pg-new", 0, ".net", 10, 10, time.Now())
 				score, err := cell.ScoreForLRPAuction(nonMatchingInstance)
 				Ω(score).Should(BeZero())
-				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
+				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
 			})
 		})
 	})
@@ -238,7 +238,7 @@ var _ = Describe("Cell", func() {
 				nonMatchingTask := BuildTask("pg-new", ".net", 10, 10)
 				score, err := cell.ScoreForTask(nonMatchingTask)
 				Ω(score).Should(BeZero())
-				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
+				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
 			})
 		})
 	})
@@ -291,7 +291,7 @@ var _ = Describe("Cell", func() {
 			It("should error", func() {
 				instance := BuildLRPAuction("pg-test", 0, ".net", 10, 10, time.Now())
 				err := cell.ReserveLRP(instance)
-				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
+				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
 			})
 		})
 
@@ -325,7 +325,7 @@ var _ = Describe("Cell", func() {
 			It("should error", func() {
 				task := BuildTask("tg-test", ".net", 10, 10)
 				err := cell.ReserveTask(task)
-				Ω(err).Should(MatchError(auctiontypes.ErrorStackMismatch))
+				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
 			})
 		})
 

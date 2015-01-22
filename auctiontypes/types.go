@@ -12,7 +12,7 @@ import (
 
 // Auction Runners
 
-var ErrorStackMismatch = errors.New(diego_errors.STACK_MISMATCH)
+var ErrorCellMismatch = errors.New(diego_errors.CELL_MISMATCH_MESSAGE)
 var ErrorInsufficientResources = errors.New(diego_errors.INSUFFICIENT_RESOURCES_MESSAGE)
 var ErrorNothingToStop = errors.New("nothing to stop")
 

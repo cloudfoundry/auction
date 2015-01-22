@@ -10,15 +10,29 @@ import (
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
+type Zone []*Cell
+
+func (z *Zone) FilterCells(stack string) []*Cell {
+	var cells = make([]*Cell, 0, len(*z))
+
+	for _, cell := range *z {
+		if cell.Stack() == stack {
+			cells = append(cells, cell)
+		}
+	}
+
+	return cells
+}
+
 type Scheduler struct {
 	workPool     *workpool.WorkPool
-	zones        map[string][]*Cell
+	zones        map[string]Zone
 	timeProvider timeprovider.TimeProvider
 }
 
 func NewScheduler(
 	workPool *workpool.WorkPool,
-	zones map[string][]*Cell,
+	zones map[string]Zone,
 	timeProvider timeprovider.TimeProvider,
 ) *Scheduler {
 	return &Scheduler{
@@ -41,7 +55,13 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 
 	if len(s.zones) == 0 {
 		results.FailedLRPs = auctionRequest.LRPs
+		for i, _ := range results.FailedLRPs {
+			results.FailedLRPs[i].PlacementError = auctiontypes.ErrorCellMismatch.Error()
+		}
 		results.FailedTasks = auctionRequest.Tasks
+		for i, _ := range results.FailedTasks {
+			results.FailedTasks[i].PlacementError = auctiontypes.ErrorCellMismatch.Error()
+		}
 		return s.markResults(results)
 	}
 
@@ -174,8 +194,13 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction auctiontypes.LRPAuction) (auct
 
 	sortedZones := sortZonesByInstances(s.zones, lrpAuction)
 
-	for zoneIndex, zone := range sortedZones {
-		for _, cell := range zone.cells {
+	for zoneIndex, lrpByZone := range sortedZones {
+		cells := lrpByZone.zone.FilterCells(lrpAuction.DesiredLRP.Stack)
+		if len(cells) == 0 {
+			return auctiontypes.LRPAuction{}, auctiontypes.ErrorCellMismatch
+		}
+
+		for _, cell := range cells {
 			score, err := cell.ScoreForLRPAuction(lrpAuction)
 			if err != nil {
 				continue
@@ -188,7 +213,7 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction auctiontypes.LRPAuction) (auct
 		}
 
 		if zoneIndex+1 < len(sortedZones) &&
-			zone.instances == sortedZones[zoneIndex+1].instances {
+			lrpByZone.instances == sortedZones[zoneIndex+1].instances {
 			continue
 		}
 
@@ -214,7 +239,12 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction auctiontypes.TaskAuction) (a
 	var winnerCell *Cell
 	winnerScore := 1e20
 
-	for _, cells := range s.zones {
+	for _, zone := range s.zones {
+		cells := zone.FilterCells(taskAuction.Task.Stack)
+		if len(cells) == 0 {
+			return auctiontypes.TaskAuction{}, auctiontypes.ErrorCellMismatch
+		}
+
 		for _, cell := range cells {
 			score, err := cell.ScoreForTask(taskAuction.Task)
 			if err != nil {

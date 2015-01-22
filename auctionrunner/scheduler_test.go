@@ -18,7 +18,7 @@ import (
 
 var _ = Describe("Scheduler", func() {
 	var clients map[string]*fakes.FakeSimulationCellRep
-	var zones map[string][]*Cell
+	var zones map[string]Zone
 	var timeProvider *faketimeprovider.FakeTimeProvider
 	var workPool *workpool.WorkPool
 	var results auctiontypes.AuctionResults
@@ -28,7 +28,7 @@ var _ = Describe("Scheduler", func() {
 		workPool = workpool.NewWorkPool(5)
 
 		clients = map[string]*fakes.FakeSimulationCellRep{}
-		zones = map[string][]*Cell{}
+		zones = map[string]Zone{}
 	})
 
 	AfterEach(func() {
@@ -47,7 +47,7 @@ var _ = Describe("Scheduler", func() {
 			}
 
 			By("no auctions are marked successful")
-			scheduler := NewScheduler(workPool, map[string][]*Cell{}, timeProvider)
+			scheduler := NewScheduler(workPool, map[string]Zone{}, timeProvider)
 			results := scheduler.Schedule(auctionRequest)
 			Ω(results.SuccessfulLRPs).Should(BeEmpty())
 			Ω(results.SuccessfulTasks).Should(BeEmpty())
@@ -57,12 +57,14 @@ var _ = Describe("Scheduler", func() {
 			failedLRPStart := results.FailedLRPs[0]
 			Ω(failedLRPStart.Identifier()).Should(Equal(startAuction.Identifier()))
 			Ω(failedLRPStart.Attempts).Should(Equal(startAuction.Attempts + 1))
+			Ω(failedLRPStart.PlacementError).Should(Equal(diego_errors.CELL_MISMATCH_MESSAGE))
 
 			By("all tasks are marked failed, and their attempts are incremented")
 			Ω(results.FailedTasks).Should(HaveLen(1))
 			failedTask := results.FailedTasks[0]
 			Ω(failedTask.Identifier()).Should(Equal(taskAuction.Identifier()))
 			Ω(failedTask.Attempts).Should(Equal(taskAuction.Attempts + 1))
+			Ω(failedTask.PlacementError).Should(Equal(diego_errors.CELL_MISMATCH_MESSAGE))
 		})
 
 	})
@@ -72,13 +74,13 @@ var _ = Describe("Scheduler", func() {
 
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = []*Cell{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, []auctiontypes.LRP{
 				{"pg-1", 0, 10, 10},
 				{"pg-2", 0, 10, 10},
 			}))}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = []*Cell{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, []auctiontypes.LRP{
 				{"pg-3", 0, 10, 10},
 			}))}
 		})
@@ -189,13 +191,13 @@ var _ = Describe("Scheduler", func() {
 
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = []*Cell{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, []auctiontypes.LRP{
 				{"does-not-matter", 0, 10, 10},
 				{"does-not-matter", 0, 10, 10},
 			}))}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = []*Cell{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, []auctiontypes.LRP{
 				{"does-not-matter", 0, 10, 10},
 			}))}
 
@@ -266,6 +268,30 @@ var _ = Describe("Scheduler", func() {
 				Ω(results.FailedTasks).Should(HaveLen(1))
 				failedTask := results.FailedTasks[0]
 				Ω(failedTask.Attempts).Should(Equal(1))
+				Ω(failedTask.PlacementError).Should(Equal(diego_errors.INSUFFICIENT_RESOURCES_MESSAGE))
+			})
+		})
+
+		Context("when there is cell mismatch", func() {
+			BeforeEach(func() {
+				taskAuction = BuildTaskAuction(BuildTask("tg-1", "unsupported-stack", 100, 100), timeProvider.Now())
+				timeProvider.Increment(time.Minute)
+				s := NewScheduler(workPool, zones, timeProvider)
+				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
+			})
+
+			It("should not attempt to start the task", func() {
+				Ω(clients["A-cell"].PerformCallCount()).Should(Equal(0))
+				Ω(clients["B-cell"].PerformCallCount()).Should(Equal(0))
+			})
+
+			It("should mark the start auction as failed", func() {
+				Ω(results.SuccessfulTasks).Should(BeEmpty())
+
+				Ω(results.FailedTasks).Should(HaveLen(1))
+				failedTask := results.FailedTasks[0]
+				Ω(failedTask.Attempts).Should(Equal(1))
+				Ω(failedTask.PlacementError).Should(Equal(diego_errors.CELL_MISMATCH_MESSAGE))
 			})
 		})
 	})
@@ -273,13 +299,13 @@ var _ = Describe("Scheduler", func() {
 	Describe("a comprehensive scenario", func() {
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = []*Cell{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, []auctiontypes.LRP{
 				{"pg-1", 0, 10, 10},
 				{"pg-2", 0, 10, 10},
 			}))}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = []*Cell{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, []auctiontypes.LRP{
 				{"pg-3", 0, 10, 10},
 				{"pg-4", 0, 20, 20},
 			}))}
@@ -297,7 +323,7 @@ var _ = Describe("Scheduler", func() {
 			startPGNope := BuildLRPAuctionWithPlacementError(
 				"pg-nope", 1, ".net", 10, 10,
 				timeProvider.Now(),
-				diego_errors.INSUFFICIENT_RESOURCES_MESSAGE,
+				diego_errors.CELL_MISMATCH_MESSAGE,
 			)
 
 			taskAuction1 := BuildTaskAuction(
@@ -387,7 +413,7 @@ var _ = Describe("Scheduler", func() {
 		})
 
 		JustBeforeEach(func() {
-			zones["zone"] = []*Cell{
+			zones["zone"] = Zone{
 				NewCell("cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, []auctiontypes.LRP{})),
 			}
 

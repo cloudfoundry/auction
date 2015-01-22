@@ -9,6 +9,7 @@ import (
 	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
+	"github.com/cloudfoundry-incubator/runtime-schema/diego_errors"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	. "github.com/onsi/ginkgo"
@@ -164,7 +165,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when there is no room", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuction("pg-4", 0, "lucid64", 1000, 1000, timeProvider.Now())
+				startAuction = BuildLRPAuctionWithPlacementError("pg-4", 0, "lucid64", 1000, 1000, timeProvider.Now(), diego_errors.INSUFFICIENT_RESOURCES_MESSAGE)
 				timeProvider.Increment(time.Minute)
 				s := NewScheduler(workPool, zones, timeProvider)
 				results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
@@ -293,9 +294,10 @@ var _ = Describe("Scheduler", func() {
 				"pg-2", 1, "lucid64", 5, 5,
 				timeProvider.Now(),
 			)
-			startPGNope := BuildLRPAuction(
+			startPGNope := BuildLRPAuctionWithPlacementError(
 				"pg-nope", 1, ".net", 10, 10,
 				timeProvider.Now(),
+				diego_errors.INSUFFICIENT_RESOURCES_MESSAGE,
 			)
 
 			taskAuction1 := BuildTaskAuction(

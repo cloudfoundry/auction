@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cloudfoundry-incubator/runtime-schema/diego_errors"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/tedsuo/ifrit"
 )
 
 // Auction Runners
 
-var ErrorStackMismatch = errors.New("stack mismatch")
-var ErrorInsufficientResources = errors.New("insufficient resources")
+var ErrorStackMismatch = errors.New(diego_errors.STACK_MISMATCH)
+var ErrorInsufficientResources = errors.New(diego_errors.INSUFFICIENT_RESOURCES_MESSAGE)
 var ErrorNothingToStop = errors.New("nothing to stop")
 
 //go:generate counterfeiter -o fakes/fake_auction_runner.go . AuctionRunner
@@ -47,6 +48,8 @@ type AuctionRecord struct {
 
 	QueueTime    time.Time
 	WaitDuration time.Duration
+
+	PlacementError string
 }
 
 type LRPAuction struct {

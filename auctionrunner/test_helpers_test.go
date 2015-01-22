@@ -44,6 +44,22 @@ func BuildLRPAuction(processGuid string, index int, stack string, memoryMB, disk
 	}
 }
 
+func BuildLRPAuctionWithPlacementError(processGuid string, index int, stack string, memoryMB, diskMB int, queueTime time.Time, placementError string) auctiontypes.LRPAuction {
+	return auctiontypes.LRPAuction{
+		DesiredLRP: models.DesiredLRP{
+			ProcessGuid: processGuid,
+			MemoryMB:    memoryMB,
+			DiskMB:      diskMB,
+			Stack:       stack,
+		},
+		Index: index,
+		AuctionRecord: auctiontypes.AuctionRecord{
+			QueueTime:      queueTime,
+			PlacementError: placementError,
+		},
+	}
+}
+
 func BuildLRPAuctions(lrpStart models.LRPStartRequest, queueTime time.Time) []auctiontypes.LRPAuction {
 	auctions := make([]auctiontypes.LRPAuction, 0, len(lrpStart.Indices))
 	for _, i := range lrpStart.Indices {

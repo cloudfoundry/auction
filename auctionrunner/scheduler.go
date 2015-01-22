@@ -56,11 +56,12 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 	lrpsBeforeTasks, lrpsAfterTasks := splitLRPS(auctionRequest.LRPs)
 
 	auctionLRP := func(lrpsToAuction []auctiontypes.LRPAuction) {
-		for _, startAuction := range lrpsToAuction {
-			lrpStartAuctionLookup[startAuction.Identifier()] = startAuction
-			successfulStart, err := s.scheduleLRPAuction(startAuction)
+		for _, lrpAuction := range lrpsToAuction {
+			lrpStartAuctionLookup[lrpAuction.Identifier()] = lrpAuction
+			successfulStart, err := s.scheduleLRPAuction(lrpAuction)
 			if err != nil {
-				results.FailedLRPs = append(results.FailedLRPs, startAuction)
+				lrpAuction.PlacementError = err.Error()
+				results.FailedLRPs = append(results.FailedLRPs, lrpAuction)
 			} else {
 				successfulLRPs[successfulStart.Identifier()] = successfulStart
 			}
@@ -73,6 +74,7 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 		taskAuctionLookup[taskAuction.Identifier()] = taskAuction
 		successfulTask, err := s.scheduleTaskAuction(taskAuction)
 		if err != nil {
+			taskAuction.PlacementError = err.Error()
 			results.FailedTasks = append(results.FailedTasks, taskAuction)
 		} else {
 			successfulTasks[successfulTask.Identifier()] = successfulTask

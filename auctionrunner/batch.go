@@ -64,20 +64,6 @@ func (b *Batch) AddTasks(tasks []models.Task) {
 	b.lock.Unlock()
 }
 
-func (b *Batch) ResubmitStartAuctions(starts []auctiontypes.LRPAuction) {
-	b.lock.Lock()
-	b.lrpAuctions = append(starts, b.lrpAuctions...)
-	b.claimToHaveWork()
-	b.lock.Unlock()
-}
-
-func (b *Batch) ResubmitTaskAuctions(tasks []auctiontypes.TaskAuction) {
-	b.lock.Lock()
-	b.taskAuctions = append(tasks, b.taskAuctions...)
-	b.claimToHaveWork()
-	b.lock.Unlock()
-}
-
 func (b *Batch) DedupeAndDrain() ([]auctiontypes.LRPAuction, []auctiontypes.TaskAuction) {
 	b.lock.Lock()
 	lrpAuctions := b.lrpAuctions

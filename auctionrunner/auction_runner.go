@@ -12,10 +12,6 @@ import (
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
-const (
-	maxRetries = 5
-)
-
 type auctionRunner struct {
 	delegate     auctiontypes.AuctionRunnerDelegate
 	batch        *Batch
@@ -95,8 +91,6 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			numStartsFailed := len(auctionResults.FailedLRPs)
 			numTasksFailed := len(auctionResults.FailedTasks)
 
-			logger.Info("resubmitting-failures")
-			auctionResults = ResubmitFailedAuctions(a.batch, auctionResults, maxRetries)
 			logger.Info("resubmitted-failures", lager.Data{
 				"successful-lrp-start-auctions":     len(auctionResults.SuccessfulLRPs),
 				"successful-task-auctions":          len(auctionResults.SuccessfulTasks),

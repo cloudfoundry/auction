@@ -64,66 +64,6 @@ var _ = Describe("Batch", func() {
 		})
 	})
 
-	Describe("resubmitting work", func() {
-		Context("resubmitting starts", func() {
-			It("adds the work, and ensures it has priority when deduping", func() {
-				lrpStartAuction1 := BuildLRPStartRequest("pg-1", []uint{1}, "lucid64", 10, 10)
-				startAuction1 := BuildLRPAuctions(lrpStartAuction1, timeProvider.Now())
-
-				lrpStartAuction2 := BuildLRPStartRequest("pg-2", []uint{1}, "lucid64", 10, 10)
-				startAuction2 := BuildLRPAuctions(lrpStartAuction2, timeProvider.Now())
-
-				batch.AddLRPStarts([]models.LRPStartRequest{lrpStartAuction1, lrpStartAuction2})
-
-				lrpAuctions, _ := batch.DedupeAndDrain()
-				Ω(lrpAuctions).Should(Equal(append(startAuction1, startAuction2...)))
-
-				batch.AddLRPStarts([]models.LRPStartRequest{lrpStartAuction1, lrpStartAuction2})
-				batch.ResubmitStartAuctions(startAuction2)
-
-				lrpAuctions, _ = batch.DedupeAndDrain()
-				Ω(lrpAuctions).Should(Equal(append(startAuction2, startAuction1...)))
-			})
-
-			It("should have work", func() {
-				lrpStartAuction := BuildLRPStartRequest("pg-1", []uint{1}, "lucid64", 10, 10)
-				startAuction := BuildLRPAuctions(lrpStartAuction, timeProvider.Now())
-				batch.ResubmitStartAuctions(startAuction)
-
-				Ω(batch.HasWork).Should(Receive())
-			})
-		})
-
-		Context("resubmitting tasks", func() {
-			It("adds the work, and ensures it has priority when deduping", func() {
-				task1 := BuildTask("tg-1", "lucid64", 10, 10)
-				taskAuction1 := BuildTaskAuction(task1, timeProvider.Now())
-
-				task2 := BuildTask("tg-2", "lucid64", 10, 10)
-				taskAuction2 := BuildTaskAuction(task2, timeProvider.Now())
-
-				batch.AddTasks([]models.Task{task1, task2})
-
-				_, taskAuctions := batch.DedupeAndDrain()
-				Ω(taskAuctions).Should(Equal([]auctiontypes.TaskAuction{taskAuction1, taskAuction2}))
-
-				batch.AddTasks([]models.Task{task1, task2})
-				batch.ResubmitTaskAuctions([]auctiontypes.TaskAuction{taskAuction2})
-
-				_, taskAuctions = batch.DedupeAndDrain()
-				Ω(taskAuctions).Should(Equal([]auctiontypes.TaskAuction{taskAuction2, taskAuction1}))
-			})
-
-			It("should have work", func() {
-				task := BuildTask("tg-1", "lucid64", 10, 10)
-				taskAuction := BuildTaskAuction(task, timeProvider.Now())
-				batch.ResubmitTaskAuctions([]auctiontypes.TaskAuction{taskAuction})
-
-				Ω(batch.HasWork).Should(Receive())
-			})
-		})
-	})
-
 	Describe("DedupeAndDrain", func() {
 		BeforeEach(func() {
 			batch.AddLRPStarts([]models.LRPStartRequest{

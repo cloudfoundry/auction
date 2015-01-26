@@ -29,9 +29,9 @@ var _ = Describe("ZoneBuilder", func() {
 			"C": repC,
 		}
 
-		repA.StateReturns(BuildCellState("the-zone", 100, 200, 100, nil), nil)
-		repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, nil), nil)
-		repC.StateReturns(BuildCellState("other-zone", 100, 10, 100, nil), nil)
+		repA.StateReturns(BuildCellState("the-zone", 100, 200, 100, false, nil), nil)
+		repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, false, nil), nil)
+		repC.StateReturns(BuildCellState("other-zone", 100, 10, 100, false, nil), nil)
 	})
 
 	AfterEach(func() {
@@ -60,9 +60,28 @@ var _ = Describe("ZoneBuilder", func() {
 		Ω(repC.StateCallCount()).Should(Equal(1))
 	})
 
+	Context("when cells are evacuating", func() {
+		BeforeEach(func() {
+			repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, true, nil), nil)
+		})
+
+		It("does not include them in the map", func() {
+			zones := FetchStateAndBuildZones(workPool, clients)
+			Ω(zones).Should(HaveLen(2))
+
+			cells := zones["the-zone"]
+			Ω(cells).Should(HaveLen(1))
+			Ω(cells[0].Guid).Should(Equal("A"))
+
+			cells = zones["other-zone"]
+			Ω(cells).Should(HaveLen(1))
+			Ω(cells[0].Guid).Should(Equal("C"))
+		})
+	})
+
 	Context("when a client fails", func() {
 		BeforeEach(func() {
-			repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, nil), errors.New("boom"))
+			repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, false, nil), errors.New("boom"))
 		})
 
 		It("does not include the client in the map", func() {

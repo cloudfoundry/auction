@@ -74,13 +74,13 @@ var _ = Describe("Scheduler", func() {
 
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"pg-1", 0, 10, 10},
 				{"pg-2", 0, 10, 10},
 			}))}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"pg-3", 0, 10, 10},
 			}))}
 		})
@@ -191,13 +191,13 @@ var _ = Describe("Scheduler", func() {
 
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"does-not-matter", 0, 10, 10},
 				{"does-not-matter", 0, 10, 10},
 			}))}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"does-not-matter", 0, 10, 10},
 			}))}
 
@@ -299,13 +299,13 @@ var _ = Describe("Scheduler", func() {
 	Describe("a comprehensive scenario", func() {
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"pg-1", 0, 10, 10},
 				{"pg-2", 0, 10, 10},
 			}))}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, []auctiontypes.LRP{
+			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"pg-3", 0, 10, 10},
 				{"pg-4", 0, 20, 20},
 			}))}
@@ -414,7 +414,7 @@ var _ = Describe("Scheduler", func() {
 
 		JustBeforeEach(func() {
 			zones["zone"] = Zone{
-				NewCell("cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, []auctiontypes.LRP{})),
+				NewCell("cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, false, []auctiontypes.LRP{})),
 			}
 
 			auctionRequest := auctiontypes.AuctionRequest{

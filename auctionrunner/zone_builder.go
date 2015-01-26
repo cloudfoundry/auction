@@ -21,6 +21,11 @@ func FetchStateAndBuildZones(workPool *workpool.WorkPool, clients map[string]auc
 			if err != nil {
 				return
 			}
+
+			if state.Evacuating {
+				return
+			}
+
 			cell := NewCell(guid, client, state)
 			lock.Lock()
 			zones[state.Zone] = append(zones[state.Zone], cell)

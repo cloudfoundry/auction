@@ -91,6 +91,10 @@ var _ = Describe("ZoneBuilder", func() {
 			cells := zones["the-zone"]
 			Ω(cells).Should(HaveLen(1))
 			Ω(cells[0].Guid).Should(Equal("A"))
+
+			cells = zones["other-zone"]
+			Ω(cells).Should(HaveLen(1))
+			Ω(cells[0].Guid).Should(Equal("C"))
 		})
 	})
 })

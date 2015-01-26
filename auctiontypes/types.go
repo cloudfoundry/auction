@@ -104,6 +104,7 @@ type CellState struct {
 	LRPs               []LRP
 	Tasks              []Task
 	Zone               string
+	Evacuating         bool
 }
 
 type LRP struct {

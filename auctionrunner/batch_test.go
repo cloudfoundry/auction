@@ -6,7 +6,7 @@ import (
 	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
-	"github.com/cloudfoundry/gunk/timeprovider/faketimeprovider"
+	"github.com/pivotal-golang/clock/fakeclock"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,11 +16,11 @@ var _ = Describe("Batch", func() {
 	var lrpStart models.LRPStartRequest
 	var task models.Task
 	var batch *Batch
-	var timeProvider *faketimeprovider.FakeTimeProvider
+	var clock *fakeclock.FakeClock
 
 	BeforeEach(func() {
-		timeProvider = faketimeprovider.New(time.Now())
-		batch = NewBatch(timeProvider)
+		clock = fakeclock.NewFakeClock(time.Now())
+		batch = NewBatch(clock)
 	})
 
 	It("should start off empty", func() {
@@ -39,7 +39,7 @@ var _ = Describe("Batch", func() {
 
 			It("makes the start auction available when drained", func() {
 				lrpAuctions, _ := batch.DedupeAndDrain()
-				Ω(lrpAuctions).Should(ConsistOf(BuildLRPAuctions(lrpStart, timeProvider.Now())))
+				Ω(lrpAuctions).Should(ConsistOf(BuildLRPAuctions(lrpStart, clock.Now())))
 			})
 
 			It("should have work", func() {
@@ -55,7 +55,7 @@ var _ = Describe("Batch", func() {
 
 			It("makes the stop auction available when drained", func() {
 				_, taskAuctions := batch.DedupeAndDrain()
-				Ω(taskAuctions).Should(ConsistOf(BuildTaskAuction(task, timeProvider.Now())))
+				Ω(taskAuctions).Should(ConsistOf(BuildTaskAuction(task, clock.Now())))
 			})
 
 			It("should have work", func() {
@@ -81,18 +81,18 @@ var _ = Describe("Batch", func() {
 		It("should dedupe any duplicate start auctions and stop auctions", func() {
 			lrpAuctions, taskAuctions := batch.DedupeAndDrain()
 			Ω(lrpAuctions).Should(Equal([]auctiontypes.LRPAuction{
-				BuildLRPAuction("pg-1", 1, "lucid64", 10, 10, timeProvider.Now()),
-				BuildLRPAuction("pg-2", 2, "lucid64", 10, 10, timeProvider.Now()),
+				BuildLRPAuction("pg-1", 1, "lucid64", 10, 10, clock.Now()),
+				BuildLRPAuction("pg-2", 2, "lucid64", 10, 10, clock.Now()),
 			}))
 
 			Ω(taskAuctions).Should(Equal([]auctiontypes.TaskAuction{
 				BuildTaskAuction(
 					BuildTask("tg-1", "lucid64", 10, 10),
-					timeProvider.Now(),
+					clock.Now(),
 				),
 				BuildTaskAuction(
 					BuildTask("tg-2", "lucid64", 10, 10),
-					timeProvider.Now(),
+					clock.Now(),
 				),
 			}))
 		})

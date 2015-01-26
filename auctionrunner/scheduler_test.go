@@ -3,8 +3,8 @@ package auctionrunner_test
 import (
 	"time"
 
-	"github.com/cloudfoundry/gunk/timeprovider/faketimeprovider"
 	"github.com/cloudfoundry/gunk/workpool"
+	"github.com/pivotal-golang/clock/fakeclock"
 
 	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
@@ -19,12 +19,12 @@ import (
 var _ = Describe("Scheduler", func() {
 	var clients map[string]*fakes.FakeSimulationCellRep
 	var zones map[string]Zone
-	var timeProvider *faketimeprovider.FakeTimeProvider
+	var clock *fakeclock.FakeClock
 	var workPool *workpool.WorkPool
 	var results auctiontypes.AuctionResults
 
 	BeforeEach(func() {
-		timeProvider = faketimeprovider.New(time.Now())
+		clock = fakeclock.NewFakeClock(time.Now())
 		workPool = workpool.NewWorkPool(5)
 
 		clients = map[string]*fakes.FakeSimulationCellRep{}
@@ -37,9 +37,9 @@ var _ = Describe("Scheduler", func() {
 
 	Context("when the cells are empty", func() {
 		It("immediately returns everything as having failed, incrementing the attempt number", func() {
-			startAuction := BuildLRPAuction("pg-7", 0, "lucid64", 10, 10, timeProvider.Now())
+			startAuction := BuildLRPAuction("pg-7", 0, "lucid64", 10, 10, clock.Now())
 
-			taskAuction := BuildTaskAuction(BuildTask("tg-1", "lucid64", 0, 0), timeProvider.Now())
+			taskAuction := BuildTaskAuction(BuildTask("tg-1", "lucid64", 0, 0), clock.Now())
 
 			auctionRequest := auctiontypes.AuctionRequest{
 				LRPs:  []auctiontypes.LRPAuction{startAuction},
@@ -47,7 +47,7 @@ var _ = Describe("Scheduler", func() {
 			}
 
 			By("no auctions are marked successful")
-			scheduler := NewScheduler(workPool, map[string]Zone{}, timeProvider)
+			scheduler := NewScheduler(workPool, map[string]Zone{}, clock)
 			results := scheduler.Schedule(auctionRequest)
 			Ω(results.SuccessfulLRPs).Should(BeEmpty())
 			Ω(results.SuccessfulTasks).Should(BeEmpty())
@@ -87,14 +87,14 @@ var _ = Describe("Scheduler", func() {
 
 		Context("with an existing LRP (zone balancing)", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuction("pg-3", 1, "lucid64", 10, 10, timeProvider.Now())
+				startAuction = BuildLRPAuction("pg-3", 1, "lucid64", 10, 10, clock.Now())
 			})
 
 			Context("when it picks a winner", func() {
 				BeforeEach(func() {
-					timeProvider.Increment(time.Minute)
+					clock.Increment(time.Minute)
 
-					s := NewScheduler(workPool, zones, timeProvider)
+					s := NewScheduler(workPool, zones, clock)
 					results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 				})
 
@@ -118,13 +118,13 @@ var _ = Describe("Scheduler", func() {
 
 		Context("with a new LRP (cell balancing)", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuction("pg-4", 1, "lucid64", 10, 10, timeProvider.Now())
+				startAuction = BuildLRPAuction("pg-4", 1, "lucid64", 10, 10, clock.Now())
 			})
 
 			Context("when it picks a winner", func() {
 				BeforeEach(func() {
-					timeProvider.Increment(time.Minute)
-					s := NewScheduler(workPool, zones, timeProvider)
+					clock.Increment(time.Minute)
+					s := NewScheduler(workPool, zones, clock)
 					results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 				})
 
@@ -148,13 +148,13 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when the cell rejects the start auction", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuction("pg-3", 1, "lucid64", 10, 10, timeProvider.Now())
+				startAuction = BuildLRPAuction("pg-3", 1, "lucid64", 10, 10, clock.Now())
 
 				clients["A-cell"].PerformReturns(auctiontypes.Work{LRPs: []auctiontypes.LRPAuction{startAuction}}, nil)
 				clients["B-cell"].PerformReturns(auctiontypes.Work{LRPs: []auctiontypes.LRPAuction{startAuction}}, nil)
 
-				timeProvider.Increment(time.Minute)
-				s := NewScheduler(workPool, zones, timeProvider)
+				clock.Increment(time.Minute)
+				s := NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 			})
 
@@ -167,9 +167,9 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when there is no room", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuctionWithPlacementError("pg-4", 0, "lucid64", 1000, 1000, timeProvider.Now(), diego_errors.INSUFFICIENT_RESOURCES_MESSAGE)
-				timeProvider.Increment(time.Minute)
-				s := NewScheduler(workPool, zones, timeProvider)
+				startAuction = BuildLRPAuctionWithPlacementError("pg-4", 0, "lucid64", 1000, 1000, clock.Now(), diego_errors.INSUFFICIENT_RESOURCES_MESSAGE)
+				clock.Increment(time.Minute)
+				s := NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 			})
 
@@ -201,13 +201,13 @@ var _ = Describe("Scheduler", func() {
 				{"does-not-matter", 0, 10, 10},
 			}))}
 
-			taskAuction = BuildTaskAuction(BuildTask("tg-1", "lucid64", 10, 10), timeProvider.Now())
-			timeProvider.Increment(time.Minute)
+			taskAuction = BuildTaskAuction(BuildTask("tg-1", "lucid64", 10, 10), clock.Now())
+			clock.Increment(time.Minute)
 		})
 
 		Context("when it picks a winner", func() {
 			BeforeEach(func() {
-				s := NewScheduler(workPool, zones, timeProvider)
+				s := NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -236,7 +236,7 @@ var _ = Describe("Scheduler", func() {
 		Context("when the cell rejects the task", func() {
 			BeforeEach(func() {
 				clients["B-cell"].PerformReturns(auctiontypes.Work{Tasks: []models.Task{taskAuction.Task}}, nil)
-				s := NewScheduler(workPool, zones, timeProvider)
+				s := NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -251,9 +251,9 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when there is no room", func() {
 			BeforeEach(func() {
-				taskAuction = BuildTaskAuction(BuildTask("tg-1", "lucid64", 1000, 1000), timeProvider.Now())
-				timeProvider.Increment(time.Minute)
-				s := NewScheduler(workPool, zones, timeProvider)
+				taskAuction = BuildTaskAuction(BuildTask("tg-1", "lucid64", 1000, 1000), clock.Now())
+				clock.Increment(time.Minute)
+				s := NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -274,9 +274,9 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when there is cell mismatch", func() {
 			BeforeEach(func() {
-				taskAuction = BuildTaskAuction(BuildTask("tg-1", "unsupported-stack", 100, 100), timeProvider.Now())
-				timeProvider.Increment(time.Minute)
-				s := NewScheduler(workPool, zones, timeProvider)
+				taskAuction = BuildTaskAuction(BuildTask("tg-1", "unsupported-stack", 100, 100), clock.Now())
+				clock.Increment(time.Minute)
+				s := NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -314,29 +314,29 @@ var _ = Describe("Scheduler", func() {
 		It("should optimize the distribution", func() {
 			startPG3 := BuildLRPAuction(
 				"pg-3", 1, "lucid64", 40, 40,
-				timeProvider.Now(),
+				clock.Now(),
 			)
 			startPG2 := BuildLRPAuction(
 				"pg-2", 1, "lucid64", 5, 5,
-				timeProvider.Now(),
+				clock.Now(),
 			)
 			startPGNope := BuildLRPAuctionWithPlacementError(
 				"pg-nope", 1, ".net", 10, 10,
-				timeProvider.Now(),
+				clock.Now(),
 				diego_errors.CELL_MISMATCH_MESSAGE,
 			)
 
 			taskAuction1 := BuildTaskAuction(
 				BuildTask("tg-1", "lucid64", 40, 40),
-				timeProvider.Now(),
+				clock.Now(),
 			)
 			taskAuction2 := BuildTaskAuction(
 				BuildTask("tg-2", "lucid64", 5, 5),
-				timeProvider.Now(),
+				clock.Now(),
 			)
 			taskAuctionNope := BuildTaskAuction(
 				BuildTask("tg-nope", ".net", 1, 1),
-				timeProvider.Now(),
+				clock.Now(),
 			)
 
 			auctionRequest := auctiontypes.AuctionRequest{
@@ -344,7 +344,7 @@ var _ = Describe("Scheduler", func() {
 				Tasks: []auctiontypes.TaskAuction{taskAuction1, taskAuction2, taskAuctionNope},
 			}
 
-			s := NewScheduler(workPool, zones, timeProvider)
+			s := NewScheduler(workPool, zones, clock)
 			results = s.Schedule(auctionRequest)
 
 			Ω(clients["A-cell"].PerformCallCount()).Should(Equal(1))
@@ -399,14 +399,14 @@ var _ = Describe("Scheduler", func() {
 		BeforeEach(func() {
 			clients["cell"] = &fakes.FakeSimulationCellRep{}
 
-			pg70 = BuildLRPAuction("pg-7", 0, "lucid64", 10, 10, timeProvider.Now())
-			pg71 = BuildLRPAuction("pg-7", 1, "lucid64", 10, 10, timeProvider.Now())
-			pg81 = BuildLRPAuction("pg-8", 1, "lucid64", 40, 40, timeProvider.Now())
-			pg82 = BuildLRPAuction("pg-8", 2, "lucid64", 40, 40, timeProvider.Now())
+			pg70 = BuildLRPAuction("pg-7", 0, "lucid64", 10, 10, clock.Now())
+			pg71 = BuildLRPAuction("pg-7", 1, "lucid64", 10, 10, clock.Now())
+			pg81 = BuildLRPAuction("pg-8", 1, "lucid64", 40, 40, clock.Now())
+			pg82 = BuildLRPAuction("pg-8", 2, "lucid64", 40, 40, clock.Now())
 			lrps = []auctiontypes.LRPAuction{pg70, pg71, pg81, pg82}
 
-			tg1 = BuildTaskAuction(BuildTask("tg-1", "lucid64", 10, 10), timeProvider.Now())
-			tg2 = BuildTaskAuction(BuildTask("tg-2", "lucid64", 20, 20), timeProvider.Now())
+			tg1 = BuildTaskAuction(BuildTask("tg-1", "lucid64", 10, 10), clock.Now())
+			tg2 = BuildTaskAuction(BuildTask("tg-2", "lucid64", 20, 20), clock.Now())
 			tasks = []auctiontypes.TaskAuction{tg1, tg2}
 
 			memory = 100
@@ -422,7 +422,7 @@ var _ = Describe("Scheduler", func() {
 				Tasks: tasks,
 			}
 
-			scheduler := NewScheduler(workPool, zones, timeProvider)
+			scheduler := NewScheduler(workPool, zones, clock)
 			results = scheduler.Schedule(auctionRequest)
 		})
 
@@ -499,7 +499,7 @@ var _ = Describe("Scheduler", func() {
 			var tg3 auctiontypes.TaskAuction
 
 			BeforeEach(func() {
-				tg3 = BuildTaskAuction(BuildTask("tg-3", "lucid64", 30, 30), timeProvider.Now())
+				tg3 = BuildTaskAuction(BuildTask("tg-3", "lucid64", 30, 30), clock.Now())
 				lrps = []auctiontypes.LRPAuction{}
 				tasks = append(tasks, tg3)
 				memory = tg3.Task.MemoryMB + 1

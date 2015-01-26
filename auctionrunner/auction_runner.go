@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/cloudfoundry/gunk/timeprovider"
+	"github.com/pivotal-golang/clock"
 	"github.com/pivotal-golang/lager"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
@@ -13,20 +13,20 @@ import (
 )
 
 type auctionRunner struct {
-	delegate     auctiontypes.AuctionRunnerDelegate
-	batch        *Batch
-	timeProvider timeprovider.TimeProvider
-	workPool     *workpool.WorkPool
-	logger       lager.Logger
+	delegate auctiontypes.AuctionRunnerDelegate
+	batch    *Batch
+	clock    clock.Clock
+	workPool *workpool.WorkPool
+	logger   lager.Logger
 }
 
-func New(delegate auctiontypes.AuctionRunnerDelegate, timeProvider timeprovider.TimeProvider, workPool *workpool.WorkPool, logger lager.Logger) *auctionRunner {
+func New(delegate auctiontypes.AuctionRunnerDelegate, clock clock.Clock, workPool *workpool.WorkPool, logger lager.Logger) *auctionRunner {
 	return &auctionRunner{
-		delegate:     delegate,
-		batch:        NewBatch(timeProvider),
-		timeProvider: timeProvider,
-		workPool:     workPool,
-		logger:       logger,
+		delegate: delegate,
+		batch:    NewBatch(clock),
+		clock:    clock,
+		workPool: workPool,
+		logger:   logger,
 	}
 }
 
@@ -80,7 +80,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				Tasks: taskAuctions,
 			}
 
-			scheduler := NewScheduler(a.workPool, zones, a.timeProvider)
+			scheduler := NewScheduler(a.workPool, zones, a.clock)
 			auctionResults := scheduler.Schedule(auctionRequest)
 			logger.Info("scheduled", lager.Data{
 				"successful-lrp-start-auctions": len(auctionResults.SuccessfulLRPs),

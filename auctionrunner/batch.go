@@ -6,7 +6,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
-	"github.com/cloudfoundry/gunk/timeprovider"
+	"github.com/pivotal-golang/clock"
 )
 
 type Batch struct {
@@ -14,21 +14,21 @@ type Batch struct {
 	taskAuctions []auctiontypes.TaskAuction
 	lock         *sync.Mutex
 	HasWork      chan struct{}
-	timeProvider timeprovider.TimeProvider
+	clock        clock.Clock
 }
 
-func NewBatch(timeProvider timeprovider.TimeProvider) *Batch {
+func NewBatch(clock clock.Clock) *Batch {
 	return &Batch{
-		lrpAuctions:  []auctiontypes.LRPAuction{},
-		lock:         &sync.Mutex{},
-		timeProvider: timeProvider,
-		HasWork:      make(chan struct{}, 1),
+		lrpAuctions: []auctiontypes.LRPAuction{},
+		lock:        &sync.Mutex{},
+		clock:       clock,
+		HasWork:     make(chan struct{}, 1),
 	}
 }
 
 func (b *Batch) AddLRPStarts(starts []models.LRPStartRequest) {
 	auctions := make([]auctiontypes.LRPAuction, 0, len(starts))
-	now := b.timeProvider.Now()
+	now := b.clock.Now()
 	for _, start := range starts {
 		for _, i := range start.Indices {
 			auctions = append(auctions, auctiontypes.LRPAuction{
@@ -48,7 +48,7 @@ func (b *Batch) AddLRPStarts(starts []models.LRPStartRequest) {
 
 func (b *Batch) AddTasks(tasks []models.Task) {
 	auctions := make([]auctiontypes.TaskAuction, 0, len(tasks))
-	now := b.timeProvider.Now()
+	now := b.clock.Now()
 	for _, t := range tasks {
 		auctions = append(auctions, auctiontypes.TaskAuction{
 			Task: t,

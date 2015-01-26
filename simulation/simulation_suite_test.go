@@ -13,7 +13,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/communication/http/auction_http_client"
 
-	"github.com/cloudfoundry/gunk/timeprovider"
+	"github.com/pivotal-golang/clock"
 
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/tedsuo/ifrit"
@@ -114,7 +114,7 @@ var _ = BeforeEach(func() {
 	util.ResetGuids()
 
 	auctionRunnerDelegate = NewAuctionRunnerDelegate(cells)
-	auctionRunner = auctionrunner.New(auctionRunnerDelegate, timeprovider.NewTimeProvider(), auctionWorkPool, logger)
+	auctionRunner = auctionrunner.New(auctionRunnerDelegate, clock.NewClock(), auctionWorkPool, logger)
 	auctionRunnerProcess = ifrit.Invoke(auctionRunner)
 })
 

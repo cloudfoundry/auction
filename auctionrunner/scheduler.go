@@ -6,8 +6,8 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 
-	"github.com/cloudfoundry/gunk/timeprovider"
 	"github.com/cloudfoundry/gunk/workpool"
+	"github.com/pivotal-golang/clock"
 )
 
 type Zone []*Cell
@@ -25,20 +25,20 @@ func (z *Zone) FilterCells(stack string) []*Cell {
 }
 
 type Scheduler struct {
-	workPool     *workpool.WorkPool
-	zones        map[string]Zone
-	timeProvider timeprovider.TimeProvider
+	workPool *workpool.WorkPool
+	zones    map[string]Zone
+	clock    clock.Clock
 }
 
 func NewScheduler(
 	workPool *workpool.WorkPool,
 	zones map[string]Zone,
-	timeProvider timeprovider.TimeProvider,
+	clock clock.Clock,
 ) *Scheduler {
 	return &Scheduler{
-		workPool:     workPool,
-		zones:        zones,
-		timeProvider: timeProvider,
+		workPool: workPool,
+		zones:    zones,
+		clock:    clock,
 	}
 }
 
@@ -129,7 +129,7 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 }
 
 func (s *Scheduler) markResults(results auctiontypes.AuctionResults) auctiontypes.AuctionResults {
-	now := s.timeProvider.Now()
+	now := s.clock.Now()
 	for i := range results.FailedLRPs {
 
 		results.FailedLRPs[i].Attempts++

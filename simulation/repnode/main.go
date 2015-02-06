@@ -43,7 +43,8 @@ func main() {
 		Containers: *containers,
 	})
 
-	handlers := auction_http_handlers.New(simulationRep, cf_lager.New("repnode-http").Session(*repGuid))
+	logger, _ := cf_lager.New("repnode-http")
+	handlers := auction_http_handlers.New(simulationRep, logger.Session(*repGuid))
 	router, err := rata.NewRouter(routes.Routes, handlers)
 	if err != nil {
 		log.Fatalln("failed to make router:", err)

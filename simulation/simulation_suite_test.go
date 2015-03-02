@@ -57,10 +57,10 @@ var reportName string
 var disableSVGReport bool
 
 var sessionsToTerminate []*gexec.Session
-var auctionRunnerProcess ifrit.Process
-var auctionRunnerDelegate *AuctionRunnerDelegate
-var auctionWorkPool *workpool.WorkPool
-var auctionRunner auctiontypes.AuctionRunner
+var runnerProcess ifrit.Process
+var runnerDelegate *auctionRunnerDelegate
+var workPool *workpool.WorkPool
+var runner auctiontypes.AuctionRunner
 var logger lager.Logger
 
 func init() {
@@ -98,13 +98,13 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	auctionWorkPool = workpool.NewWorkPool(workers)
+	workPool = workpool.NewWorkPool(workers)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(cells))
 	for _, cell := range cells {
 		cell := cell
-		auctionWorkPool.Submit(func() {
+		workPool.Submit(func() {
 			cell.Reset()
 			wg.Done()
 		})
@@ -113,15 +113,22 @@ var _ = BeforeEach(func() {
 
 	util.ResetGuids()
 
-	auctionRunnerDelegate = NewAuctionRunnerDelegate(cells)
-	auctionRunner = auctionrunner.New(auctionRunnerDelegate, clock.NewClock(), auctionWorkPool, logger)
-	auctionRunnerProcess = ifrit.Invoke(auctionRunner)
+	runnerDelegate = NewAuctionRunnerDelegate(cells)
+	metricEmitterDelegate := NewAuctionMetricEmitterDelegate()
+	runner = auctionrunner.New(
+		runnerDelegate,
+		metricEmitterDelegate,
+		clock.NewClock(),
+		workPool,
+		logger,
+	)
+	runnerProcess = ifrit.Invoke(runner)
 })
 
 var _ = AfterEach(func() {
-	auctionRunnerProcess.Signal(os.Interrupt)
-	Eventually(auctionRunnerProcess.Wait(), 20).Should(Receive())
-	auctionWorkPool.Stop()
+	runnerProcess.Signal(os.Interrupt)
+	Eventually(runnerProcess.Wait(), 20).Should(Receive())
+	workPool.Stop()
 })
 
 var _ = AfterSuite(func() {

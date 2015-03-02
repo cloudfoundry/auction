@@ -13,20 +13,28 @@ import (
 )
 
 type auctionRunner struct {
-	delegate auctiontypes.AuctionRunnerDelegate
-	batch    *Batch
-	clock    clock.Clock
-	workPool *workpool.WorkPool
-	logger   lager.Logger
+	delegate      auctiontypes.AuctionRunnerDelegate
+	metricEmitter auctiontypes.AuctionMetricEmitterDelegate
+	batch         *Batch
+	clock         clock.Clock
+	workPool      *workpool.WorkPool
+	logger        lager.Logger
 }
 
-func New(delegate auctiontypes.AuctionRunnerDelegate, clock clock.Clock, workPool *workpool.WorkPool, logger lager.Logger) *auctionRunner {
+func New(
+	delegate auctiontypes.AuctionRunnerDelegate,
+	metricEmitter auctiontypes.AuctionMetricEmitterDelegate,
+	clock clock.Clock,
+	workPool *workpool.WorkPool,
+	logger lager.Logger,
+) *auctionRunner {
 	return &auctionRunner{
-		delegate: delegate,
-		batch:    NewBatch(clock),
-		clock:    clock,
-		workPool: workPool,
-		logger:   logger,
+		delegate:      delegate,
+		metricEmitter: metricEmitter,
+		batch:         NewBatch(clock),
+		clock:         clock,
+		workPool:      workPool,
+		logger:        logger,
 	}
 }
 
@@ -55,7 +63,9 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			hasWork = a.batch.HasWork
 
 			logger.Info("fetching-zone-state")
+			fetchStatesStartTime := time.Now()
 			zones := FetchStateAndBuildZones(a.workPool, clients)
+			a.metricEmitter.FetchStatesCompleted(time.Since(fetchStatesStartTime))
 			cellCount := 0
 			for zone, cells := range zones {
 				logger.Info("zone-state", lager.Data{"zone": zone, "cell-count": len(cells)})
@@ -100,6 +110,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				"will-retry-task-auctions":          numTasksFailed - len(auctionResults.FailedTasks),
 			})
 
+			a.metricEmitter.AuctionCompleted(auctionResults)
 			a.delegate.AuctionCompleted(auctionResults)
 		case <-signals:
 			return nil

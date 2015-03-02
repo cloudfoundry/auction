@@ -92,21 +92,21 @@ var _ = Describe("Auction", func() {
 	}
 
 	runStartAuction := func(lrpStartAuctions []models.LRPStartRequest, numCells int) {
-		auctionRunnerDelegate.SetCellLimit(numCells)
-		auctionRunner.ScheduleLRPsForAuctions(lrpStartAuctions)
+		runnerDelegate.SetCellLimit(numCells)
+		runner.ScheduleLRPsForAuctions(lrpStartAuctions)
 
-		Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStartAuctions)))
+		Eventually(runnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStartAuctions)))
 	}
 
 	runAndReportStartAuction := func(lrpStartAuctions []models.LRPStartRequest, numCells int, i int, j int) *visualization.Report {
 		t := time.Now()
 		runStartAuction(lrpStartAuctions, numCells)
 
-		Eventually(auctionRunnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStartAuctions)))
+		Eventually(runnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStartAuctions)))
 		duration := time.Since(t)
 
-		cells, _ := auctionRunnerDelegate.FetchCellReps()
-		report := visualization.NewReport(len(lrpStartAuctions), cells, auctionRunnerDelegate.Results(), duration)
+		cells, _ := runnerDelegate.FetchCellReps()
+		report := visualization.NewReport(len(lrpStartAuctions), cells, runnerDelegate.Results(), duration)
 
 		visualization.PrintReport(report)
 		svgReport.DrawReportCard(i, j, report)
@@ -126,7 +126,7 @@ var _ = Describe("Auction", func() {
 		for index, instances := range initialDistributions {
 			guid := cellGuid(index)
 			instances := instances
-			auctionWorkPool.Submit(func() {
+			workPool.Submit(func() {
 				cells[guid].Perform(workForInstances(instances))
 				wg.Done()
 			})
@@ -260,7 +260,7 @@ var _ = Describe("Auction", func() {
 				instances = append(instances, generateLRPStartAuctionsForProcessGuid(2, "red", 50)...)
 
 				runStartAuction(instances, nCells)
-				results := auctionRunnerDelegate.Results()
+				results := runnerDelegate.Results()
 
 				winners := []string{}
 				losers := []string{}

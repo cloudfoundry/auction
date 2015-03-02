@@ -28,6 +28,11 @@ type AuctionRunnerDelegate interface {
 	AuctionCompleted(AuctionResults)
 }
 
+type AuctionMetricEmitterDelegate interface {
+	FetchStatesCompleted(time.Duration)
+	AuctionCompleted(AuctionResults)
+}
+
 type AuctionRequest struct {
 	LRPs  []LRPAuction
 	Tasks []TaskAuction

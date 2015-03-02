@@ -6,30 +6,30 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 )
 
-type AuctionRunnerDelegate struct {
+type auctionRunnerDelegate struct {
 	cells       map[string]auctiontypes.CellRep
 	cellLimit   int
 	workResults auctiontypes.AuctionResults
 	lock        *sync.Mutex
 }
 
-func NewAuctionRunnerDelegate(cells map[string]auctiontypes.SimulationCellRep) *AuctionRunnerDelegate {
+func NewAuctionRunnerDelegate(cells map[string]auctiontypes.SimulationCellRep) *auctionRunnerDelegate {
 	typecastCells := map[string]auctiontypes.CellRep{}
 	for guid, cell := range cells {
 		typecastCells[guid] = cell
 	}
-	return &AuctionRunnerDelegate{
+	return &auctionRunnerDelegate{
 		cells:     typecastCells,
 		cellLimit: len(typecastCells),
 		lock:      &sync.Mutex{},
 	}
 }
 
-func (a *AuctionRunnerDelegate) SetCellLimit(limit int) {
+func (a *auctionRunnerDelegate) SetCellLimit(limit int) {
 	a.cellLimit = limit
 }
 
-func (a *AuctionRunnerDelegate) FetchCellReps() (map[string]auctiontypes.CellRep, error) {
+func (a *auctionRunnerDelegate) FetchCellReps() (map[string]auctiontypes.CellRep, error) {
 	subset := map[string]auctiontypes.CellRep{}
 	for i := 0; i < a.cellLimit; i++ {
 		subset[cellGuid(i)] = a.cells[cellGuid(i)]
@@ -37,7 +37,7 @@ func (a *AuctionRunnerDelegate) FetchCellReps() (map[string]auctiontypes.CellRep
 	return subset, nil
 }
 
-func (a *AuctionRunnerDelegate) AuctionCompleted(work auctiontypes.AuctionResults) {
+func (a *auctionRunnerDelegate) AuctionCompleted(work auctiontypes.AuctionResults) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.workResults.FailedLRPs = append(a.workResults.FailedLRPs, work.FailedLRPs...)
@@ -46,7 +46,7 @@ func (a *AuctionRunnerDelegate) AuctionCompleted(work auctiontypes.AuctionResult
 	a.workResults.SuccessfulTasks = append(a.workResults.SuccessfulTasks, work.SuccessfulTasks...)
 }
 
-func (a *AuctionRunnerDelegate) ResultSize() int {
+func (a *auctionRunnerDelegate) ResultSize() int {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
@@ -56,7 +56,7 @@ func (a *AuctionRunnerDelegate) ResultSize() int {
 		len(a.workResults.SuccessfulTasks)
 }
 
-func (a *AuctionRunnerDelegate) Results() auctiontypes.AuctionResults {
+func (a *auctionRunnerDelegate) Results() auctiontypes.AuctionResults {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 

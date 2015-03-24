@@ -37,6 +37,7 @@ var communicationMode string
 
 const InProcess = "inprocess"
 const HTTP = "http"
+const lucidStack = "lucid64"
 
 const numCells = 100
 
@@ -153,7 +154,7 @@ func buildInProcessReps() map[string]auctiontypes.SimulationCellRep {
 	cells := map[string]auctiontypes.SimulationCellRep{}
 
 	for i := 0; i < numCells; i++ {
-		cells[cellGuid(i)] = simulationrep.New("lucid64", zone(i), repResources)
+		cells[cellGuid(i)] = simulationrep.New(lucidStack, zone(i), repResources)
 	}
 
 	return cells

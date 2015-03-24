@@ -16,7 +16,7 @@ var _ = Describe("State", func() {
 		var repState auctiontypes.CellState
 		BeforeEach(func() {
 			repState = auctiontypes.CellState{
-				Stack: "lucid64",
+				RootFSProviders: auctiontypes.RootFSProviders{"docker": auctiontypes.ArbitraryRootFSProvider{}},
 			}
 			auctionRep.StateReturns(repState, nil)
 			Ω(auctionRep.StateCallCount()).Should(Equal(0))

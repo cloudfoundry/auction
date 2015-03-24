@@ -7,6 +7,7 @@ import (
 	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -33,8 +34,8 @@ var _ = Describe("Cell", func() {
 
 	Describe("ScoreForLRPAuction", func() {
 		It("factors in memory usage", func() {
-			bigInstance := BuildLRPAuction("pg-big", 0, "lucid64", 20, 10, time.Now())
-			smallInstance := BuildLRPAuction("pg-small", 0, "lucid64", 10, 10, time.Now())
+			bigInstance := BuildLRPAuction("pg-big", 0, lucidRootFSURL, 20, 10, time.Now())
+			smallInstance := BuildLRPAuction("pg-small", 0, lucidRootFSURL, 10, 10, time.Now())
 
 			By("factoring in the amount of memory taken up by the instance")
 			bigScore, err := emptyCell.ScoreForLRPAuction(bigInstance)
@@ -53,8 +54,8 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in disk usage", func() {
-			bigInstance := BuildLRPAuction("pg-big", 0, "lucid64", 10, 20, time.Now())
-			smallInstance := BuildLRPAuction("pg-small", 0, "lucid64", 10, 10, time.Now())
+			bigInstance := BuildLRPAuction("pg-big", 0, lucidRootFSURL, 10, 20, time.Now())
+			smallInstance := BuildLRPAuction("pg-small", 0, lucidRootFSURL, 10, 10, time.Now())
 
 			By("factoring in the amount of memory taken up by the instance")
 			bigScore, err := emptyCell.ScoreForLRPAuction(bigInstance)
@@ -73,7 +74,7 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in container usage", func() {
-			instance := BuildLRPAuction("pg-big", 0, "lucid64", 20, 20, time.Now())
+			instance := BuildLRPAuction("pg-big", 0, lucidRootFSURL, 20, 20, time.Now())
 
 			bigState := BuildCellState("the-zone", 100, 200, 50, false, nil)
 			bigCell := NewCell("big-cell", client, bigState)
@@ -89,9 +90,9 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in process-guids that are already present", func() {
-			instanceWithTwoMatches := BuildLRPAuction("pg-1", 2, "lucid64", 10, 10, time.Now())
-			instanceWithOneMatch := BuildLRPAuction("pg-2", 1, "lucid64", 10, 10, time.Now())
-			instanceWithNoMatches := BuildLRPAuction("pg-new", 0, "lucid64", 10, 10, time.Now())
+			instanceWithTwoMatches := BuildLRPAuction("pg-1", 2, lucidRootFSURL, 10, 10, time.Now())
+			instanceWithOneMatch := BuildLRPAuction("pg-2", 1, lucidRootFSURL, 10, 10, time.Now())
+			instanceWithNoMatches := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
 
 			twoMatchesScore, err := cell.ScoreForLRPAuction(instanceWithTwoMatches)
 			Ω(err).ShouldNot(HaveOccurred())
@@ -107,7 +108,7 @@ var _ = Describe("Cell", func() {
 		Context("when the LRP does not fit", func() {
 			Context("because of memory constraints", func() {
 				It("should error", func() {
-					massiveMemoryInstance := BuildLRPAuction("pg-new", 0, "lucid64", 10000, 10, time.Now())
+					massiveMemoryInstance := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10000, 10, time.Now())
 					score, err := cell.ScoreForLRPAuction(massiveMemoryInstance)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
@@ -116,7 +117,7 @@ var _ = Describe("Cell", func() {
 
 			Context("because of disk constraints", func() {
 				It("should error", func() {
-					massiveDiskInstance := BuildLRPAuction("pg-new", 0, "lucid64", 10, 10000, time.Now())
+					massiveDiskInstance := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10000, time.Now())
 					score, err := cell.ScoreForLRPAuction(massiveDiskInstance)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
@@ -125,7 +126,7 @@ var _ = Describe("Cell", func() {
 
 			Context("because of container constraints", func() {
 				It("should error", func() {
-					instance := BuildLRPAuction("pg-new", 0, "lucid64", 10, 10, time.Now())
+					instance := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
 					zeroState := BuildCellState("the-zone", 100, 100, 0, false, nil)
 					zeroCell := NewCell("zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForLRPAuction(instance)
@@ -135,9 +136,9 @@ var _ = Describe("Cell", func() {
 			})
 		})
 
-		Context("when the LRP doesn't match the stack", func() {
+		Context("when the LRP doesn't match the rootfs", func() {
 			It("should error", func() {
-				nonMatchingInstance := BuildLRPAuction("pg-new", 0, ".net", 10, 10, time.Now())
+				nonMatchingInstance := BuildLRPAuction("pg-new", 0, models.PreloadedRootFS("dot-net"), 10, 10, time.Now())
 				score, err := cell.ScoreForLRPAuction(nonMatchingInstance)
 				Ω(score).Should(BeZero())
 				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
@@ -147,8 +148,8 @@ var _ = Describe("Cell", func() {
 
 	Describe("ScoreForTask", func() {
 		It("factors in memory usage", func() {
-			bigTask := BuildTask("tg-big", "lucid64", 20, 10)
-			smallTask := BuildTask("tg-small", "lucid64", 10, 10)
+			bigTask := BuildTask("tg-big", lucidRootFSURL, 20, 10)
+			smallTask := BuildTask("tg-small", lucidRootFSURL, 10, 10)
 
 			By("factoring in the amount of memory taken up by the task")
 			bigScore, err := emptyCell.ScoreForTask(bigTask)
@@ -167,8 +168,8 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in disk usage", func() {
-			bigTask := BuildTask("tg-big", "lucid64", 10, 20)
-			smallTask := BuildTask("tg-small", "lucid64", 10, 10)
+			bigTask := BuildTask("tg-big", lucidRootFSURL, 10, 20)
+			smallTask := BuildTask("tg-small", lucidRootFSURL, 10, 10)
 
 			By("factoring in the amount of memory taken up by the task")
 			bigScore, err := emptyCell.ScoreForTask(bigTask)
@@ -187,7 +188,7 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in container usage", func() {
-			task := BuildTask("tg-big", "lucid64", 20, 20)
+			task := BuildTask("tg-big", lucidRootFSURL, 20, 20)
 
 			bigState := BuildCellState("the-zone", 100, 200, 50, false, nil)
 			bigCell := NewCell("big-cell", client, bigState)
@@ -205,7 +206,7 @@ var _ = Describe("Cell", func() {
 		Context("when the task does not fit", func() {
 			Context("because of memory constraints", func() {
 				It("should error", func() {
-					massiveMemoryTask := BuildTask("pg-new", "lucid64", 10000, 10)
+					massiveMemoryTask := BuildTask("pg-new", lucidRootFSURL, 10000, 10)
 					score, err := cell.ScoreForTask(massiveMemoryTask)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
@@ -214,7 +215,7 @@ var _ = Describe("Cell", func() {
 
 			Context("because of disk constraints", func() {
 				It("should error", func() {
-					massiveDiskTask := BuildTask("pg-new", "lucid64", 10, 10000)
+					massiveDiskTask := BuildTask("pg-new", lucidRootFSURL, 10, 10000)
 					score, err := cell.ScoreForTask(massiveDiskTask)
 					Ω(score).Should(BeZero())
 					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
@@ -223,7 +224,7 @@ var _ = Describe("Cell", func() {
 
 			Context("because of container constraints", func() {
 				It("should error", func() {
-					task := BuildTask("pg-new", "lucid64", 10, 10)
+					task := BuildTask("pg-new", lucidRootFSURL, 10, 10)
 					zeroState := BuildCellState("the-zone", 100, 100, 0, false, nil)
 					zeroCell := NewCell("zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForTask(task)
@@ -233,9 +234,9 @@ var _ = Describe("Cell", func() {
 			})
 		})
 
-		Context("when the task doesn't match the stack", func() {
+		Context("when the task doesn't match the rootfs", func() {
 			It("should error", func() {
-				nonMatchingTask := BuildTask("pg-new", ".net", 10, 10)
+				nonMatchingTask := BuildTask("pg-new", models.PreloadedRootFS("dot-net"), 10, 10)
 				score, err := cell.ScoreForTask(nonMatchingTask)
 				Ω(score).Should(BeZero())
 				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
@@ -246,8 +247,8 @@ var _ = Describe("Cell", func() {
 	Describe("ReserveLRP", func() {
 		Context("when there is room for the LRP", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
-				instance := BuildLRPAuction("pg-test", 0, "lucid64", 10, 10, time.Now())
-				instanceToAdd := BuildLRPAuction("pg-new", 0, "lucid64", 10, 10, time.Now())
+				instance := BuildLRPAuction("pg-test", 0, lucidRootFSURL, 10, 10, time.Now())
+				instanceToAdd := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
 
 				initialScore, err := cell.ScoreForLRPAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
@@ -260,9 +261,9 @@ var _ = Describe("Cell", func() {
 			})
 
 			It("should register the LRP and keep it in mind when handling future requests", func() {
-				instance := BuildLRPAuction("pg-test", 0, "lucid64", 10, 10, time.Now())
-				instanceWithMatchingProcessGuid := BuildLRPAuction("pg-new", 1, "lucid64", 10, 10, time.Now())
-				instanceToAdd := BuildLRPAuction("pg-new", 0, "lucid64", 10, 10, time.Now())
+				instance := BuildLRPAuction("pg-test", 0, lucidRootFSURL, 10, 10, time.Now())
+				instanceWithMatchingProcessGuid := BuildLRPAuction("pg-new", 1, lucidRootFSURL, 10, 10, time.Now())
+				instanceToAdd := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
 
 				initialScore, err := cell.ScoreForLRPAuction(instance)
 				Ω(err).ShouldNot(HaveOccurred())
@@ -287,9 +288,9 @@ var _ = Describe("Cell", func() {
 			})
 		})
 
-		Context("when there is a stack mismatch", func() {
+		Context("when there is a rootfs mismatch", func() {
 			It("should error", func() {
-				instance := BuildLRPAuction("pg-test", 0, ".net", 10, 10, time.Now())
+				instance := BuildLRPAuction("pg-test", 0, models.PreloadedRootFS("dot-net"), 10, 10, time.Now())
 				err := cell.ReserveLRP(instance)
 				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
 			})
@@ -297,7 +298,7 @@ var _ = Describe("Cell", func() {
 
 		Context("when there is no room for the LRP", func() {
 			It("should error", func() {
-				instance := BuildLRPAuction("pg-test", 0, "lucid64", 10000, 10, time.Now())
+				instance := BuildLRPAuction("pg-test", 0, lucidRootFSURL, 10000, 10, time.Now())
 				err := cell.ReserveLRP(instance)
 				Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
@@ -307,8 +308,8 @@ var _ = Describe("Cell", func() {
 	Describe("ReserveTask", func() {
 		Context("when there is room for the task", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
-				task := BuildTask("tg-test", "lucid64", 10, 10)
-				taskToAdd := BuildTask("tg-new", "lucid64", 10, 10)
+				task := BuildTask("tg-test", lucidRootFSURL, 10, 10)
+				taskToAdd := BuildTask("tg-new", lucidRootFSURL, 10, 10)
 
 				initialScore, err := cell.ScoreForTask(task)
 				Ω(err).ShouldNot(HaveOccurred())
@@ -321,9 +322,9 @@ var _ = Describe("Cell", func() {
 			})
 		})
 
-		Context("when there is a stack mismatch", func() {
+		Context("when there is a rootfs mismatch", func() {
 			It("should error", func() {
-				task := BuildTask("tg-test", ".net", 10, 10)
+				task := BuildTask("tg-test", models.PreloadedRootFS("dot-net"), 10, 10)
 				err := cell.ReserveTask(task)
 				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
 			})
@@ -331,7 +332,7 @@ var _ = Describe("Cell", func() {
 
 		Context("when there is no room for the Task", func() {
 			It("should error", func() {
-				task := BuildTask("tg-test", "lucid64", 10000, 10)
+				task := BuildTask("tg-test", lucidRootFSURL, 10000, 10)
 				err := cell.ReserveTask(task)
 				Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
@@ -351,7 +352,7 @@ var _ = Describe("Cell", func() {
 			var lrpAuction auctiontypes.LRPAuction
 
 			BeforeEach(func() {
-				lrpAuction = BuildLRPAuction("pg-new", 0, "lucid64", 20, 10, time.Now())
+				lrpAuction = BuildLRPAuction("pg-new", 0, lucidRootFSURL, 20, 10, time.Now())
 
 				Ω(cell.ReserveLRP(lrpAuction)).Should(Succeed())
 			})

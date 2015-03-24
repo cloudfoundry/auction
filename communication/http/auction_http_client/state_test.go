@@ -14,7 +14,7 @@ var _ = Describe("State", func() {
 
 	BeforeEach(func() {
 		state = auctiontypes.CellState{
-			Stack: "lucid64",
+			RootFSProviders: auctiontypes.RootFSProviders{"docker": auctiontypes.ArbitraryRootFSProvider{}},
 		}
 	})
 

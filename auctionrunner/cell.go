@@ -21,8 +21,8 @@ func NewCell(guid string, client auctiontypes.CellRep, state auctiontypes.CellSt
 	}
 }
 
-func (c *Cell) Stack() string {
-	return c.state.Stack
+func (c *Cell) MatchRootFS(rootFS string) bool {
+	return c.state.MatchRootFS(rootFS)
 }
 
 func (c *Cell) ScoreForLRPAuction(lrpAuction auctiontypes.LRPAuction) (float64, error) {
@@ -123,7 +123,7 @@ func (c *Cell) Commit() auctiontypes.Work {
 }
 
 func (c *Cell) canHandleLRPAuction(lrpAuction auctiontypes.LRPAuction) error {
-	if c.state.Stack != lrpAuction.DesiredLRP.Stack {
+	if !c.MatchRootFS(lrpAuction.DesiredLRP.RootFS) {
 		return auctiontypes.ErrorCellMismatch
 	}
 	if c.state.AvailableResources.MemoryMB < lrpAuction.DesiredLRP.MemoryMB {
@@ -140,7 +140,7 @@ func (c *Cell) canHandleLRPAuction(lrpAuction auctiontypes.LRPAuction) error {
 }
 
 func (c *Cell) canHandleTask(task models.Task) error {
-	if c.state.Stack != task.Stack {
+	if !c.MatchRootFS(task.RootFS) {
 		return auctiontypes.ErrorCellMismatch
 	}
 	if c.state.AvailableResources.MemoryMB < task.MemoryMB {

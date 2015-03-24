@@ -8,34 +8,34 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func BuildLRPStartRequest(processGuid string, indices []uint, stack string, memoryMB, diskMB int) models.LRPStartRequest {
+func BuildLRPStartRequest(processGuid string, indices []uint, rootFS string, memoryMB, diskMB int) models.LRPStartRequest {
 	return models.LRPStartRequest{
 		DesiredLRP: models.DesiredLRP{
 			ProcessGuid: processGuid,
 			MemoryMB:    memoryMB,
 			DiskMB:      diskMB,
-			Stack:       stack,
+			RootFS:      rootFS,
 		},
 		Indices: indices,
 	}
 }
 
-func BuildTask(taskGuid, stack string, memoryMB, diskMB int) models.Task {
+func BuildTask(taskGuid, rootFS string, memoryMB, diskMB int) models.Task {
 	return models.Task{
 		TaskGuid: taskGuid,
-		Stack:    stack,
+		RootFS:   rootFS,
 		MemoryMB: memoryMB,
 		DiskMB:   diskMB,
 	}
 }
 
-func BuildLRPAuction(processGuid string, index int, stack string, memoryMB, diskMB int, queueTime time.Time) auctiontypes.LRPAuction {
+func BuildLRPAuction(processGuid string, index int, rootFS string, memoryMB, diskMB int, queueTime time.Time) auctiontypes.LRPAuction {
 	return auctiontypes.LRPAuction{
 		DesiredLRP: models.DesiredLRP{
 			ProcessGuid: processGuid,
 			MemoryMB:    memoryMB,
 			DiskMB:      diskMB,
-			Stack:       stack,
+			RootFS:      rootFS,
 		},
 		Index: index,
 		AuctionRecord: auctiontypes.AuctionRecord{
@@ -44,13 +44,13 @@ func BuildLRPAuction(processGuid string, index int, stack string, memoryMB, disk
 	}
 }
 
-func BuildLRPAuctionWithPlacementError(processGuid string, index int, stack string, memoryMB, diskMB int, queueTime time.Time, placementError string) auctiontypes.LRPAuction {
+func BuildLRPAuctionWithPlacementError(processGuid string, index int, rootFS string, memoryMB, diskMB int, queueTime time.Time, placementError string) auctiontypes.LRPAuction {
 	return auctiontypes.LRPAuction{
 		DesiredLRP: models.DesiredLRP{
 			ProcessGuid: processGuid,
 			MemoryMB:    memoryMB,
 			DiskMB:      diskMB,
-			Stack:       stack,
+			RootFS:      rootFS,
 		},
 		Index: index,
 		AuctionRecord: auctiontypes.AuctionRecord{
@@ -84,7 +84,12 @@ func BuildTaskAuction(task models.Task, queueTime time.Time) auctiontypes.TaskAu
 	}
 }
 
-func BuildCellState(zone string,
+const lucidStack = "lucid64"
+
+var lucidRootFSURL = models.PreloadedRootFS(lucidStack)
+
+func BuildCellState(
+	zone string,
 	memoryMB int,
 	diskMB int,
 	containers int,
@@ -109,7 +114,7 @@ func BuildCellState(zone string,
 	Ω(availableResources.Containers).Should(BeNumerically(">=", 0), "Check your math!")
 
 	return auctiontypes.CellState{
-		Stack:              "lucid64",
+		RootFSProviders:    auctiontypes.RootFSProviders{models.PreloadedRootFSScheme: auctiontypes.NewFixedSetRootFSProvider(lucidStack)},
 		AvailableResources: availableResources,
 		TotalResources:     totalResources,
 		LRPs:               lrps,

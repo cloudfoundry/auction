@@ -3,6 +3,7 @@ package auctiontypes
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/cloudfoundry-incubator/runtime-schema/diego_errors"
@@ -103,13 +104,22 @@ type Work struct {
 }
 
 type CellState struct {
-	Stack              string
+	RootFSProviders    RootFSProviders
 	AvailableResources Resources
 	TotalResources     Resources
 	LRPs               []LRP
 	Tasks              []Task
 	Zone               string
 	Evacuating         bool
+}
+
+func (cell CellState) MatchRootFS(rootfs string) bool {
+	rootFSURL, err := url.Parse(rootfs)
+	if err != nil {
+		return false
+	}
+
+	return cell.RootFSProviders.Match(*rootFSURL)
 }
 
 type LRP struct {

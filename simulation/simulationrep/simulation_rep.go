@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/runtime-schema/models"
 )
 
 type SimulationRep struct {
@@ -47,7 +48,9 @@ func (rep *SimulationRep) State() (auctiontypes.CellState, error) {
 	// util.RandomSleep(800, 900)
 
 	return auctiontypes.CellState{
-		Stack:              rep.stack,
+		RootFSProviders: auctiontypes.RootFSProviders{
+			models.PreloadedRootFSScheme: auctiontypes.NewFixedSetRootFSProvider(rep.stack),
+		},
 		AvailableResources: availableResources,
 		TotalResources:     rep.totalResources,
 		LRPs:               lrps,

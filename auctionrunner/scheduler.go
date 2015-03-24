@@ -12,11 +12,11 @@ import (
 
 type Zone []*Cell
 
-func (z *Zone) FilterCells(stack string) []*Cell {
+func (z *Zone) FilterCells(rootFS string) []*Cell {
 	var cells = make([]*Cell, 0, len(*z))
 
 	for _, cell := range *z {
-		if cell.Stack() == stack {
+		if cell.MatchRootFS(rootFS) {
 			cells = append(cells, cell)
 		}
 	}
@@ -195,7 +195,7 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction auctiontypes.LRPAuction) (auct
 	sortedZones := sortZonesByInstances(s.zones, lrpAuction)
 
 	for zoneIndex, lrpByZone := range sortedZones {
-		cells := lrpByZone.zone.FilterCells(lrpAuction.DesiredLRP.Stack)
+		cells := lrpByZone.zone.FilterCells(lrpAuction.DesiredLRP.RootFS)
 		if len(cells) == 0 {
 			return auctiontypes.LRPAuction{}, auctiontypes.ErrorCellMismatch
 		}
@@ -240,7 +240,7 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction auctiontypes.TaskAuction) (a
 	winnerScore := 1e20
 
 	for _, zone := range s.zones {
-		cells := zone.FilterCells(taskAuction.Task.Stack)
+		cells := zone.FilterCells(taskAuction.Task.RootFS)
 		if len(cells) == 0 {
 			return auctiontypes.TaskAuction{}, auctiontypes.ErrorCellMismatch
 		}

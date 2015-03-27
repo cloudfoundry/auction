@@ -3,7 +3,7 @@ package auctionrunner_test
 import (
 	"time"
 
-	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
+	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/pivotal-golang/clock/fakeclock"
@@ -15,12 +15,12 @@ import (
 var _ = Describe("Batch", func() {
 	var lrpStart models.LRPStartRequest
 	var task models.Task
-	var batch *Batch
+	var batch *auctionrunner.Batch
 	var clock *fakeclock.FakeClock
 
 	BeforeEach(func() {
 		clock = fakeclock.NewFakeClock(time.Now())
-		batch = NewBatch(clock)
+		batch = auctionrunner.NewBatch(clock)
 	})
 
 	It("should start off empty", func() {

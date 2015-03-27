@@ -6,7 +6,7 @@ import (
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/pivotal-golang/clock/fakeclock"
 
-	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
+	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
 	"github.com/cloudfoundry-incubator/runtime-schema/diego_errors"
@@ -18,7 +18,7 @@ import (
 
 var _ = Describe("Scheduler", func() {
 	var clients map[string]*fakes.FakeSimulationCellRep
-	var zones map[string]Zone
+	var zones map[string]auctionrunner.Zone
 	var clock *fakeclock.FakeClock
 	var workPool *workpool.WorkPool
 	var results auctiontypes.AuctionResults
@@ -28,7 +28,7 @@ var _ = Describe("Scheduler", func() {
 		workPool = workpool.NewWorkPool(5)
 
 		clients = map[string]*fakes.FakeSimulationCellRep{}
-		zones = map[string]Zone{}
+		zones = map[string]auctionrunner.Zone{}
 	})
 
 	AfterEach(func() {
@@ -47,7 +47,7 @@ var _ = Describe("Scheduler", func() {
 			}
 
 			By("no auctions are marked successful")
-			scheduler := NewScheduler(workPool, map[string]Zone{}, clock)
+			scheduler := auctionrunner.NewScheduler(workPool, map[string]auctionrunner.Zone{}, clock)
 			results := scheduler.Schedule(auctionRequest)
 			Ω(results.SuccessfulLRPs).Should(BeEmpty())
 			Ω(results.SuccessfulTasks).Should(BeEmpty())
@@ -74,13 +74,13 @@ var _ = Describe("Scheduler", func() {
 
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, []auctiontypes.LRP{
+			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"pg-1", 0, 10, 10},
 				{"pg-2", 0, 10, 10},
 			}))}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, []auctiontypes.LRP{
+			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"pg-3", 0, 10, 10},
 			}))}
 		})
@@ -94,7 +94,7 @@ var _ = Describe("Scheduler", func() {
 				BeforeEach(func() {
 					clock.Increment(time.Minute)
 
-					s := NewScheduler(workPool, zones, clock)
+					s := auctionrunner.NewScheduler(workPool, zones, clock)
 					results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 				})
 
@@ -124,7 +124,7 @@ var _ = Describe("Scheduler", func() {
 			Context("when it picks a winner", func() {
 				BeforeEach(func() {
 					clock.Increment(time.Minute)
-					s := NewScheduler(workPool, zones, clock)
+					s := auctionrunner.NewScheduler(workPool, zones, clock)
 					results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 				})
 
@@ -154,7 +154,7 @@ var _ = Describe("Scheduler", func() {
 				clients["B-cell"].PerformReturns(auctiontypes.Work{LRPs: []auctiontypes.LRPAuction{startAuction}}, nil)
 
 				clock.Increment(time.Minute)
-				s := NewScheduler(workPool, zones, clock)
+				s := auctionrunner.NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 			})
 
@@ -169,7 +169,7 @@ var _ = Describe("Scheduler", func() {
 			BeforeEach(func() {
 				startAuction = BuildLRPAuctionWithPlacementError("pg-4", 0, lucidRootFSURL, 1000, 1000, clock.Now(), diego_errors.INSUFFICIENT_RESOURCES_MESSAGE)
 				clock.Increment(time.Minute)
-				s := NewScheduler(workPool, zones, clock)
+				s := auctionrunner.NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 			})
 
@@ -191,13 +191,13 @@ var _ = Describe("Scheduler", func() {
 
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, []auctiontypes.LRP{
+			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"does-not-matter", 0, 10, 10},
 				{"does-not-matter", 0, 10, 10},
 			}))}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, []auctiontypes.LRP{
+			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"does-not-matter", 0, 10, 10},
 			}))}
 
@@ -207,7 +207,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when it picks a winner", func() {
 			BeforeEach(func() {
-				s := NewScheduler(workPool, zones, clock)
+				s := auctionrunner.NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -236,7 +236,7 @@ var _ = Describe("Scheduler", func() {
 		Context("when the cell rejects the task", func() {
 			BeforeEach(func() {
 				clients["B-cell"].PerformReturns(auctiontypes.Work{Tasks: []models.Task{taskAuction.Task}}, nil)
-				s := NewScheduler(workPool, zones, clock)
+				s := auctionrunner.NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -253,7 +253,7 @@ var _ = Describe("Scheduler", func() {
 			BeforeEach(func() {
 				taskAuction = BuildTaskAuction(BuildTask("tg-1", lucidRootFSURL, 1000, 1000), clock.Now())
 				clock.Increment(time.Minute)
-				s := NewScheduler(workPool, zones, clock)
+				s := auctionrunner.NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -276,7 +276,7 @@ var _ = Describe("Scheduler", func() {
 			BeforeEach(func() {
 				taskAuction = BuildTaskAuction(BuildTask("tg-1", "unsupported:rootfs", 100, 100), clock.Now())
 				clock.Increment(time.Minute)
-				s := NewScheduler(workPool, zones, clock)
+				s := auctionrunner.NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -299,13 +299,13 @@ var _ = Describe("Scheduler", func() {
 	Describe("a comprehensive scenario", func() {
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = Zone{NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, []auctiontypes.LRP{
+			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"pg-1", 0, 10, 10},
 				{"pg-2", 0, 10, 10},
 			}))}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = Zone{NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, []auctiontypes.LRP{
+			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, []auctiontypes.LRP{
 				{"pg-3", 0, 10, 10},
 				{"pg-4", 0, 20, 20},
 			}))}
@@ -344,7 +344,7 @@ var _ = Describe("Scheduler", func() {
 				Tasks: []auctiontypes.TaskAuction{taskAuction1, taskAuction2, taskAuctionNope},
 			}
 
-			s := NewScheduler(workPool, zones, clock)
+			s := auctionrunner.NewScheduler(workPool, zones, clock)
 			results = s.Schedule(auctionRequest)
 
 			Ω(clients["A-cell"].PerformCallCount()).Should(Equal(1))
@@ -413,8 +413,8 @@ var _ = Describe("Scheduler", func() {
 		})
 
 		JustBeforeEach(func() {
-			zones["zone"] = Zone{
-				NewCell("cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, false, []auctiontypes.LRP{})),
+			zones["zone"] = auctionrunner.Zone{
+				auctionrunner.NewCell("cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, false, []auctiontypes.LRP{})),
 			}
 
 			auctionRequest := auctiontypes.AuctionRequest{
@@ -422,7 +422,7 @@ var _ = Describe("Scheduler", func() {
 				Tasks: tasks,
 			}
 
-			scheduler := NewScheduler(workPool, zones, clock)
+			scheduler := auctionrunner.NewScheduler(workPool, zones, clock)
 			results = scheduler.Schedule(auctionRequest)
 		})
 

@@ -3,7 +3,7 @@ package auctionrunner_test
 import (
 	"errors"
 
-	. "github.com/cloudfoundry-incubator/auction/auctionrunner"
+	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
 	"github.com/cloudfoundry/gunk/workpool"
@@ -39,10 +39,10 @@ var _ = Describe("ZoneBuilder", func() {
 	})
 
 	It("fetches state by calling each client", func() {
-		zones := FetchStateAndBuildZones(workPool, clients)
+		zones := auctionrunner.FetchStateAndBuildZones(workPool, clients)
 		Ω(zones).Should(HaveLen(2))
 
-		cells := map[string]*Cell{}
+		cells := map[string]*auctionrunner.Cell{}
 		for _, cell := range zones["the-zone"] {
 			cells[cell.Guid] = cell
 		}
@@ -66,7 +66,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("does not include them in the map", func() {
-			zones := FetchStateAndBuildZones(workPool, clients)
+			zones := auctionrunner.FetchStateAndBuildZones(workPool, clients)
 			Ω(zones).Should(HaveLen(2))
 
 			cells := zones["the-zone"]
@@ -85,7 +85,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("does not include the client in the map", func() {
-			zones := FetchStateAndBuildZones(workPool, clients)
+			zones := auctionrunner.FetchStateAndBuildZones(workPool, clients)
 			Ω(zones).Should(HaveLen(2))
 
 			cells := zones["the-zone"]

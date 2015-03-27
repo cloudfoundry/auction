@@ -6,7 +6,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
-	. "github.com/cloudfoundry-incubator/auction/communication/http/auction_http_client"
+	"github.com/cloudfoundry-incubator/auction/communication/http/auction_http_client"
 	"github.com/cloudfoundry-incubator/auction/communication/http/auction_http_handlers"
 	"github.com/cloudfoundry-incubator/auction/communication/http/routes"
 	. "github.com/onsi/ginkgo"
@@ -38,7 +38,7 @@ var _ = BeforeEach(func() {
 	Ω(err).ShouldNot(HaveOccurred())
 	server = httptest.NewServer(handler)
 
-	client = New(&http.Client{}, "rep-guid", server.URL, logger)
+	client = auction_http_client.New(&http.Client{}, "rep-guid", server.URL, logger)
 
 	serverThatErrors = ghttp.NewServer()
 	erroringHandler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
@@ -47,7 +47,7 @@ var _ = BeforeEach(func() {
 	//5 erroringHandlers should be more than enough: none of the individual tests should make more than 5 requests to this server
 	serverThatErrors.AppendHandlers(erroringHandler, erroringHandler, erroringHandler, erroringHandler, erroringHandler)
 
-	clientForServerThatErrors = New(&http.Client{}, "rep-guid", serverThatErrors.URL(), logger)
+	clientForServerThatErrors = auction_http_client.New(&http.Client{}, "rep-guid", serverThatErrors.URL(), logger)
 })
 
 var _ = AfterEach(func() {

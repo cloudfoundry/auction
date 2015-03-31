@@ -98,17 +98,6 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				"failed-lrp-start-auctions":     len(auctionResults.FailedLRPs),
 				"failed-task-auctions":          len(auctionResults.FailedTasks),
 			})
-			numStartsFailed := len(auctionResults.FailedLRPs)
-			numTasksFailed := len(auctionResults.FailedTasks)
-
-			logger.Info("resubmitted-failures", lager.Data{
-				"successful-lrp-start-auctions":     len(auctionResults.SuccessfulLRPs),
-				"successful-task-auctions":          len(auctionResults.SuccessfulTasks),
-				"will-not-retry-lrp-start-auctions": len(auctionResults.FailedLRPs),
-				"will-not-retry-task-auctions":      len(auctionResults.FailedTasks),
-				"will-retry-lrp-start-auctions":     numStartsFailed - len(auctionResults.FailedLRPs),
-				"will-retry-task-auctions":          numTasksFailed - len(auctionResults.FailedTasks),
-			})
 
 			a.metricEmitter.AuctionCompleted(auctionResults)
 			a.delegate.AuctionCompleted(auctionResults)

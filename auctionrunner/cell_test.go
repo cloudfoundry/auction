@@ -7,7 +7,6 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,10 +18,10 @@ var _ = Describe("Cell", func() {
 
 	BeforeEach(func() {
 		client = &fakes.FakeSimulationCellRep{}
-		emptyState := BuildCellState("the-zone", 100, 200, 50, false, nil)
+		emptyState := BuildCellState("the-zone", 100, 200, 50, false, lucidOnlyRootFSProviders, nil)
 		emptyCell = auctionrunner.NewCell("empty-cell", client, emptyState)
 
-		state := BuildCellState("the-zone", 100, 200, 50, false, []auctiontypes.LRP{
+		state := BuildCellState("the-zone", 100, 200, 50, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
 			{"pg-1", 0, 10, 20},
 			{"pg-1", 1, 10, 20},
 			{"pg-2", 0, 10, 20},
@@ -76,10 +75,10 @@ var _ = Describe("Cell", func() {
 		It("factors in container usage", func() {
 			instance := BuildLRPAuction("pg-big", 0, lucidRootFSURL, 20, 20, time.Now())
 
-			bigState := BuildCellState("the-zone", 100, 200, 50, false, nil)
+			bigState := BuildCellState("the-zone", 100, 200, 50, false, lucidOnlyRootFSProviders, nil)
 			bigCell := auctionrunner.NewCell("big-cell", client, bigState)
 
-			smallState := BuildCellState("the-zone", 100, 200, 20, false, nil)
+			smallState := BuildCellState("the-zone", 100, 200, 20, false, lucidOnlyRootFSProviders, nil)
 			smallCell := auctionrunner.NewCell("small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForLRPAuction(instance)
@@ -127,7 +126,7 @@ var _ = Describe("Cell", func() {
 			Context("because of container constraints", func() {
 				It("should error", func() {
 					instance := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
-					zeroState := BuildCellState("the-zone", 100, 100, 0, false, nil)
+					zeroState := BuildCellState("the-zone", 100, 100, 0, false, lucidOnlyRootFSProviders, nil)
 					zeroCell := auctionrunner.NewCell("zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForLRPAuction(instance)
 					Ω(score).Should(BeZero())
@@ -136,12 +135,102 @@ var _ = Describe("Cell", func() {
 			})
 		})
 
-		Context("when the LRP doesn't match the rootfs", func() {
-			It("should error", func() {
-				nonMatchingInstance := BuildLRPAuction("pg-new", 0, models.PreloadedRootFS("dot-net"), 10, 10, time.Now())
-				score, err := cell.ScoreForLRPAuction(nonMatchingInstance)
-				Ω(score).Should(BeZero())
-				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+		Describe("matching the RootFS", func() {
+			Context("when the cell provides a complex array of RootFSes", func() {
+				BeforeEach(func() {
+					state := BuildCellState(
+						"the-zone",
+						100,
+						100,
+						100,
+						false,
+						auctiontypes.RootFSProviders{
+							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"fixed-set-2": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"arbitrary-1": auctiontypes.ArbitraryRootFSProvider{},
+							"arbitrary-2": auctiontypes.ArbitraryRootFSProvider{},
+						},
+						[]auctiontypes.LRP{},
+					)
+					cell = auctionrunner.NewCell("the-cell", client, state)
+				})
+
+				It("should support LRPs with various stack requirements", func() {
+					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-2", 10, 10, time.Now()))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary-1://random-root-fs", 10, 10, time.Now()))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary-2://random-root-fs", 10, 10, time.Now()))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+
+				It("should error for LRPs with unsupported stack requirements", func() {
+					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-3", 10, 10, time.Now()))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-3:root-fs-1", 10, 10, time.Now()))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary-3://random-root-fs", 10, 10, time.Now()))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+				})
+			})
+
+			Context("when the cell supports a single RootFS", func() {
+				BeforeEach(func() {
+					state := BuildCellState(
+						"the-zone",
+						100,
+						100,
+						100,
+						false,
+						auctiontypes.RootFSProviders{
+							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1"),
+						},
+						[]auctiontypes.LRP{},
+					)
+					cell = auctionrunner.NewCell("the-cell", client, state)
+				})
+
+				It("should support LRPs requiring the stack supported by the cell", func() {
+					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+
+				It("should error for LRPs with unsupported stack requirements", func() {
+					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary://random-root-fs", 10, 10, time.Now()))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+				})
 			})
 		})
 	})
@@ -190,10 +279,10 @@ var _ = Describe("Cell", func() {
 		It("factors in container usage", func() {
 			task := BuildTask("tg-big", lucidRootFSURL, 20, 20)
 
-			bigState := BuildCellState("the-zone", 100, 200, 50, false, nil)
+			bigState := BuildCellState("the-zone", 100, 200, 50, false, lucidOnlyRootFSProviders, nil)
 			bigCell := auctionrunner.NewCell("big-cell", client, bigState)
 
-			smallState := BuildCellState("the-zone", 100, 200, 20, false, nil)
+			smallState := BuildCellState("the-zone", 100, 200, 20, false, lucidOnlyRootFSProviders, nil)
 			smallCell := auctionrunner.NewCell("small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForTask(task)
@@ -225,7 +314,7 @@ var _ = Describe("Cell", func() {
 			Context("because of container constraints", func() {
 				It("should error", func() {
 					task := BuildTask("pg-new", lucidRootFSURL, 10, 10)
-					zeroState := BuildCellState("the-zone", 100, 100, 0, false, nil)
+					zeroState := BuildCellState("the-zone", 100, 100, 0, false, lucidOnlyRootFSProviders, nil)
 					zeroCell := auctionrunner.NewCell("zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForTask(task)
 					Ω(score).Should(BeZero())
@@ -234,12 +323,102 @@ var _ = Describe("Cell", func() {
 			})
 		})
 
-		Context("when the task doesn't match the rootfs", func() {
-			It("should error", func() {
-				nonMatchingTask := BuildTask("pg-new", models.PreloadedRootFS("dot-net"), 10, 10)
-				score, err := cell.ScoreForTask(nonMatchingTask)
-				Ω(score).Should(BeZero())
-				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+		Describe("matching the RootFS", func() {
+			Context("when the cell provides a complex array of RootFSes", func() {
+				BeforeEach(func() {
+					state := BuildCellState(
+						"the-zone",
+						100,
+						100,
+						100,
+						false,
+						auctiontypes.RootFSProviders{
+							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"fixed-set-2": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"arbitrary-1": auctiontypes.ArbitraryRootFSProvider{},
+							"arbitrary-2": auctiontypes.ArbitraryRootFSProvider{},
+						},
+						[]auctiontypes.LRP{},
+					)
+					cell = auctionrunner.NewCell("the-cell", client, state)
+				})
+
+				It("should support Tasks with various stack requirements", func() {
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-2:root-fs-2", 10, 10))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary-1://random-root-fs", 10, 10))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary-2://random-root-fs", 10, 10))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+
+				It("should error for Tasks with unsupported stack requirements", func() {
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-3", 10, 10))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-3:root-fs-1", 10, 10))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary-3://random-root-fs", 10, 10))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+				})
+			})
+
+			Context("when the cell supports a single RootFS", func() {
+				BeforeEach(func() {
+					state := BuildCellState(
+						"the-zone",
+						100,
+						100,
+						100,
+						false,
+						auctiontypes.RootFSProviders{
+							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1"),
+						},
+						[]auctiontypes.LRP{},
+					)
+					cell = auctionrunner.NewCell("the-cell", client, state)
+				})
+
+				It("should support Tasks requiring the stack supported by the cell", func() {
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
+					Ω(score).Should(BeNumerically(">", 0))
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+
+				It("should error for Tasks with unsupported stack requirements", func() {
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary://random-root-fs", 10, 10))
+					Ω(score).Should(BeZero())
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+				})
 			})
 		})
 	})
@@ -288,11 +467,89 @@ var _ = Describe("Cell", func() {
 			})
 		})
 
-		Context("when there is a rootfs mismatch", func() {
-			It("should error", func() {
-				instance := BuildLRPAuction("pg-test", 0, models.PreloadedRootFS("dot-net"), 10, 10, time.Now())
-				err := cell.ReserveLRP(instance)
-				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+		Describe("matching the RootFS", func() {
+			Context("when the cell provides a complex array of RootFSes", func() {
+				BeforeEach(func() {
+					state := BuildCellState(
+						"the-zone",
+						100,
+						100,
+						100,
+						false,
+						auctiontypes.RootFSProviders{
+							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"fixed-set-2": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"arbitrary-1": auctiontypes.ArbitraryRootFSProvider{},
+							"arbitrary-2": auctiontypes.ArbitraryRootFSProvider{},
+						},
+						[]auctiontypes.LRP{},
+					)
+					cell = auctionrunner.NewCell("the-cell", client, state)
+				})
+
+				It("should support LRPs with various stack requirements", func() {
+					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-2", 10, 10, time.Now()))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary-1://random-root-fs", 10, 10, time.Now()))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary-2://random-root-fs", 10, 10, time.Now()))
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+
+				It("should error for LRPs with unsupported stack requirements", func() {
+					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-3", 10, 10, time.Now()))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-3:root-fs-1", 10, 10, time.Now()))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary-3://random-root-fs", 10, 10, time.Now()))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+				})
+			})
+
+			Context("when the cell supports a single RootFS", func() {
+				BeforeEach(func() {
+					state := BuildCellState(
+						"the-zone",
+						100,
+						100,
+						100,
+						false,
+						auctiontypes.RootFSProviders{
+							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1"),
+						},
+						[]auctiontypes.LRP{},
+					)
+					cell = auctionrunner.NewCell("the-cell", client, state)
+				})
+
+				It("should support LRPs requiring the stack supported by the cell", func() {
+					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+
+				It("should error for LRPs with unsupported stack requirements", func() {
+					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary://random-root-fs", 10, 10, time.Now()))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+				})
 			})
 		})
 
@@ -322,11 +579,89 @@ var _ = Describe("Cell", func() {
 			})
 		})
 
-		Context("when there is a rootfs mismatch", func() {
-			It("should error", func() {
-				task := BuildTask("tg-test", models.PreloadedRootFS("dot-net"), 10, 10)
-				err := cell.ReserveTask(task)
-				Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+		Describe("matching the RootFS", func() {
+			Context("when the cell provides a complex array of RootFSes", func() {
+				BeforeEach(func() {
+					state := BuildCellState(
+						"the-zone",
+						100,
+						100,
+						100,
+						false,
+						auctiontypes.RootFSProviders{
+							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"fixed-set-2": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"arbitrary-1": auctiontypes.ArbitraryRootFSProvider{},
+							"arbitrary-2": auctiontypes.ArbitraryRootFSProvider{},
+						},
+						[]auctiontypes.LRP{},
+					)
+					cell = auctionrunner.NewCell("the-cell", client, state)
+				})
+
+				It("should support Tasks with various stack requirements", func() {
+					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-2:root-fs-2", 10, 10))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary-1://random-root-fs", 10, 10))
+					Ω(err).ShouldNot(HaveOccurred())
+
+					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary-2://random-root-fs", 10, 10))
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+
+				It("should error for Tasks with unsupported stack requirements", func() {
+					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-3", 10, 10))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-3:root-fs-1", 10, 10))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary-3://random-root-fs", 10, 10))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+				})
+			})
+
+			Context("when the cell supports a single RootFS", func() {
+				BeforeEach(func() {
+					state := BuildCellState(
+						"the-zone",
+						100,
+						100,
+						100,
+						false,
+						auctiontypes.RootFSProviders{
+							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1"),
+						},
+						[]auctiontypes.LRP{},
+					)
+					cell = auctionrunner.NewCell("the-cell", client, state)
+				})
+
+				It("should support Tasks requiring the stack supported by the cell", func() {
+					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+
+				It("should error for Tasks with unsupported stack requirements", func() {
+					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+
+					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary://random-root-fs", 10, 10))
+					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+				})
 			})
 		})
 

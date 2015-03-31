@@ -88,12 +88,15 @@ const lucidStack = "lucid64"
 
 var lucidRootFSURL = models.PreloadedRootFS(lucidStack)
 
+var lucidOnlyRootFSProviders = auctiontypes.RootFSProviders{models.PreloadedRootFSScheme: auctiontypes.NewFixedSetRootFSProvider(lucidStack)}
+
 func BuildCellState(
 	zone string,
 	memoryMB int,
 	diskMB int,
 	containers int,
 	evacuating bool,
+	rootFSProviders auctiontypes.RootFSProviders,
 	lrps []auctiontypes.LRP,
 ) auctiontypes.CellState {
 	totalResources := auctiontypes.Resources{
@@ -114,7 +117,7 @@ func BuildCellState(
 	Ω(availableResources.Containers).Should(BeNumerically(">=", 0), "Check your math!")
 
 	return auctiontypes.CellState{
-		RootFSProviders:    auctiontypes.RootFSProviders{models.PreloadedRootFSScheme: auctiontypes.NewFixedSetRootFSProvider(lucidStack)},
+		RootFSProviders:    rootFSProviders,
 		AvailableResources: availableResources,
 		TotalResources:     totalResources,
 		LRPs:               lrps,

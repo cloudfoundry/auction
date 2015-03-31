@@ -33,9 +33,9 @@ var _ = Describe("ZoneBuilder", func() {
 			"C": repC,
 		}
 
-		repA.StateReturns(BuildCellState("the-zone", 100, 200, 100, false, nil), nil)
-		repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, false, nil), nil)
-		repC.StateReturns(BuildCellState("other-zone", 100, 10, 100, false, nil), nil)
+		repA.StateReturns(BuildCellState("the-zone", 100, 200, 100, false, lucidOnlyRootFSProviders, nil), nil)
+		repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, false, lucidOnlyRootFSProviders, nil), nil)
+		repC.StateReturns(BuildCellState("other-zone", 100, 10, 100, false, lucidOnlyRootFSProviders, nil), nil)
 	})
 
 	AfterEach(func() {
@@ -66,7 +66,7 @@ var _ = Describe("ZoneBuilder", func() {
 
 	Context("when cells are evacuating", func() {
 		BeforeEach(func() {
-			repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, true, nil), nil)
+			repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, true, lucidOnlyRootFSProviders, nil), nil)
 		})
 
 		It("does not include them in the map", func() {
@@ -85,7 +85,7 @@ var _ = Describe("ZoneBuilder", func() {
 
 	Context("when a client fails", func() {
 		BeforeEach(func() {
-			repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, false, nil), errors.New("boom"))
+			repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, false, lucidOnlyRootFSProviders, nil), errors.New("boom"))
 		})
 
 		It("does not include the client in the map", func() {

@@ -64,14 +64,19 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 
 			logger.Info("fetching-zone-state")
 			fetchStatesStartTime := time.Now()
-			zones := FetchStateAndBuildZones(a.workPool, clients)
-			a.metricEmitter.FetchStatesCompleted(time.Since(fetchStatesStartTime))
+			zones := FetchStateAndBuildZones(logger, a.workPool, clients)
+			fetchStateDuration := time.Since(fetchStatesStartTime)
+			a.metricEmitter.FetchStatesCompleted(fetchStateDuration)
 			cellCount := 0
 			for zone, cells := range zones {
 				logger.Info("zone-state", lager.Data{"zone": zone, "cell-count": len(cells)})
 				cellCount += len(cells)
 			}
-			logger.Info("fetched-zone-state", lager.Data{"cell-state-count": cellCount, "num-failed-requests": len(clients) - cellCount})
+			logger.Info("fetched-zone-state", lager.Data{
+				"cell-state-count":    cellCount,
+				"num-failed-requests": len(clients) - cellCount,
+				"duration":            fetchStateDuration.String(),
+			})
 
 			logger.Info("fetching-auctions")
 			lrpAuctions, taskAuctions := a.batch.DedupeAndDrain()

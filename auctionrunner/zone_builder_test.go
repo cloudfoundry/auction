@@ -7,6 +7,8 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
 	"github.com/cloudfoundry/gunk/workpool"
+	"github.com/pivotal-golang/lager"
+	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,8 +18,10 @@ var _ = Describe("ZoneBuilder", func() {
 	var repA, repB, repC *fakes.FakeSimulationCellRep
 	var clients map[string]auctiontypes.CellRep
 	var workPool *workpool.WorkPool
+	var logger lager.Logger
 
 	BeforeEach(func() {
+		logger = lagertest.NewTestLogger("test")
 		workPool = workpool.NewWorkPool(5)
 		repA = &fakes.FakeSimulationCellRep{}
 		repB = &fakes.FakeSimulationCellRep{}
@@ -39,7 +43,7 @@ var _ = Describe("ZoneBuilder", func() {
 	})
 
 	It("fetches state by calling each client", func() {
-		zones := auctionrunner.FetchStateAndBuildZones(workPool, clients)
+		zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
 		Ω(zones).Should(HaveLen(2))
 
 		cells := map[string]*auctionrunner.Cell{}
@@ -66,7 +70,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("does not include them in the map", func() {
-			zones := auctionrunner.FetchStateAndBuildZones(workPool, clients)
+			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
 			Ω(zones).Should(HaveLen(2))
 
 			cells := zones["the-zone"]
@@ -85,7 +89,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("does not include the client in the map", func() {
-			zones := auctionrunner.FetchStateAndBuildZones(workPool, clients)
+			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
 			Ω(zones).Should(HaveLen(2))
 
 			cells := zones["the-zone"]

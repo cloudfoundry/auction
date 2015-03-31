@@ -5,9 +5,10 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry/gunk/workpool"
+	"github.com/pivotal-golang/lager"
 )
 
-func FetchStateAndBuildZones(workPool *workpool.WorkPool, clients map[string]auctiontypes.CellRep) map[string]Zone {
+func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]auctiontypes.CellRep) map[string]Zone {
 	wg := &sync.WaitGroup{}
 	zones := map[string]Zone{}
 	lock := &sync.Mutex{}
@@ -19,6 +20,7 @@ func FetchStateAndBuildZones(workPool *workpool.WorkPool, clients map[string]auc
 			defer wg.Done()
 			state, err := client.State()
 			if err != nil {
+				logger.Error("failed-to-get-state", err, lager.Data{"cell-guid": guid})
 				return
 			}
 

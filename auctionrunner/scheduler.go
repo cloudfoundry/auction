@@ -192,15 +192,18 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction auctiontypes.LRPAuction) (auct
 	var winnerCell *Cell
 	winnerScore := 1e20
 
-	sortedZones := sortZonesByInstances(s.zones, lrpAuction)
+	zones := accumulateZonesByInstances(s.zones, lrpAuction)
+
+	filteredZones := filterZonesByRootFS(zones, lrpAuction.DesiredLRP.RootFS)
+
+	if len(filteredZones) == 0 {
+		return auctiontypes.LRPAuction{}, auctiontypes.ErrorCellMismatch
+	}
+
+	sortedZones := sortZonesByInstances(filteredZones)
 
 	for zoneIndex, lrpByZone := range sortedZones {
-		cells := lrpByZone.zone.FilterCells(lrpAuction.DesiredLRP.RootFS)
-		if len(cells) == 0 {
-			return auctiontypes.LRPAuction{}, auctiontypes.ErrorCellMismatch
-		}
-
-		for _, cell := range cells {
+		for _, cell := range lrpByZone.zone {
 			score, err := cell.ScoreForLRPAuction(lrpAuction)
 			if err != nil {
 				continue
@@ -239,13 +242,21 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction auctiontypes.TaskAuction) (a
 	var winnerCell *Cell
 	winnerScore := 1e20
 
+	filteredZones := []Zone{}
+
 	for _, zone := range s.zones {
 		cells := zone.FilterCells(taskAuction.Task.RootFS)
-		if len(cells) == 0 {
-			return auctiontypes.TaskAuction{}, auctiontypes.ErrorCellMismatch
+		if len(cells) > 0 {
+			filteredZones = append(filteredZones, Zone(cells))
 		}
+	}
 
-		for _, cell := range cells {
+	if len(filteredZones) == 0 {
+		return auctiontypes.TaskAuction{}, auctiontypes.ErrorCellMismatch
+	}
+
+	for _, zone := range filteredZones {
+		for _, cell := range zone {
 			score, err := cell.ScoreForTask(taskAuction.Task)
 			if err != nil {
 				continue

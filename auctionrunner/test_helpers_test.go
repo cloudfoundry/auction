@@ -90,6 +90,12 @@ var lucidRootFSURL = models.PreloadedRootFS(lucidStack)
 
 var lucidOnlyRootFSProviders = auctiontypes.RootFSProviders{models.PreloadedRootFSScheme: auctiontypes.NewFixedSetRootFSProvider(lucidStack)}
 
+const windowsStack = "windows"
+
+var windowsRootFSURL = models.PreloadedRootFS(windowsStack)
+
+var windowsOnlyRootFSProviders = auctiontypes.RootFSProviders{models.PreloadedRootFSScheme: auctiontypes.NewFixedSetRootFSProvider(windowsStack)}
+
 func BuildCellState(
 	zone string,
 	memoryMB int,

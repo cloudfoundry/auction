@@ -74,15 +74,73 @@ var _ = Describe("Scheduler", func() {
 
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
-				{"pg-1", 0, 10, 10},
-				{"pg-2", 0, 10, 10},
-			}))}
+			zones["A-zone"] = auctionrunner.Zone{
+				auctionrunner.NewCell(
+					"A-cell",
+					clients["A-cell"],
+					BuildCellState("A-zone", 100, 100, 100, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
+						{"pg-1", 0, 10, 10},
+						{"pg-2", 0, 10, 10},
+					}),
+				),
+			}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
-				{"pg-3", 0, 10, 10},
-			}))}
+			zones["B-zone"] = auctionrunner.Zone{
+				auctionrunner.NewCell(
+					"B-cell",
+					clients["B-cell"],
+					BuildCellState("B-zone", 100, 100, 100, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
+						{"pg-3", 0, 10, 10},
+					}),
+				),
+			}
+		})
+
+		Context("when only one of many zones supports a specific RootFS", func() {
+			BeforeEach(func() {
+				clients["C-cell"] = &fakes.FakeSimulationCellRep{}
+				zones["C-zone"] = auctionrunner.Zone{
+					auctionrunner.NewCell(
+						"C-cell",
+						clients["C-cell"],
+						BuildCellState("C-zone", 100, 100, 100, false, windowsOnlyRootFSProviders, []auctiontypes.LRP{
+							{"pg-win-1", 0, 10, 10},
+						}),
+					),
+				}
+			})
+
+			Context("with a new LRP only supported in one of many zones", func() {
+				BeforeEach(func() {
+					startAuction = BuildLRPAuction("pg-win-2", 1, windowsRootFSURL, 10, 10, clock.Now())
+				})
+
+				Context("when it picks a winner", func() {
+					BeforeEach(func() {
+						clock.Increment(time.Minute)
+						s := auctionrunner.NewScheduler(workPool, zones, clock)
+						results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
+					})
+
+					It("picks the best cell for the job", func() {
+						Ω(clients["A-cell"].PerformCallCount()).Should(Equal(0))
+						Ω(clients["B-cell"].PerformCallCount()).Should(Equal(0))
+						Ω(clients["C-cell"].PerformCallCount()).Should(Equal(1))
+
+						startsToC := clients["C-cell"].PerformArgsForCall(0).LRPs
+
+						Ω(startsToC).Should(ConsistOf(startAuction))
+					})
+
+					It("marks the start auction as succeeded", func() {
+						setLRPWinner("C-cell", &startAuction)
+						startAuction.WaitDuration = time.Minute
+						Ω(results.SuccessfulLRPs).Should(ConsistOf(startAuction))
+						Ω(results.FailedLRPs).Should(BeEmpty())
+					})
+				})
+			})
 		})
 
 		Context("with an existing LRP (zone balancing)", func() {
@@ -203,6 +261,52 @@ var _ = Describe("Scheduler", func() {
 
 			taskAuction = BuildTaskAuction(BuildTask("tg-1", lucidRootFSURL, 10, 10), clock.Now())
 			clock.Increment(time.Minute)
+		})
+
+		Context("when only one of many zones supports a specific RootFS", func() {
+			BeforeEach(func() {
+				clients["C-cell"] = &fakes.FakeSimulationCellRep{}
+				zones["C-zone"] = auctionrunner.Zone{
+					auctionrunner.NewCell(
+						"C-cell",
+						clients["C-cell"],
+						BuildCellState("C-zone", 100, 100, 100, false, windowsOnlyRootFSProviders, []auctiontypes.LRP{
+							{"tg-win-1", 0, 10, 10},
+						}),
+					),
+				}
+			})
+
+			Context("with a new Task only supported in one of many zones", func() {
+				BeforeEach(func() {
+					taskAuction = BuildTaskAuction(BuildTask("tg-win-2", windowsRootFSURL, 10, 10), clock.Now())
+				})
+
+				Context("when it picks a winner", func() {
+					BeforeEach(func() {
+						clock.Increment(time.Minute)
+						s := auctionrunner.NewScheduler(workPool, zones, clock)
+						results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
+					})
+
+					It("picks the best cell for the job", func() {
+						Ω(clients["A-cell"].PerformCallCount()).Should(Equal(0))
+						Ω(clients["B-cell"].PerformCallCount()).Should(Equal(0))
+						Ω(clients["C-cell"].PerformCallCount()).Should(Equal(1))
+
+						startsToC := clients["C-cell"].PerformArgsForCall(0).Tasks
+
+						Ω(startsToC).Should(ConsistOf(taskAuction.Task))
+					})
+
+					It("marks the start auction as succeeded", func() {
+						setTaskWinner("C-cell", &taskAuction)
+						taskAuction.WaitDuration = time.Minute
+						Ω(results.SuccessfulTasks).Should(ConsistOf(taskAuction))
+						Ω(results.FailedTasks).Should(BeEmpty())
+					})
+				})
+			})
 		})
 
 		Context("when it picks a winner", func() {

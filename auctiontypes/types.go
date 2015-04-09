@@ -92,6 +92,7 @@ type CellRep interface {
 	Perform(Work) (Work, error)
 }
 
+//go:generate counterfeiter -o fakes/fake_simulation_auction_runner.go . SimulationCellRep
 type SimulationCellRep interface {
 	CellRep
 

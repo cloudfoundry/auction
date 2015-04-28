@@ -13,8 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Ω
-
 var _ = Describe("Auction", func() {
 	var initialDistributions map[int][]auctiontypes.LRP
 	var lucidRootFSURL = models.PreloadedRootFS(lucidStack)
@@ -223,7 +221,7 @@ var _ = Describe("Auction", func() {
 
 				numOnZone1 := len(report.InstancesByRep[cellGuid(1)]) - initialAppsOnZone0
 
-				Ω(numOnZone0).Should(Equal(numOnZone1))
+				Expect(numOnZone0).To(Equal(numOnZone1))
 			})
 		})
 
@@ -273,11 +271,11 @@ var _ = Describe("Auction", func() {
 					losers = append(losers, fmt.Sprintf("%s-%d", result.DesiredLRP.ProcessGuid, result.Index))
 				}
 
-				Ω(winners).Should(HaveLen(51))
-				Ω(losers).Should(HaveLen(31))
+				Expect(winners).To(HaveLen(51))
+				Expect(losers).To(HaveLen(31))
 
-				Ω(winners).Should(ContainElement("red-0"))
-				Ω(losers).Should(ContainElement("red-1"))
+				Expect(winners).To(ContainElement("red-0"))
+				Expect(losers).To(ContainElement("red-1"))
 			})
 		})
 	})

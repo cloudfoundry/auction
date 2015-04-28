@@ -35,9 +35,9 @@ var _ = Describe("Perform", func() {
 	})
 
 	It("should tell the rep to perform", func() {
-		Ω(auctionRep.PerformCallCount()).Should(Equal(0))
+		Expect(auctionRep.PerformCallCount()).To(Equal(0))
 		client.Perform(work)
-		Ω(auctionRep.PerformArgsForCall(0)).Should(Equal(work))
+		Expect(auctionRep.PerformArgsForCall(0)).To(Equal(work))
 	})
 
 	Context("when the request succeeds", func() {
@@ -46,7 +46,7 @@ var _ = Describe("Perform", func() {
 		})
 
 		It("should return the state returned by the rep", func() {
-			Ω(client.Perform(work)).Should(Equal(failedWork))
+			Expect(client.Perform(work)).To(Equal(failedWork))
 		})
 	})
 
@@ -57,16 +57,16 @@ var _ = Describe("Perform", func() {
 
 		It("should error", func() {
 			failedWork, err := client.Perform(work)
-			Ω(failedWork).Should(BeZero())
-			Ω(err).Should(HaveOccurred())
+			Expect(failedWork).To(BeZero())
+			Expect(err).To(HaveOccurred())
 		})
 	})
 
 	Context("when a request errors (in the network sense)", func() {
 		It("should error", func() {
 			failedWork, err := clientForServerThatErrors.Perform(work)
-			Ω(failedWork).Should(BeZero())
-			Ω(err).Should(HaveOccurred())
+			Expect(failedWork).To(BeZero())
+			Expect(err).To(HaveOccurred())
 		})
 	})
 })

@@ -10,7 +10,7 @@ import (
 var _ = Describe("(Sim) Reset", func() {
 	It("should tell the rep to reset", func() {
 		client.Reset()
-		Ω(auctionRep.ResetCallCount()).Should(Equal(1))
+		Expect(auctionRep.ResetCallCount()).To(Equal(1))
 	})
 
 	Context("when the request succeeds", func() {
@@ -19,7 +19,7 @@ var _ = Describe("(Sim) Reset", func() {
 		})
 
 		It("should return the state returned by the rep", func() {
-			Ω(client.Reset()).Should(Succeed())
+			Expect(client.Reset()).To(Succeed())
 		})
 	})
 
@@ -29,13 +29,13 @@ var _ = Describe("(Sim) Reset", func() {
 		})
 
 		It("should error", func() {
-			Ω(client.Reset()).ShouldNot(Succeed())
+			Expect(client.Reset()).NotTo(Succeed())
 		})
 	})
 
 	Context("when a request errors (in the network sense)", func() {
 		It("should error", func() {
-			Ω(clientForServerThatErrors.Reset()).ShouldNot(Succeed())
+			Expect(clientForServerThatErrors.Reset()).NotTo(Succeed())
 		})
 	})
 })

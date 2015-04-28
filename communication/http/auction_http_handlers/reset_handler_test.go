@@ -14,26 +14,26 @@ var _ = Describe("Reset Handler", func() {
 	Describe("Reset", func() {
 		Context("when the reset succeeds", func() {
 			It("succeeds", func() {
-				Ω(auctionRep.ResetCallCount()).Should(Equal(0))
+				Expect(auctionRep.ResetCallCount()).To(Equal(0))
 
 				status, body := Request(routes.Sim_Reset, nil, nil)
-				Ω(status).Should(Equal(http.StatusOK))
-				Ω(body).Should(BeEmpty())
+				Expect(status).To(Equal(http.StatusOK))
+				Expect(body).To(BeEmpty())
 
-				Ω(auctionRep.ResetCallCount()).Should(Equal(1))
+				Expect(auctionRep.ResetCallCount()).To(Equal(1))
 			})
 		})
 
 		Context("when the reset fails", func() {
 			It("fails", func() {
 				auctionRep.ResetReturns(errors.New("boom"))
-				Ω(auctionRep.ResetCallCount()).Should(Equal(0))
+				Expect(auctionRep.ResetCallCount()).To(Equal(0))
 
 				status, body := Request(routes.Sim_Reset, nil, nil)
-				Ω(status).Should(Equal(http.StatusInternalServerError))
-				Ω(body).Should(BeEmpty())
+				Expect(status).To(Equal(http.StatusInternalServerError))
+				Expect(body).To(BeEmpty())
 
-				Ω(auctionRep.ResetCallCount()).Should(Equal(1))
+				Expect(auctionRep.ResetCallCount()).To(Equal(1))
 			})
 		})
 	})

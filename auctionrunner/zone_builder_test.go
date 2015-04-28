@@ -44,24 +44,24 @@ var _ = Describe("ZoneBuilder", func() {
 
 	It("fetches state by calling each client", func() {
 		zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
-		Ω(zones).Should(HaveLen(2))
+		Expect(zones).To(HaveLen(2))
 
 		cells := map[string]*auctionrunner.Cell{}
 		for _, cell := range zones["the-zone"] {
 			cells[cell.Guid] = cell
 		}
-		Ω(cells).Should(HaveLen(2))
-		Ω(cells).Should(HaveKey("A"))
-		Ω(cells).Should(HaveKey("B"))
+		Expect(cells).To(HaveLen(2))
+		Expect(cells).To(HaveKey("A"))
+		Expect(cells).To(HaveKey("B"))
 
-		Ω(repA.StateCallCount()).Should(Equal(1))
-		Ω(repB.StateCallCount()).Should(Equal(1))
+		Expect(repA.StateCallCount()).To(Equal(1))
+		Expect(repB.StateCallCount()).To(Equal(1))
 
 		otherZone := zones["other-zone"]
-		Ω(otherZone).Should(HaveLen(1))
-		Ω(otherZone[0].Guid).Should(Equal("C"))
+		Expect(otherZone).To(HaveLen(1))
+		Expect(otherZone[0].Guid).To(Equal("C"))
 
-		Ω(repC.StateCallCount()).Should(Equal(1))
+		Expect(repC.StateCallCount()).To(Equal(1))
 	})
 
 	Context("when cells are evacuating", func() {
@@ -71,15 +71,15 @@ var _ = Describe("ZoneBuilder", func() {
 
 		It("does not include them in the map", func() {
 			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
-			Ω(zones).Should(HaveLen(2))
+			Expect(zones).To(HaveLen(2))
 
 			cells := zones["the-zone"]
-			Ω(cells).Should(HaveLen(1))
-			Ω(cells[0].Guid).Should(Equal("A"))
+			Expect(cells).To(HaveLen(1))
+			Expect(cells[0].Guid).To(Equal("A"))
 
 			cells = zones["other-zone"]
-			Ω(cells).Should(HaveLen(1))
-			Ω(cells[0].Guid).Should(Equal("C"))
+			Expect(cells).To(HaveLen(1))
+			Expect(cells[0].Guid).To(Equal("C"))
 		})
 	})
 
@@ -90,15 +90,15 @@ var _ = Describe("ZoneBuilder", func() {
 
 		It("does not include the client in the map", func() {
 			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
-			Ω(zones).Should(HaveLen(2))
+			Expect(zones).To(HaveLen(2))
 
 			cells := zones["the-zone"]
-			Ω(cells).Should(HaveLen(1))
-			Ω(cells[0].Guid).Should(Equal("A"))
+			Expect(cells).To(HaveLen(1))
+			Expect(cells[0].Guid).To(Equal("A"))
 
 			cells = zones["other-zone"]
-			Ω(cells).Should(HaveLen(1))
-			Ω(cells[0].Guid).Should(Equal("C"))
+			Expect(cells).To(HaveLen(1))
+			Expect(cells[0].Guid).To(Equal("C"))
 		})
 	})
 })

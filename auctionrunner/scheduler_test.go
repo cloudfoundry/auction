@@ -49,22 +49,22 @@ var _ = Describe("Scheduler", func() {
 			By("no auctions are marked successful")
 			scheduler := auctionrunner.NewScheduler(workPool, map[string]auctionrunner.Zone{}, clock)
 			results := scheduler.Schedule(auctionRequest)
-			Ω(results.SuccessfulLRPs).Should(BeEmpty())
-			Ω(results.SuccessfulTasks).Should(BeEmpty())
+			Expect(results.SuccessfulLRPs).To(BeEmpty())
+			Expect(results.SuccessfulTasks).To(BeEmpty())
 
 			By("all lrp starts are marked failed, and their attempts are incremented")
-			Ω(results.FailedLRPs).Should(HaveLen(1))
+			Expect(results.FailedLRPs).To(HaveLen(1))
 			failedLRPStart := results.FailedLRPs[0]
-			Ω(failedLRPStart.Identifier()).Should(Equal(startAuction.Identifier()))
-			Ω(failedLRPStart.Attempts).Should(Equal(startAuction.Attempts + 1))
-			Ω(failedLRPStart.PlacementError).Should(Equal(diego_errors.CELL_MISMATCH_MESSAGE))
+			Expect(failedLRPStart.Identifier()).To(Equal(startAuction.Identifier()))
+			Expect(failedLRPStart.Attempts).To(Equal(startAuction.Attempts + 1))
+			Expect(failedLRPStart.PlacementError).To(Equal(diego_errors.CELL_MISMATCH_MESSAGE))
 
 			By("all tasks are marked failed, and their attempts are incremented")
-			Ω(results.FailedTasks).Should(HaveLen(1))
+			Expect(results.FailedTasks).To(HaveLen(1))
 			failedTask := results.FailedTasks[0]
-			Ω(failedTask.Identifier()).Should(Equal(taskAuction.Identifier()))
-			Ω(failedTask.Attempts).Should(Equal(taskAuction.Attempts + 1))
-			Ω(failedTask.PlacementError).Should(Equal(diego_errors.CELL_MISMATCH_MESSAGE))
+			Expect(failedTask.Identifier()).To(Equal(taskAuction.Identifier()))
+			Expect(failedTask.Attempts).To(Equal(taskAuction.Attempts + 1))
+			Expect(failedTask.PlacementError).To(Equal(diego_errors.CELL_MISMATCH_MESSAGE))
 		})
 
 	})
@@ -124,20 +124,20 @@ var _ = Describe("Scheduler", func() {
 					})
 
 					It("picks the best cell for the job", func() {
-						Ω(clients["A-cell"].PerformCallCount()).Should(Equal(0))
-						Ω(clients["B-cell"].PerformCallCount()).Should(Equal(0))
-						Ω(clients["C-cell"].PerformCallCount()).Should(Equal(1))
+						Expect(clients["A-cell"].PerformCallCount()).To(Equal(0))
+						Expect(clients["B-cell"].PerformCallCount()).To(Equal(0))
+						Expect(clients["C-cell"].PerformCallCount()).To(Equal(1))
 
 						startsToC := clients["C-cell"].PerformArgsForCall(0).LRPs
 
-						Ω(startsToC).Should(ConsistOf(startAuction))
+						Expect(startsToC).To(ConsistOf(startAuction))
 					})
 
 					It("marks the start auction as succeeded", func() {
 						setLRPWinner("C-cell", &startAuction)
 						startAuction.WaitDuration = time.Minute
-						Ω(results.SuccessfulLRPs).Should(ConsistOf(startAuction))
-						Ω(results.FailedLRPs).Should(BeEmpty())
+						Expect(results.SuccessfulLRPs).To(ConsistOf(startAuction))
+						Expect(results.FailedLRPs).To(BeEmpty())
 					})
 				})
 			})
@@ -157,19 +157,19 @@ var _ = Describe("Scheduler", func() {
 				})
 
 				It("picks the best cell for the job", func() {
-					Ω(clients["A-cell"].PerformCallCount()).Should(Equal(1))
-					Ω(clients["B-cell"].PerformCallCount()).Should(Equal(0))
+					Expect(clients["A-cell"].PerformCallCount()).To(Equal(1))
+					Expect(clients["B-cell"].PerformCallCount()).To(Equal(0))
 
 					startsToA := clients["A-cell"].PerformArgsForCall(0).LRPs
 
-					Ω(startsToA).Should(ConsistOf(startAuction))
+					Expect(startsToA).To(ConsistOf(startAuction))
 				})
 
 				It("marks the start auction as succeeded", func() {
 					setLRPWinner("A-cell", &startAuction)
 					startAuction.WaitDuration = time.Minute
-					Ω(results.SuccessfulLRPs).Should(ConsistOf(startAuction))
-					Ω(results.FailedLRPs).Should(BeEmpty())
+					Expect(results.SuccessfulLRPs).To(ConsistOf(startAuction))
+					Expect(results.FailedLRPs).To(BeEmpty())
 				})
 			})
 		})
@@ -187,19 +187,19 @@ var _ = Describe("Scheduler", func() {
 				})
 
 				It("picks the best cell for the job", func() {
-					Ω(clients["A-cell"].PerformCallCount()).Should(Equal(0))
-					Ω(clients["B-cell"].PerformCallCount()).Should(Equal(1))
+					Expect(clients["A-cell"].PerformCallCount()).To(Equal(0))
+					Expect(clients["B-cell"].PerformCallCount()).To(Equal(1))
 
 					startsToB := clients["B-cell"].PerformArgsForCall(0).LRPs
 
-					Ω(startsToB).Should(ConsistOf(startAuction))
+					Expect(startsToB).To(ConsistOf(startAuction))
 				})
 
 				It("marks the start auction as succeeded", func() {
 					setLRPWinner("B-cell", &startAuction)
 					startAuction.WaitDuration = time.Minute
-					Ω(results.SuccessfulLRPs).Should(ConsistOf(startAuction))
-					Ω(results.FailedLRPs).Should(BeEmpty())
+					Expect(results.SuccessfulLRPs).To(ConsistOf(startAuction))
+					Expect(results.FailedLRPs).To(BeEmpty())
 				})
 			})
 		})
@@ -218,8 +218,8 @@ var _ = Describe("Scheduler", func() {
 
 			It("marks the start auction as failed", func() {
 				startAuction.Attempts = 1
-				Ω(results.SuccessfulLRPs).Should(BeEmpty())
-				Ω(results.FailedLRPs).Should(ConsistOf(startAuction))
+				Expect(results.SuccessfulLRPs).To(BeEmpty())
+				Expect(results.FailedLRPs).To(ConsistOf(startAuction))
 			})
 		})
 
@@ -232,14 +232,14 @@ var _ = Describe("Scheduler", func() {
 			})
 
 			It("should not attempt to start the LRP", func() {
-				Ω(clients["A-cell"].PerformCallCount()).Should(Equal(0))
-				Ω(clients["B-cell"].PerformCallCount()).Should(Equal(0))
+				Expect(clients["A-cell"].PerformCallCount()).To(Equal(0))
+				Expect(clients["B-cell"].PerformCallCount()).To(Equal(0))
 			})
 
 			It("should mark the start auction as failed", func() {
 				startAuction.Attempts = 1
-				Ω(results.SuccessfulLRPs).Should(BeEmpty())
-				Ω(results.FailedLRPs).Should(ConsistOf(startAuction))
+				Expect(results.SuccessfulLRPs).To(BeEmpty())
+				Expect(results.FailedLRPs).To(ConsistOf(startAuction))
 			})
 		})
 	})
@@ -290,20 +290,20 @@ var _ = Describe("Scheduler", func() {
 					})
 
 					It("picks the best cell for the job", func() {
-						Ω(clients["A-cell"].PerformCallCount()).Should(Equal(0))
-						Ω(clients["B-cell"].PerformCallCount()).Should(Equal(0))
-						Ω(clients["C-cell"].PerformCallCount()).Should(Equal(1))
+						Expect(clients["A-cell"].PerformCallCount()).To(Equal(0))
+						Expect(clients["B-cell"].PerformCallCount()).To(Equal(0))
+						Expect(clients["C-cell"].PerformCallCount()).To(Equal(1))
 
 						startsToC := clients["C-cell"].PerformArgsForCall(0).Tasks
 
-						Ω(startsToC).Should(ConsistOf(taskAuction.Task))
+						Expect(startsToC).To(ConsistOf(taskAuction.Task))
 					})
 
 					It("marks the start auction as succeeded", func() {
 						setTaskWinner("C-cell", &taskAuction)
 						taskAuction.WaitDuration = time.Minute
-						Ω(results.SuccessfulTasks).Should(ConsistOf(taskAuction))
-						Ω(results.FailedTasks).Should(BeEmpty())
+						Expect(results.SuccessfulTasks).To(ConsistOf(taskAuction))
+						Expect(results.FailedTasks).To(BeEmpty())
 					})
 				})
 			})
@@ -316,24 +316,25 @@ var _ = Describe("Scheduler", func() {
 			})
 
 			It("picks the best cell for the job", func() {
-				Ω(clients["A-cell"].PerformCallCount()).Should(Equal(0))
-				Ω(clients["B-cell"].PerformCallCount()).Should(Equal(1))
+				Expect(clients["A-cell"].PerformCallCount()).To(Equal(0))
+				Expect(clients["B-cell"].PerformCallCount()).To(Equal(1))
 
 				tasksToB := clients["B-cell"].PerformArgsForCall(0).Tasks
 
-				Ω(tasksToB).Should(ConsistOf(
+				Expect(tasksToB).To(ConsistOf(
 					taskAuction.Task,
 				))
+
 			})
 
 			It("marks the task auction as succeeded", func() {
-				Ω(results.SuccessfulTasks).Should(HaveLen(1))
+				Expect(results.SuccessfulTasks).To(HaveLen(1))
 				successfulTask := results.SuccessfulTasks[0]
-				Ω(successfulTask.Winner).Should(Equal("B-cell"))
-				Ω(successfulTask.Attempts).Should(Equal(1))
-				Ω(successfulTask.WaitDuration).Should(Equal(time.Minute))
+				Expect(successfulTask.Winner).To(Equal("B-cell"))
+				Expect(successfulTask.Attempts).To(Equal(1))
+				Expect(successfulTask.WaitDuration).To(Equal(time.Minute))
 
-				Ω(results.FailedTasks).Should(BeEmpty())
+				Expect(results.FailedTasks).To(BeEmpty())
 			})
 		})
 
@@ -345,11 +346,11 @@ var _ = Describe("Scheduler", func() {
 			})
 
 			It("marks the task auction as failed", func() {
-				Ω(results.SuccessfulTasks).Should(BeEmpty())
+				Expect(results.SuccessfulTasks).To(BeEmpty())
 
-				Ω(results.FailedTasks).Should(HaveLen(1))
+				Expect(results.FailedTasks).To(HaveLen(1))
 				failedTask := results.FailedTasks[0]
-				Ω(failedTask.Attempts).Should(Equal(1))
+				Expect(failedTask.Attempts).To(Equal(1))
 			})
 		})
 
@@ -362,17 +363,17 @@ var _ = Describe("Scheduler", func() {
 			})
 
 			It("should not attempt to start the task", func() {
-				Ω(clients["A-cell"].PerformCallCount()).Should(Equal(0))
-				Ω(clients["B-cell"].PerformCallCount()).Should(Equal(0))
+				Expect(clients["A-cell"].PerformCallCount()).To(Equal(0))
+				Expect(clients["B-cell"].PerformCallCount()).To(Equal(0))
 			})
 
 			It("should mark the start auction as failed", func() {
-				Ω(results.SuccessfulTasks).Should(BeEmpty())
+				Expect(results.SuccessfulTasks).To(BeEmpty())
 
-				Ω(results.FailedTasks).Should(HaveLen(1))
+				Expect(results.FailedTasks).To(HaveLen(1))
 				failedTask := results.FailedTasks[0]
-				Ω(failedTask.Attempts).Should(Equal(1))
-				Ω(failedTask.PlacementError).Should(Equal(diego_errors.INSUFFICIENT_RESOURCES_MESSAGE))
+				Expect(failedTask.Attempts).To(Equal(1))
+				Expect(failedTask.PlacementError).To(Equal(diego_errors.INSUFFICIENT_RESOURCES_MESSAGE))
 			})
 		})
 
@@ -385,17 +386,17 @@ var _ = Describe("Scheduler", func() {
 			})
 
 			It("should not attempt to start the task", func() {
-				Ω(clients["A-cell"].PerformCallCount()).Should(Equal(0))
-				Ω(clients["B-cell"].PerformCallCount()).Should(Equal(0))
+				Expect(clients["A-cell"].PerformCallCount()).To(Equal(0))
+				Expect(clients["B-cell"].PerformCallCount()).To(Equal(0))
 			})
 
 			It("should mark the start auction as failed", func() {
-				Ω(results.SuccessfulTasks).Should(BeEmpty())
+				Expect(results.SuccessfulTasks).To(BeEmpty())
 
-				Ω(results.FailedTasks).Should(HaveLen(1))
+				Expect(results.FailedTasks).To(HaveLen(1))
 				failedTask := results.FailedTasks[0]
-				Ω(failedTask.Attempts).Should(Equal(1))
-				Ω(failedTask.PlacementError).Should(Equal(diego_errors.CELL_MISMATCH_MESSAGE))
+				Expect(failedTask.Attempts).To(Equal(1))
+				Expect(failedTask.PlacementError).To(Equal(diego_errors.CELL_MISMATCH_MESSAGE))
 			})
 		})
 	})
@@ -451,20 +452,20 @@ var _ = Describe("Scheduler", func() {
 			s := auctionrunner.NewScheduler(workPool, zones, clock)
 			results = s.Schedule(auctionRequest)
 
-			Ω(clients["A-cell"].PerformCallCount()).Should(Equal(1))
-			Ω(clients["B-cell"].PerformCallCount()).Should(Equal(1))
+			Expect(clients["A-cell"].PerformCallCount()).To(Equal(1))
+			Expect(clients["B-cell"].PerformCallCount()).To(Equal(1))
 
-			Ω(clients["A-cell"].PerformArgsForCall(0).LRPs).Should(ConsistOf(startPG3))
-			Ω(clients["B-cell"].PerformArgsForCall(0).LRPs).Should(ConsistOf(startPG2))
+			Expect(clients["A-cell"].PerformArgsForCall(0).LRPs).To(ConsistOf(startPG3))
+			Expect(clients["B-cell"].PerformArgsForCall(0).LRPs).To(ConsistOf(startPG2))
 
-			Ω(clients["A-cell"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction1.Task))
-			Ω(clients["B-cell"].PerformArgsForCall(0).Tasks).Should(ConsistOf(taskAuction2.Task))
+			Expect(clients["A-cell"].PerformArgsForCall(0).Tasks).To(ConsistOf(taskAuction1.Task))
+			Expect(clients["B-cell"].PerformArgsForCall(0).Tasks).To(ConsistOf(taskAuction2.Task))
 
 			setLRPWinner("A-cell", &startPG3)
 			setLRPWinner("B-cell", &startPG2)
-			Ω(results.SuccessfulLRPs).Should(ConsistOf(startPG3, startPG2))
+			Expect(results.SuccessfulLRPs).To(ConsistOf(startPG3, startPG2))
 
-			Ω(results.SuccessfulTasks).Should(HaveLen(2))
+			Expect(results.SuccessfulTasks).To(HaveLen(2))
 			var successfulTaskAuction1, successfulTaskAuction2 auctiontypes.TaskAuction
 			for _, ta := range results.SuccessfulTasks {
 				if ta.Identifier() == taskAuction1.Identifier() {
@@ -473,20 +474,20 @@ var _ = Describe("Scheduler", func() {
 					successfulTaskAuction2 = ta
 				}
 			}
-			Ω(successfulTaskAuction1).ShouldNot(BeNil())
-			Ω(successfulTaskAuction1.Attempts).Should(Equal(1))
-			Ω(successfulTaskAuction1.Winner).Should(Equal("A-cell"))
-			Ω(successfulTaskAuction2).ShouldNot(BeNil())
-			Ω(successfulTaskAuction2.Attempts).Should(Equal(1))
-			Ω(successfulTaskAuction2.Winner).Should(Equal("B-cell"))
+			Expect(successfulTaskAuction1).NotTo(BeNil())
+			Expect(successfulTaskAuction1.Attempts).To(Equal(1))
+			Expect(successfulTaskAuction1.Winner).To(Equal("A-cell"))
+			Expect(successfulTaskAuction2).NotTo(BeNil())
+			Expect(successfulTaskAuction2.Attempts).To(Equal(1))
+			Expect(successfulTaskAuction2.Winner).To(Equal("B-cell"))
 
 			startPGNope.Attempts = 1
-			Ω(results.FailedLRPs).Should(ConsistOf(startPGNope))
-			Ω(results.FailedTasks).Should(HaveLen(1))
+			Expect(results.FailedLRPs).To(ConsistOf(startPGNope))
+			Expect(results.FailedTasks).To(HaveLen(1))
 
 			failedTask := results.FailedTasks[0]
-			Ω(failedTask.Identifier()).Should(Equal(taskAuctionNope.Identifier()))
-			Ω(failedTask.Attempts).Should(Equal(1))
+			Expect(failedTask.Identifier()).To(Equal(taskAuctionNope.Identifier()))
+			Expect(failedTask.Attempts).To(Equal(1))
 		})
 	})
 
@@ -539,8 +540,8 @@ var _ = Describe("Scheduler", func() {
 				setLRPWinner("cell", &pg70, &pg71, &pg81, &pg82)
 				setTaskWinner("cell", &tg1, &tg2)
 
-				Ω(results.SuccessfulLRPs).Should(ConsistOf(pg70, pg71, pg81, pg82))
-				Ω(results.SuccessfulTasks).Should(ConsistOf(tg1, tg2))
+				Expect(results.SuccessfulLRPs).To(ConsistOf(pg70, pg71, pg81, pg82))
+				Expect(results.SuccessfulTasks).To(ConsistOf(tg1, tg2))
 			})
 		})
 
@@ -552,8 +553,8 @@ var _ = Describe("Scheduler", func() {
 			It("schedules LRP instances with index 0 first", func() {
 				setLRPWinner("cell", &pg70)
 
-				Ω(results.SuccessfulLRPs).Should(ConsistOf(pg70))
-				Ω(results.SuccessfulTasks).Should(BeEmpty())
+				Expect(results.SuccessfulLRPs).To(ConsistOf(pg70))
+				Expect(results.SuccessfulTasks).To(BeEmpty())
 			})
 
 			Context("with just a bit more resources", func() {
@@ -565,8 +566,8 @@ var _ = Describe("Scheduler", func() {
 					setLRPWinner("cell", &pg70)
 					setTaskWinner("cell", &tg1, &tg2)
 
-					Ω(results.SuccessfulLRPs).Should(ConsistOf(pg70))
-					Ω(results.SuccessfulTasks).Should(ConsistOf(tg1, tg2))
+					Expect(results.SuccessfulLRPs).To(ConsistOf(pg70))
+					Expect(results.SuccessfulTasks).To(ConsistOf(tg1, tg2))
 				})
 
 				Context("with even more resources", func() {
@@ -578,8 +579,8 @@ var _ = Describe("Scheduler", func() {
 						setLRPWinner("cell", &pg70, &pg71, &pg81)
 						setTaskWinner("cell", &tg1, &tg2)
 
-						Ω(results.SuccessfulLRPs).Should(ConsistOf(pg70, pg71, pg81))
-						Ω(results.SuccessfulTasks).Should(ConsistOf(tg1, tg2))
+						Expect(results.SuccessfulLRPs).To(ConsistOf(pg70, pg71, pg81))
+						Expect(results.SuccessfulTasks).To(ConsistOf(tg1, tg2))
 					})
 				})
 			})
@@ -594,8 +595,8 @@ var _ = Describe("Scheduler", func() {
 				setLRPWinner("cell", &pg70, &pg81)
 				setTaskWinner("cell", &tg1, &tg2)
 
-				Ω(results.SuccessfulLRPs).Should(ConsistOf(pg70, pg81))
-				Ω(results.SuccessfulTasks).Should(ConsistOf(tg1, tg2))
+				Expect(results.SuccessfulLRPs).To(ConsistOf(pg70, pg81))
+				Expect(results.SuccessfulTasks).To(ConsistOf(tg1, tg2))
 			})
 		})
 
@@ -611,7 +612,7 @@ var _ = Describe("Scheduler", func() {
 
 			It("schedules boulders before pebbles", func() {
 				setTaskWinner("cell", &tg3)
-				Ω(results.SuccessfulTasks).Should(ConsistOf(tg3))
+				Expect(results.SuccessfulTasks).To(ConsistOf(tg3))
 			})
 		})
 	})

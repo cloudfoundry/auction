@@ -162,7 +162,7 @@ func buildInProcessReps() map[string]auctiontypes.SimulationCellRep {
 
 func launchExternalHTTPReps() map[string]auctiontypes.SimulationCellRep {
 	repNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/repnode")
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	cells := map[string]auctiontypes.SimulationCellRep{}
 
@@ -184,7 +184,7 @@ func launchExternalHTTPReps() map[string]auctiontypes.SimulationCellRep {
 		)
 
 		sess, err := gexec.Start(serverCmd, GinkgoWriter, GinkgoWriter)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 		sessionsToTerminate = append(sessionsToTerminate, sess)
 		Eventually(sess).Should(gbytes.Say("listening"))
 
@@ -208,6 +208,6 @@ func finishReport() {
 	}
 
 	data, err := json.Marshal(reports)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	ioutil.WriteFile("./"+reportName+".json", data, 0777)
 }

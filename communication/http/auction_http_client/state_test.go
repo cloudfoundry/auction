@@ -20,7 +20,7 @@ var _ = Describe("State", func() {
 
 	It("should ask the rep for state", func() {
 		client.State()
-		Ω(auctionRep.StateCallCount()).Should(Equal(1))
+		Expect(auctionRep.StateCallCount()).To(Equal(1))
 	})
 
 	Context("when the request succeeds", func() {
@@ -29,7 +29,7 @@ var _ = Describe("State", func() {
 		})
 
 		It("should return the state returned by the rep", func() {
-			Ω(client.State()).Should(Equal(state))
+			Expect(client.State()).To(Equal(state))
 		})
 	})
 
@@ -40,16 +40,16 @@ var _ = Describe("State", func() {
 
 		It("should error", func() {
 			state, err := client.State()
-			Ω(state).Should(BeZero())
-			Ω(err).Should(HaveOccurred())
+			Expect(state).To(BeZero())
+			Expect(err).To(HaveOccurred())
 		})
 	})
 
 	Context("when a request errors (in the network sense)", func() {
 		It("should error", func() {
 			state, err := clientForServerThatErrors.State()
-			Ω(state).Should(BeZero())
-			Ω(err).Should(HaveOccurred())
+			Expect(state).To(BeZero())
+			Expect(err).To(HaveOccurred())
 		})
 	})
 })

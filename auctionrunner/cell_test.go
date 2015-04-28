@@ -38,18 +38,18 @@ var _ = Describe("Cell", func() {
 
 			By("factoring in the amount of memory taken up by the instance")
 			bigScore, err := emptyCell.ScoreForLRPAuction(bigInstance)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			smallScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
-			Ω(smallScore).Should(BeNumerically("<", bigScore))
+			Expect(smallScore).To(BeNumerically("<", bigScore))
 
 			By("factoring in the relative emptiness of Cells")
 			emptyScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			score, err := cell.ScoreForLRPAuction(smallInstance)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(emptyScore).Should(BeNumerically("<", score))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(emptyScore).To(BeNumerically("<", score))
 		})
 
 		It("factors in disk usage", func() {
@@ -58,18 +58,18 @@ var _ = Describe("Cell", func() {
 
 			By("factoring in the amount of memory taken up by the instance")
 			bigScore, err := emptyCell.ScoreForLRPAuction(bigInstance)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			smallScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
-			Ω(smallScore).Should(BeNumerically("<", bigScore))
+			Expect(smallScore).To(BeNumerically("<", bigScore))
 
 			By("factoring in the relative emptiness of Cells")
 			emptyScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			score, err := cell.ScoreForLRPAuction(smallInstance)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(emptyScore).Should(BeNumerically("<", score))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(emptyScore).To(BeNumerically("<", score))
 		})
 
 		It("factors in container usage", func() {
@@ -82,10 +82,10 @@ var _ = Describe("Cell", func() {
 			smallCell := auctionrunner.NewCell("small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForLRPAuction(instance)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			smallScore, err := smallCell.ScoreForLRPAuction(instance)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(bigScore).Should(BeNumerically("<", smallScore), "prefer Cells with more resources")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(bigScore).To(BeNumerically("<", smallScore), "prefer Cells with more resources")
 		})
 
 		It("factors in process-guids that are already present", func() {
@@ -94,14 +94,14 @@ var _ = Describe("Cell", func() {
 			instanceWithNoMatches := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
 
 			twoMatchesScore, err := cell.ScoreForLRPAuction(instanceWithTwoMatches)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			oneMatchesScore, err := cell.ScoreForLRPAuction(instanceWithOneMatch)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			noMatchesScore, err := cell.ScoreForLRPAuction(instanceWithNoMatches)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
-			Ω(noMatchesScore).Should(BeNumerically("<", oneMatchesScore))
-			Ω(oneMatchesScore).Should(BeNumerically("<", twoMatchesScore))
+			Expect(noMatchesScore).To(BeNumerically("<", oneMatchesScore))
+			Expect(oneMatchesScore).To(BeNumerically("<", twoMatchesScore))
 		})
 
 		Context("when the LRP does not fit", func() {
@@ -109,8 +109,8 @@ var _ = Describe("Cell", func() {
 				It("should error", func() {
 					massiveMemoryInstance := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10000, 10, time.Now())
 					score, err := cell.ScoreForLRPAuction(massiveMemoryInstance)
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
 			})
 
@@ -118,8 +118,8 @@ var _ = Describe("Cell", func() {
 				It("should error", func() {
 					massiveDiskInstance := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10000, time.Now())
 					score, err := cell.ScoreForLRPAuction(massiveDiskInstance)
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
 			})
 
@@ -129,8 +129,8 @@ var _ = Describe("Cell", func() {
 					zeroState := BuildCellState("the-zone", 100, 100, 0, false, lucidOnlyRootFSProviders, nil)
 					zeroCell := auctionrunner.NewCell("zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForLRPAuction(instance)
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
 			})
 		})
@@ -157,42 +157,42 @@ var _ = Describe("Cell", func() {
 
 				It("should support LRPs with various stack requirements", func() {
 					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 
 					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 
 					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 
 					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-2", 10, 10, time.Now()))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 
 					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary-1://random-root-fs", 10, 10, time.Now()))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 
 					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary-2://random-root-fs", 10, 10, time.Now()))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for LRPs with unsupported stack requirements", func() {
 					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-3", 10, 10, time.Now()))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-3:root-fs-1", 10, 10, time.Now()))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary-3://random-root-fs", 10, 10, time.Now()))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 				})
 			})
 
@@ -214,22 +214,22 @@ var _ = Describe("Cell", func() {
 
 				It("should support LRPs requiring the stack supported by the cell", func() {
 					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for LRPs with unsupported stack requirements", func() {
 					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary://random-root-fs", 10, 10, time.Now()))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 				})
 			})
 		})
@@ -242,18 +242,18 @@ var _ = Describe("Cell", func() {
 
 			By("factoring in the amount of memory taken up by the task")
 			bigScore, err := emptyCell.ScoreForTask(bigTask)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			smallScore, err := emptyCell.ScoreForTask(smallTask)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
-			Ω(smallScore).Should(BeNumerically("<", bigScore))
+			Expect(smallScore).To(BeNumerically("<", bigScore))
 
 			By("factoring in the relative emptiness of Cells")
 			emptyScore, err := emptyCell.ScoreForTask(smallTask)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			score, err := cell.ScoreForTask(smallTask)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(emptyScore).Should(BeNumerically("<", score))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(emptyScore).To(BeNumerically("<", score))
 		})
 
 		It("factors in disk usage", func() {
@@ -262,18 +262,18 @@ var _ = Describe("Cell", func() {
 
 			By("factoring in the amount of memory taken up by the task")
 			bigScore, err := emptyCell.ScoreForTask(bigTask)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			smallScore, err := emptyCell.ScoreForTask(smallTask)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
-			Ω(smallScore).Should(BeNumerically("<", bigScore))
+			Expect(smallScore).To(BeNumerically("<", bigScore))
 
 			By("factoring in the relative emptiness of Cells")
 			emptyScore, err := emptyCell.ScoreForTask(smallTask)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			score, err := cell.ScoreForTask(smallTask)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(emptyScore).Should(BeNumerically("<", score))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(emptyScore).To(BeNumerically("<", score))
 		})
 
 		It("factors in container usage", func() {
@@ -286,10 +286,10 @@ var _ = Describe("Cell", func() {
 			smallCell := auctionrunner.NewCell("small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForTask(task)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			smallScore, err := smallCell.ScoreForTask(task)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(bigScore).Should(BeNumerically("<", smallScore), "prefer Cells with more resources")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(bigScore).To(BeNumerically("<", smallScore), "prefer Cells with more resources")
 		})
 
 		Context("when the task does not fit", func() {
@@ -297,8 +297,8 @@ var _ = Describe("Cell", func() {
 				It("should error", func() {
 					massiveMemoryTask := BuildTask("pg-new", lucidRootFSURL, 10000, 10)
 					score, err := cell.ScoreForTask(massiveMemoryTask)
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
 			})
 
@@ -306,8 +306,8 @@ var _ = Describe("Cell", func() {
 				It("should error", func() {
 					massiveDiskTask := BuildTask("pg-new", lucidRootFSURL, 10, 10000)
 					score, err := cell.ScoreForTask(massiveDiskTask)
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
 			})
 
@@ -317,8 +317,8 @@ var _ = Describe("Cell", func() {
 					zeroState := BuildCellState("the-zone", 100, 100, 0, false, lucidOnlyRootFSProviders, nil)
 					zeroCell := auctionrunner.NewCell("zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForTask(task)
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
 				})
 			})
 		})
@@ -345,42 +345,42 @@ var _ = Describe("Cell", func() {
 
 				It("should support Tasks with various stack requirements", func() {
 					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 
 					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 
 					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 
 					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-2:root-fs-2", 10, 10))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 
 					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary-1://random-root-fs", 10, 10))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 
 					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary-2://random-root-fs", 10, 10))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
 					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-3", 10, 10))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-3:root-fs-1", 10, 10))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary-3://random-root-fs", 10, 10))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 				})
 			})
 
@@ -402,22 +402,22 @@ var _ = Describe("Cell", func() {
 
 				It("should support Tasks requiring the stack supported by the cell", func() {
 					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
-					Ω(score).Should(BeNumerically(">", 0))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(score).To(BeNumerically(">", 0))
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
 					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary://random-root-fs", 10, 10))
-					Ω(score).Should(BeZero())
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(score).To(BeZero())
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 				})
 			})
 		})
@@ -430,13 +430,13 @@ var _ = Describe("Cell", func() {
 				instanceToAdd := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
 
 				initialScore, err := cell.ScoreForLRPAuction(instance)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(cell.ReserveLRP(instanceToAdd)).Should(Succeed())
+				Expect(cell.ReserveLRP(instanceToAdd)).To(Succeed())
 
 				subsequentScore, err := cell.ScoreForLRPAuction(instance)
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(initialScore).Should(BeNumerically("<", subsequentScore), "the score should have gotten worse")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(initialScore).To(BeNumerically("<", subsequentScore), "the score should have gotten worse")
 			})
 
 			It("should register the LRP and keep it in mind when handling future requests", func() {
@@ -445,25 +445,25 @@ var _ = Describe("Cell", func() {
 				instanceToAdd := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
 
 				initialScore, err := cell.ScoreForLRPAuction(instance)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				initialScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRPAuction(instanceWithMatchingProcessGuid)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(initialScore).Should(BeNumerically("==", initialScoreForInstanceWithMatchingProcessGuid))
+				Expect(initialScore).To(BeNumerically("==", initialScoreForInstanceWithMatchingProcessGuid))
 
-				Ω(cell.ReserveLRP(instanceToAdd)).Should(Succeed())
+				Expect(cell.ReserveLRP(instanceToAdd)).To(Succeed())
 
 				subsequentScore, err := cell.ScoreForLRPAuction(instance)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				subsequentScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRPAuction(instanceWithMatchingProcessGuid)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(initialScore).Should(BeNumerically("<", subsequentScore), "the score should have gotten worse")
-				Ω(initialScoreForInstanceWithMatchingProcessGuid).Should(BeNumerically("<", subsequentScoreForInstanceWithMatchingProcessGuid), "the score should have gotten worse")
+				Expect(initialScore).To(BeNumerically("<", subsequentScore), "the score should have gotten worse")
+				Expect(initialScoreForInstanceWithMatchingProcessGuid).To(BeNumerically("<", subsequentScoreForInstanceWithMatchingProcessGuid), "the score should have gotten worse")
 
-				Ω(subsequentScore).Should(BeNumerically("<", subsequentScoreForInstanceWithMatchingProcessGuid), "the score should be substantially worse for the instance with the matching process guid")
+				Expect(subsequentScore).To(BeNumerically("<", subsequentScoreForInstanceWithMatchingProcessGuid), "the score should be substantially worse for the instance with the matching process guid")
 			})
 		})
 
@@ -489,33 +489,33 @@ var _ = Describe("Cell", func() {
 
 				It("should support LRPs with various stack requirements", func() {
 					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-2", 10, 10, time.Now()))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary-1://random-root-fs", 10, 10, time.Now()))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary-2://random-root-fs", 10, 10, time.Now()))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for LRPs with unsupported stack requirements", func() {
 					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-3", 10, 10, time.Now()))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-3:root-fs-1", 10, 10, time.Now()))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary-3://random-root-fs", 10, 10, time.Now()))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 				})
 			})
 
@@ -537,18 +537,18 @@ var _ = Describe("Cell", func() {
 
 				It("should support LRPs requiring the stack supported by the cell", func() {
 					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for LRPs with unsupported stack requirements", func() {
 					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary://random-root-fs", 10, 10, time.Now()))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 				})
 			})
 		})
@@ -557,7 +557,7 @@ var _ = Describe("Cell", func() {
 			It("should error", func() {
 				instance := BuildLRPAuction("pg-test", 0, lucidRootFSURL, 10000, 10, time.Now())
 				err := cell.ReserveLRP(instance)
-				Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+				Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
 		})
 	})
@@ -569,13 +569,13 @@ var _ = Describe("Cell", func() {
 				taskToAdd := BuildTask("tg-new", lucidRootFSURL, 10, 10)
 
 				initialScore, err := cell.ScoreForTask(task)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(cell.ReserveTask(taskToAdd)).Should(Succeed())
+				Expect(cell.ReserveTask(taskToAdd)).To(Succeed())
 
 				subsequentScore, err := cell.ScoreForTask(task)
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(initialScore).Should(BeNumerically("<", subsequentScore), "the score should have gotten worse")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(initialScore).To(BeNumerically("<", subsequentScore), "the score should have gotten worse")
 			})
 		})
 
@@ -601,33 +601,33 @@ var _ = Describe("Cell", func() {
 
 				It("should support Tasks with various stack requirements", func() {
 					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-2:root-fs-2", 10, 10))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary-1://random-root-fs", 10, 10))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary-2://random-root-fs", 10, 10))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
 					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-3", 10, 10))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-3:root-fs-1", 10, 10))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary-3://random-root-fs", 10, 10))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 				})
 			})
 
@@ -649,18 +649,18 @@ var _ = Describe("Cell", func() {
 
 				It("should support Tasks requiring the stack supported by the cell", func() {
 					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
 					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 
 					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary://random-root-fs", 10, 10))
-					Ω(err).Should(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
 				})
 			})
 		})
@@ -669,7 +669,7 @@ var _ = Describe("Cell", func() {
 			It("should error", func() {
 				task := BuildTask("tg-test", lucidRootFSURL, 10000, 10)
 				err := cell.ReserveTask(task)
-				Ω(err).Should(MatchError(auctiontypes.ErrorInsufficientResources))
+				Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
 		})
 	})
@@ -678,8 +678,8 @@ var _ = Describe("Cell", func() {
 		Context("with nothing to commit", func() {
 			It("does nothing and returns empty", func() {
 				failedWork := cell.Commit()
-				Ω(failedWork).Should(BeZero())
-				Ω(client.PerformCallCount()).Should(Equal(0))
+				Expect(failedWork).To(BeZero())
+				Expect(client.PerformCallCount()).To(Equal(0))
 			})
 		})
 
@@ -689,15 +689,16 @@ var _ = Describe("Cell", func() {
 			BeforeEach(func() {
 				lrpAuction = BuildLRPAuction("pg-new", 0, lucidRootFSURL, 20, 10, time.Now())
 
-				Ω(cell.ReserveLRP(lrpAuction)).Should(Succeed())
+				Expect(cell.ReserveLRP(lrpAuction)).To(Succeed())
 			})
 
 			It("asks the client to perform", func() {
 				cell.Commit()
-				Ω(client.PerformCallCount()).Should(Equal(1))
-				Ω(client.PerformArgsForCall(0)).Should(Equal(auctiontypes.Work{
+				Expect(client.PerformCallCount()).To(Equal(1))
+				Expect(client.PerformArgsForCall(0)).To(Equal(auctiontypes.Work{
 					LRPs: []auctiontypes.LRPAuction{lrpAuction},
 				}))
+
 			})
 
 			Context("when the client returns some failed work", func() {
@@ -706,14 +707,14 @@ var _ = Describe("Cell", func() {
 						LRPs: []auctiontypes.LRPAuction{lrpAuction},
 					}
 					client.PerformReturns(failedWork, nil)
-					Ω(cell.Commit()).Should(Equal(failedWork))
+					Expect(cell.Commit()).To(Equal(failedWork))
 				})
 			})
 
 			Context("when the client returns an error", func() {
 				It("does not return any failed work", func() {
 					client.PerformReturns(auctiontypes.Work{}, errors.New("boom"))
-					Ω(cell.Commit()).Should(BeZero())
+					Expect(cell.Commit()).To(BeZero())
 				})
 			})
 		})

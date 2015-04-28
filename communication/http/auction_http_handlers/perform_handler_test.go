@@ -43,14 +43,14 @@ var _ = Describe("Perform", func() {
 			})
 
 			It("succeeds, returning any failed work", func() {
-				Ω(auctionRep.PerformCallCount()).Should(Equal(0))
+				Expect(auctionRep.PerformCallCount()).To(Equal(0))
 
 				status, body := Request(routes.Perform, nil, JSONReaderFor(requestedWork))
-				Ω(status).Should(Equal(http.StatusOK))
-				Ω(body).Should(MatchJSON(JSONFor(failedWork)))
+				Expect(status).To(Equal(http.StatusOK))
+				Expect(body).To(MatchJSON(JSONFor(failedWork)))
 
-				Ω(auctionRep.PerformCallCount()).Should(Equal(1))
-				Ω(auctionRep.PerformArgsForCall(0)).Should(Equal(requestedWork))
+				Expect(auctionRep.PerformCallCount()).To(Equal(1))
+				Expect(auctionRep.PerformArgsForCall(0)).To(Equal(requestedWork))
 			})
 		})
 
@@ -60,27 +60,27 @@ var _ = Describe("Perform", func() {
 			})
 
 			It("fails, returning nothing", func() {
-				Ω(auctionRep.PerformCallCount()).Should(Equal(0))
+				Expect(auctionRep.PerformCallCount()).To(Equal(0))
 
 				status, body := Request(routes.Perform, nil, JSONReaderFor(requestedWork))
-				Ω(status).Should(Equal(http.StatusInternalServerError))
-				Ω(body).Should(BeEmpty())
+				Expect(status).To(Equal(http.StatusInternalServerError))
+				Expect(body).To(BeEmpty())
 
-				Ω(auctionRep.PerformCallCount()).Should(Equal(1))
-				Ω(auctionRep.PerformArgsForCall(0)).Should(Equal(requestedWork))
+				Expect(auctionRep.PerformCallCount()).To(Equal(1))
+				Expect(auctionRep.PerformArgsForCall(0)).To(Equal(requestedWork))
 			})
 		})
 	})
 
 	Context("with invalid JSON", func() {
 		It("fails", func() {
-			Ω(auctionRep.PerformCallCount()).Should(Equal(0))
+			Expect(auctionRep.PerformCallCount()).To(Equal(0))
 
 			status, body := Request(routes.Perform, nil, bytes.NewBufferString("∆"))
-			Ω(status).Should(Equal(http.StatusBadRequest))
-			Ω(body).Should(BeEmpty())
+			Expect(status).To(Equal(http.StatusBadRequest))
+			Expect(body).To(BeEmpty())
 
-			Ω(auctionRep.PerformCallCount()).Should(Equal(0))
+			Expect(auctionRep.PerformCallCount()).To(Equal(0))
 		})
 	})
 })

@@ -24,10 +24,10 @@ var _ = Describe("Batch", func() {
 	})
 
 	It("should start off empty", func() {
-		Ω(batch.HasWork).ShouldNot(Receive())
+		Expect(batch.HasWork).NotTo(Receive())
 		starts, tasks := batch.DedupeAndDrain()
-		Ω(starts).Should(BeEmpty())
-		Ω(tasks).Should(BeEmpty())
+		Expect(starts).To(BeEmpty())
+		Expect(tasks).To(BeEmpty())
 	})
 
 	Describe("adding work", func() {
@@ -39,11 +39,11 @@ var _ = Describe("Batch", func() {
 
 			It("makes the start auction available when drained", func() {
 				lrpAuctions, _ := batch.DedupeAndDrain()
-				Ω(lrpAuctions).Should(ConsistOf(BuildLRPAuctions(lrpStart, clock.Now())))
+				Expect(lrpAuctions).To(ConsistOf(BuildLRPAuctions(lrpStart, clock.Now())))
 			})
 
 			It("should have work", func() {
-				Ω(batch.HasWork).Should(Receive())
+				Expect(batch.HasWork).To(Receive())
 			})
 		})
 
@@ -55,11 +55,11 @@ var _ = Describe("Batch", func() {
 
 			It("makes the stop auction available when drained", func() {
 				_, taskAuctions := batch.DedupeAndDrain()
-				Ω(taskAuctions).Should(ConsistOf(BuildTaskAuction(task, clock.Now())))
+				Expect(taskAuctions).To(ConsistOf(BuildTaskAuction(task, clock.Now())))
 			})
 
 			It("should have work", func() {
-				Ω(batch.HasWork).Should(Receive())
+				Expect(batch.HasWork).To(Receive())
 			})
 		})
 	})
@@ -80,12 +80,12 @@ var _ = Describe("Batch", func() {
 
 		It("should dedupe any duplicate start auctions and stop auctions", func() {
 			lrpAuctions, taskAuctions := batch.DedupeAndDrain()
-			Ω(lrpAuctions).Should(Equal([]auctiontypes.LRPAuction{
+			Expect(lrpAuctions).To(Equal([]auctiontypes.LRPAuction{
 				BuildLRPAuction("pg-1", 1, "lucid64", 10, 10, clock.Now()),
 				BuildLRPAuction("pg-2", 2, "lucid64", 10, 10, clock.Now()),
 			}))
 
-			Ω(taskAuctions).Should(Equal([]auctiontypes.TaskAuction{
+			Expect(taskAuctions).To(Equal([]auctiontypes.TaskAuction{
 				BuildTaskAuction(
 					BuildTask("tg-1", "lucid64", 10, 10),
 					clock.Now(),
@@ -95,24 +95,25 @@ var _ = Describe("Batch", func() {
 					clock.Now(),
 				),
 			}))
+
 		})
 
 		It("should clear out its cache, so a subsequent call shouldn't fetch anything", func() {
 			batch.DedupeAndDrain()
 			lrpAuctions, taskAuctions := batch.DedupeAndDrain()
-			Ω(lrpAuctions).Should(BeEmpty())
-			Ω(taskAuctions).Should(BeEmpty())
+			Expect(lrpAuctions).To(BeEmpty())
+			Expect(taskAuctions).To(BeEmpty())
 		})
 
 		It("should no longer have work after draining", func() {
 			batch.DedupeAndDrain()
-			Ω(batch.HasWork).ShouldNot(Receive())
+			Expect(batch.HasWork).NotTo(Receive())
 		})
 
 		It("should not hang forever if the work channel was already drained", func() {
-			Ω(batch.HasWork).Should(Receive())
+			Expect(batch.HasWork).To(Receive())
 			batch.DedupeAndDrain()
-			Ω(batch.HasWork).ShouldNot(Receive())
+			Expect(batch.HasWork).NotTo(Receive())
 		})
 	})
 })

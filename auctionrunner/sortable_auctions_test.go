@@ -29,10 +29,10 @@ var _ = Describe("Sortable Auctions", func() {
 			})
 
 			It("sorts boulders before pebbles", func() {
-				Ω(lrps[0].DesiredLRP.ProcessGuid).Should((Equal("pg-9")))
-				Ω(lrps[1].DesiredLRP.ProcessGuid).Should((Equal("pg-8")))
-				Ω(lrps[2].DesiredLRP.ProcessGuid).Should((Equal("pg-7")))
-				Ω(lrps[3].DesiredLRP.ProcessGuid).Should((Equal("pg-6")))
+				Expect(lrps[0].DesiredLRP.ProcessGuid).To((Equal("pg-9")))
+				Expect(lrps[1].DesiredLRP.ProcessGuid).To((Equal("pg-8")))
+				Expect(lrps[2].DesiredLRP.ProcessGuid).To((Equal("pg-7")))
+				Expect(lrps[3].DesiredLRP.ProcessGuid).To((Equal("pg-6")))
 			})
 		})
 
@@ -46,7 +46,7 @@ var _ = Describe("Sortable Auctions", func() {
 
 			It("sorts by index", func() {
 				for i := 0; i < len(lrps); i++ {
-					Ω(lrps[i].Index).Should(Equal(i))
+					Expect(lrps[i].Index).To(Equal(i))
 				}
 			})
 		})
@@ -67,10 +67,10 @@ var _ = Describe("Sortable Auctions", func() {
 		})
 
 		It("sorts boulders before pebbles", func() {
-			Ω(tasks[0].Task.TaskGuid).Should((Equal("tg-9")))
-			Ω(tasks[1].Task.TaskGuid).Should((Equal("tg-8")))
-			Ω(tasks[2].Task.TaskGuid).Should((Equal("tg-7")))
-			Ω(tasks[3].Task.TaskGuid).Should((Equal("tg-6")))
+			Expect(tasks[0].Task.TaskGuid).To((Equal("tg-9")))
+			Expect(tasks[1].Task.TaskGuid).To((Equal("tg-8")))
+			Expect(tasks[2].Task.TaskGuid).To((Equal("tg-7")))
+			Expect(tasks[3].Task.TaskGuid).To((Equal("tg-6")))
 		})
 
 	})

@@ -19,29 +19,29 @@ var _ = Describe("State", func() {
 				RootFSProviders: auctiontypes.RootFSProviders{"docker": auctiontypes.ArbitraryRootFSProvider{}},
 			}
 			auctionRep.StateReturns(repState, nil)
-			Ω(auctionRep.StateCallCount()).Should(Equal(0))
+			Expect(auctionRep.StateCallCount()).To(Equal(0))
 		})
 
 		It("it returns whatever the state call returns", func() {
 			status, body := Request(routes.State, nil, nil)
-			Ω(status).Should(Equal(http.StatusOK))
+			Expect(status).To(Equal(http.StatusOK))
 
-			Ω(body).Should(MatchJSON(JSONFor(repState)))
+			Expect(body).To(MatchJSON(JSONFor(repState)))
 
-			Ω(auctionRep.StateCallCount()).Should(Equal(1))
+			Expect(auctionRep.StateCallCount()).To(Equal(1))
 		})
 	})
 
 	Context("when the state call fails", func() {
 		It("fails", func() {
 			auctionRep.StateReturns(auctiontypes.CellState{}, errors.New("boom"))
-			Ω(auctionRep.StateCallCount()).Should(Equal(0))
+			Expect(auctionRep.StateCallCount()).To(Equal(0))
 
 			status, body := Request(routes.State, nil, nil)
-			Ω(status).Should(Equal(http.StatusInternalServerError))
-			Ω(body).Should(BeEmpty())
+			Expect(status).To(Equal(http.StatusInternalServerError))
+			Expect(body).To(BeEmpty())
 
-			Ω(auctionRep.StateCallCount()).Should(Equal(1))
+			Expect(auctionRep.StateCallCount()).To(Equal(1))
 		})
 	})
 })

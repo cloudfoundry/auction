@@ -45,7 +45,7 @@ func StartSVGReport(path string, width, height int, numCells int) *SVGReport {
 	ReportCardHeight = border*3 + instanceBoxHeight
 
 	f, err := os.Create(path)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	s := svg.New(f)
 	s.Start(width*ReportCardWidth, headerHeight+height*ReportCardHeight)
 	return &SVGReport{

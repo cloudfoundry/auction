@@ -37,7 +37,7 @@ var _ = BeforeEach(func() {
 	auctionRep = &fakes.FakeSimulationCellRep{}
 
 	handler, err := rata.NewRouter(routes.Routes, auction_http_handlers.New(auctionRep, logger))
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	server = httptest.NewServer(handler)
 
 	requestGenerator = rata.NewRequestGenerator(server.URL, routes.Routes)

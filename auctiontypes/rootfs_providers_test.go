@@ -41,42 +41,42 @@ var _ = Describe("RootFSProviders", func() {
 
 	It("serializes", func() {
 		payload, err := json.Marshal(providers)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
-		Ω(payload).Should(MatchJSON(providersJSON))
+		Expect(payload).To(MatchJSON(providersJSON))
 	})
 
 	It("deserializes", func() {
 		var providersResult auctiontypes.RootFSProviders
 		err := json.Unmarshal([]byte(providersJSON), &providersResult)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
-		Ω(providersResult).Should(Equal(providers))
+		Expect(providersResult).To(Equal(providers))
 	})
 
 	Describe("Match", func() {
 		Describe("ArbitraryRootFSProvider", func() {
 			It("matches any URL", func() {
 				rootFS, err := url.Parse("some://url")
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(arbitrary.Match(*rootFS)).Should(BeTrue())
+				Expect(arbitrary.Match(*rootFS)).To(BeTrue())
 			})
 		})
 
 		Describe("FixedSetRootFSProvider", func() {
 			It("matches a URL in the set", func() {
 				rootFS, err := url.Parse("some:baz")
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(fixedSet.Match(*rootFS)).Should(BeTrue())
+				Expect(fixedSet.Match(*rootFS)).To(BeTrue())
 			})
 
 			It("does not match a URL not in the set", func() {
 				rootFS, err := url.Parse("some://baz-not-present/here")
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(fixedSet.Match(*rootFS)).Should(BeFalse())
+				Expect(fixedSet.Match(*rootFS)).To(BeFalse())
 			})
 		})
 
@@ -84,34 +84,34 @@ var _ = Describe("RootFSProviders", func() {
 			Context("for a scheme with an arbitrary provider", func() {
 				It("matches any url", func() {
 					rootFS, err := url.Parse("foo://any/url/is#ok")
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
-					Ω(providers.Match(*rootFS)).Should(BeTrue())
+					Expect(providers.Match(*rootFS)).To(BeTrue())
 				})
 			})
 
 			Context("for a scheme with a fixed-set provider", func() {
 				It("matches for a url in the set", func() {
 					rootFS, err := url.Parse("bar:quux")
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
-					Ω(providers.Match(*rootFS)).Should(BeTrue())
+					Expect(providers.Match(*rootFS)).To(BeTrue())
 				})
 
 				It("does not match for a url not in the set", func() {
 					rootFS, err := url.Parse("bar:quux/not?in=theset")
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
-					Ω(providers.Match(*rootFS)).Should(BeFalse())
+					Expect(providers.Match(*rootFS)).To(BeFalse())
 				})
 			})
 
 			Context("for a scheme not in the map", func() {
 				It("does not match", func() {
 					rootFS, err := url.Parse("missingscheme://host/path")
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
-					Ω(providers.Match(*rootFS)).Should(BeFalse())
+					Expect(providers.Match(*rootFS)).To(BeFalse())
 				})
 			})
 		})

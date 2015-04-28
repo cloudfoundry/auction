@@ -118,9 +118,9 @@ func BuildCellState(
 		availableResources.Containers -= 1
 	}
 
-	Ω(availableResources.MemoryMB).Should(BeNumerically(">=", 0), "Check your math!")
-	Ω(availableResources.DiskMB).Should(BeNumerically(">=", 0), "Check your math!")
-	Ω(availableResources.Containers).Should(BeNumerically(">=", 0), "Check your math!")
+	Expect(availableResources.MemoryMB).To(BeNumerically(">=", 0), "Check your math!")
+	Expect(availableResources.DiskMB).To(BeNumerically(">=", 0), "Check your math!")
+	Expect(availableResources.Containers).To(BeNumerically(">=", 0), "Check your math!")
 
 	return auctiontypes.CellState{
 		RootFSProviders:    rootFSProviders,

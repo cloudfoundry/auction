@@ -22,7 +22,11 @@ var _ = Describe("ZoneBuilder", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test")
-		workPool = workpool.NewWorkPool(5)
+
+		var err error
+		workPool, err = workpool.NewWorkPool(5)
+		Expect(err).NotTo(HaveOccurred())
+
 		repA = &fakes.FakeSimulationCellRep{}
 		repB = &fakes.FakeSimulationCellRep{}
 		repC = &fakes.FakeSimulationCellRep{}

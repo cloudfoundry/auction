@@ -25,7 +25,10 @@ var _ = Describe("Scheduler", func() {
 
 	BeforeEach(func() {
 		clock = fakeclock.NewFakeClock(time.Now())
-		workPool = workpool.NewWorkPool(5)
+
+		var err error
+		workPool, err = workpool.NewWorkPool(5)
+		Expect(err).NotTo(HaveOccurred())
 
 		clients = map[string]*fakes.FakeSimulationCellRep{}
 		zones = map[string]auctionrunner.Zone{}

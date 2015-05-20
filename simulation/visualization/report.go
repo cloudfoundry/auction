@@ -119,7 +119,10 @@ func (r *Report) WaitTimeStats() Stat {
 }
 
 func fetchStates(cells map[string]auctiontypes.CellRep) map[string]auctiontypes.CellState {
-	workPool := workpool.NewWorkPool(500)
+	workPool, err := workpool.NewWorkPool(500)
+	if err != nil {
+		panic(err) // should never happen
+	}
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(cells))

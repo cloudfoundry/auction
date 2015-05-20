@@ -99,7 +99,9 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	workPool = workpool.NewWorkPool(workers)
+	var err error
+	workPool, err = workpool.NewWorkPool(workers)
+	Expect(err).NotTo(HaveOccurred())
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(cells))

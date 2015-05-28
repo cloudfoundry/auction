@@ -84,11 +84,11 @@ func BuildTaskAuction(task models.Task, queueTime time.Time) auctiontypes.TaskAu
 	}
 }
 
-const lucidStack = "lucid64"
+const linuxStack = "linux"
 
-var lucidRootFSURL = models.PreloadedRootFS(lucidStack)
+var linuxRootFSURL = models.PreloadedRootFS(linuxStack)
 
-var lucidOnlyRootFSProviders = auctiontypes.RootFSProviders{models.PreloadedRootFSScheme: auctiontypes.NewFixedSetRootFSProvider(lucidStack)}
+var linuxOnlyRootFSProviders = auctiontypes.RootFSProviders{models.PreloadedRootFSScheme: auctiontypes.NewFixedSetRootFSProvider(linuxStack)}
 
 const windowsStack = "windows"
 

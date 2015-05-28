@@ -21,10 +21,10 @@ var _ = Describe("Sortable Auctions", func() {
 		Context("when LRP indexes match", func() {
 			BeforeEach(func() {
 				lrps = []auctiontypes.LRPAuction{
-					BuildLRPAuction("pg-6", 0, "lucid64", 10, 10, time.Time{}),
-					BuildLRPAuction("pg-7", 0, "lucid64", 20, 10, time.Time{}),
-					BuildLRPAuction("pg-8", 0, "lucid64", 30, 10, time.Time{}),
-					BuildLRPAuction("pg-9", 0, "lucid64", 40, 10, time.Time{}),
+					BuildLRPAuction("pg-6", 0, "linux", 10, 10, time.Time{}),
+					BuildLRPAuction("pg-7", 0, "linux", 20, 10, time.Time{}),
+					BuildLRPAuction("pg-8", 0, "linux", 30, 10, time.Time{}),
+					BuildLRPAuction("pg-9", 0, "linux", 40, 10, time.Time{}),
 				}
 			})
 
@@ -40,7 +40,7 @@ var _ = Describe("Sortable Auctions", func() {
 			BeforeEach(func() {
 				lrps = make([]auctiontypes.LRPAuction, 5)
 				for i := cap(lrps) - 1; i >= 0; i-- {
-					lrps[i] = BuildLRPAuction("pg", i, "lucid64", 40+i, 40+i, time.Time{})
+					lrps[i] = BuildLRPAuction("pg", i, "linux", 40+i, 40+i, time.Time{})
 				}
 			})
 
@@ -57,10 +57,10 @@ var _ = Describe("Sortable Auctions", func() {
 
 		BeforeEach(func() {
 			tasks = []auctiontypes.TaskAuction{
-				BuildTaskAuction(BuildTask("tg-6", "lucid64", 10, 10), time.Time{}),
-				BuildTaskAuction(BuildTask("tg-7", "lucid64", 20, 10), time.Time{}),
-				BuildTaskAuction(BuildTask("tg-8", "lucid64", 30, 10), time.Time{}),
-				BuildTaskAuction(BuildTask("tg-9", "lucid64", 40, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-6", "linux", 10, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-7", "linux", 20, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-8", "linux", 30, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-9", "linux", 40, 10), time.Time{}),
 			}
 
 			sort.Sort(auctionrunner.SortableTaskAuctions(tasks))
@@ -72,6 +72,5 @@ var _ = Describe("Sortable Auctions", func() {
 			Expect(tasks[2].Task.TaskGuid).To((Equal("tg-7")))
 			Expect(tasks[3].Task.TaskGuid).To((Equal("tg-6")))
 		})
-
 	})
 })

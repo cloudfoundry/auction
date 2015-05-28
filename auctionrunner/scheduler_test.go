@@ -40,9 +40,9 @@ var _ = Describe("Scheduler", func() {
 
 	Context("when the cells are empty", func() {
 		It("immediately returns everything as having failed, incrementing the attempt number", func() {
-			startAuction := BuildLRPAuction("pg-7", 0, lucidRootFSURL, 10, 10, clock.Now())
+			startAuction := BuildLRPAuction("pg-7", 0, linuxRootFSURL, 10, 10, clock.Now())
 
-			taskAuction := BuildTaskAuction(BuildTask("tg-1", lucidRootFSURL, 0, 0), clock.Now())
+			taskAuction := BuildTaskAuction(BuildTask("tg-1", linuxRootFSURL, 0, 0), clock.Now())
 
 			auctionRequest := auctiontypes.AuctionRequest{
 				LRPs:  []auctiontypes.LRPAuction{startAuction},
@@ -81,7 +81,7 @@ var _ = Describe("Scheduler", func() {
 				auctionrunner.NewCell(
 					"A-cell",
 					clients["A-cell"],
-					BuildCellState("A-zone", 100, 100, 100, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
+					BuildCellState("A-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []auctiontypes.LRP{
 						{"pg-1", 0, 10, 10},
 						{"pg-2", 0, 10, 10},
 					}),
@@ -93,7 +93,7 @@ var _ = Describe("Scheduler", func() {
 				auctionrunner.NewCell(
 					"B-cell",
 					clients["B-cell"],
-					BuildCellState("B-zone", 100, 100, 100, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
+					BuildCellState("B-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []auctiontypes.LRP{
 						{"pg-3", 0, 10, 10},
 					}),
 				),
@@ -148,7 +148,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("with an existing LRP (zone balancing)", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuction("pg-3", 1, lucidRootFSURL, 10, 10, clock.Now())
+				startAuction = BuildLRPAuction("pg-3", 1, linuxRootFSURL, 10, 10, clock.Now())
 			})
 
 			Context("when it picks a winner", func() {
@@ -179,7 +179,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("with a new LRP (cell balancing)", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuction("pg-4", 1, lucidRootFSURL, 10, 10, clock.Now())
+				startAuction = BuildLRPAuction("pg-4", 1, linuxRootFSURL, 10, 10, clock.Now())
 			})
 
 			Context("when it picks a winner", func() {
@@ -209,7 +209,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when the cell rejects the start auction", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuction("pg-3", 1, lucidRootFSURL, 10, 10, clock.Now())
+				startAuction = BuildLRPAuction("pg-3", 1, linuxRootFSURL, 10, 10, clock.Now())
 
 				clients["A-cell"].PerformReturns(auctiontypes.Work{LRPs: []auctiontypes.LRPAuction{startAuction}}, nil)
 				clients["B-cell"].PerformReturns(auctiontypes.Work{LRPs: []auctiontypes.LRPAuction{startAuction}}, nil)
@@ -228,7 +228,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when there is no room", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuctionWithPlacementError("pg-4", 0, lucidRootFSURL, 1000, 1000, clock.Now(), diego_errors.INSUFFICIENT_RESOURCES_MESSAGE)
+				startAuction = BuildLRPAuctionWithPlacementError("pg-4", 0, linuxRootFSURL, 1000, 1000, clock.Now(), diego_errors.INSUFFICIENT_RESOURCES_MESSAGE)
 				clock.Increment(time.Minute)
 				s := auctionrunner.NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
@@ -252,17 +252,17 @@ var _ = Describe("Scheduler", func() {
 
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
+			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []auctiontypes.LRP{
 				{"does-not-matter", 0, 10, 10},
 				{"does-not-matter", 0, 10, 10},
 			}))}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
+			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []auctiontypes.LRP{
 				{"does-not-matter", 0, 10, 10},
 			}))}
 
-			taskAuction = BuildTaskAuction(BuildTask("tg-1", lucidRootFSURL, 10, 10), clock.Now())
+			taskAuction = BuildTaskAuction(BuildTask("tg-1", linuxRootFSURL, 10, 10), clock.Now())
 			clock.Increment(time.Minute)
 		})
 
@@ -359,7 +359,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when there is no room", func() {
 			BeforeEach(func() {
-				taskAuction = BuildTaskAuction(BuildTask("tg-1", lucidRootFSURL, 1000, 1000), clock.Now())
+				taskAuction = BuildTaskAuction(BuildTask("tg-1", linuxRootFSURL, 1000, 1000), clock.Now())
 				clock.Increment(time.Minute)
 				s := auctionrunner.NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
@@ -407,13 +407,13 @@ var _ = Describe("Scheduler", func() {
 	Describe("a comprehensive scenario", func() {
 		BeforeEach(func() {
 			clients["A-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
+			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []auctiontypes.LRP{
 				{"pg-1", 0, 10, 10},
 				{"pg-2", 0, 10, 10},
 			}))}
 
 			clients["B-cell"] = &fakes.FakeSimulationCellRep{}
-			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
+			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []auctiontypes.LRP{
 				{"pg-3", 0, 10, 10},
 				{"pg-4", 0, 20, 20},
 			}))}
@@ -421,11 +421,11 @@ var _ = Describe("Scheduler", func() {
 
 		It("should optimize the distribution", func() {
 			startPG3 := BuildLRPAuction(
-				"pg-3", 1, lucidRootFSURL, 40, 40,
+				"pg-3", 1, linuxRootFSURL, 40, 40,
 				clock.Now(),
 			)
 			startPG2 := BuildLRPAuction(
-				"pg-2", 1, lucidRootFSURL, 5, 5,
+				"pg-2", 1, linuxRootFSURL, 5, 5,
 				clock.Now(),
 			)
 			startPGNope := BuildLRPAuctionWithPlacementError(
@@ -435,11 +435,11 @@ var _ = Describe("Scheduler", func() {
 			)
 
 			taskAuction1 := BuildTaskAuction(
-				BuildTask("tg-1", lucidRootFSURL, 40, 40),
+				BuildTask("tg-1", linuxRootFSURL, 40, 40),
 				clock.Now(),
 			)
 			taskAuction2 := BuildTaskAuction(
-				BuildTask("tg-2", lucidRootFSURL, 5, 5),
+				BuildTask("tg-2", linuxRootFSURL, 5, 5),
 				clock.Now(),
 			)
 			taskAuctionNope := BuildTaskAuction(
@@ -507,14 +507,14 @@ var _ = Describe("Scheduler", func() {
 		BeforeEach(func() {
 			clients["cell"] = &fakes.FakeSimulationCellRep{}
 
-			pg70 = BuildLRPAuction("pg-7", 0, lucidRootFSURL, 10, 10, clock.Now())
-			pg71 = BuildLRPAuction("pg-7", 1, lucidRootFSURL, 10, 10, clock.Now())
-			pg81 = BuildLRPAuction("pg-8", 1, lucidRootFSURL, 40, 40, clock.Now())
-			pg82 = BuildLRPAuction("pg-8", 2, lucidRootFSURL, 40, 40, clock.Now())
+			pg70 = BuildLRPAuction("pg-7", 0, linuxRootFSURL, 10, 10, clock.Now())
+			pg71 = BuildLRPAuction("pg-7", 1, linuxRootFSURL, 10, 10, clock.Now())
+			pg81 = BuildLRPAuction("pg-8", 1, linuxRootFSURL, 40, 40, clock.Now())
+			pg82 = BuildLRPAuction("pg-8", 2, linuxRootFSURL, 40, 40, clock.Now())
 			lrps = []auctiontypes.LRPAuction{pg70, pg71, pg81, pg82}
 
-			tg1 = BuildTaskAuction(BuildTask("tg-1", lucidRootFSURL, 10, 10), clock.Now())
-			tg2 = BuildTaskAuction(BuildTask("tg-2", lucidRootFSURL, 20, 20), clock.Now())
+			tg1 = BuildTaskAuction(BuildTask("tg-1", linuxRootFSURL, 10, 10), clock.Now())
+			tg2 = BuildTaskAuction(BuildTask("tg-2", linuxRootFSURL, 20, 20), clock.Now())
 			tasks = []auctiontypes.TaskAuction{tg1, tg2}
 
 			memory = 100
@@ -522,7 +522,7 @@ var _ = Describe("Scheduler", func() {
 
 		JustBeforeEach(func() {
 			zones["zone"] = auctionrunner.Zone{
-				auctionrunner.NewCell("cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{})),
+				auctionrunner.NewCell("cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, false, linuxOnlyRootFSProviders, []auctiontypes.LRP{})),
 			}
 
 			auctionRequest := auctiontypes.AuctionRequest{
@@ -607,7 +607,7 @@ var _ = Describe("Scheduler", func() {
 			var tg3 auctiontypes.TaskAuction
 
 			BeforeEach(func() {
-				tg3 = BuildTaskAuction(BuildTask("tg-3", lucidRootFSURL, 30, 30), clock.Now())
+				tg3 = BuildTaskAuction(BuildTask("tg-3", linuxRootFSURL, 30, 30), clock.Now())
 				lrps = []auctiontypes.LRPAuction{}
 				tasks = append(tasks, tg3)
 				memory = tg3.Task.MemoryMB + 1

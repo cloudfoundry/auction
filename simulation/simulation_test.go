@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("Auction", func() {
 	var initialDistributions map[int][]auctiontypes.LRP
-	var lucidRootFSURL = models.PreloadedRootFS(lucidStack)
+	var linuxRootFSURL = models.PreloadedRootFS(linuxStack)
 
 	newLRP := func(processGuid string, index int, memoryMB int) auctiontypes.LRP {
 		return auctiontypes.LRP{
@@ -40,7 +40,7 @@ var _ = Describe("Auction", func() {
 				ProcessGuid: processGuid,
 				MemoryMB:    memoryMB,
 				DiskMB:      1,
-				RootFS:      lucidRootFSURL,
+				RootFS:      linuxRootFSURL,
 				Domain:      "domain",
 			},
 			Indices: []uint{uint(index)},
@@ -80,7 +80,7 @@ var _ = Describe("Auction", func() {
 					ProcessGuid: lrp.ProcessGuid,
 					MemoryMB:    lrp.MemoryMB,
 					DiskMB:      lrp.DiskMB,
-					RootFS:      lucidRootFSURL,
+					RootFS:      linuxRootFSURL,
 					Domain:      "domain",
 				},
 

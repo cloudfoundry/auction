@@ -18,10 +18,10 @@ var _ = Describe("Cell", func() {
 
 	BeforeEach(func() {
 		client = &fakes.FakeSimulationCellRep{}
-		emptyState := BuildCellState("the-zone", 100, 200, 50, false, lucidOnlyRootFSProviders, nil)
+		emptyState := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, nil)
 		emptyCell = auctionrunner.NewCell("empty-cell", client, emptyState)
 
-		state := BuildCellState("the-zone", 100, 200, 50, false, lucidOnlyRootFSProviders, []auctiontypes.LRP{
+		state := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, []auctiontypes.LRP{
 			{"pg-1", 0, 10, 20},
 			{"pg-1", 1, 10, 20},
 			{"pg-2", 0, 10, 20},
@@ -33,8 +33,8 @@ var _ = Describe("Cell", func() {
 
 	Describe("ScoreForLRPAuction", func() {
 		It("factors in memory usage", func() {
-			bigInstance := BuildLRPAuction("pg-big", 0, lucidRootFSURL, 20, 10, time.Now())
-			smallInstance := BuildLRPAuction("pg-small", 0, lucidRootFSURL, 10, 10, time.Now())
+			bigInstance := BuildLRPAuction("pg-big", 0, linuxRootFSURL, 20, 10, time.Now())
+			smallInstance := BuildLRPAuction("pg-small", 0, linuxRootFSURL, 10, 10, time.Now())
 
 			By("factoring in the amount of memory taken up by the instance")
 			bigScore, err := emptyCell.ScoreForLRPAuction(bigInstance)
@@ -53,8 +53,8 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in disk usage", func() {
-			bigInstance := BuildLRPAuction("pg-big", 0, lucidRootFSURL, 10, 20, time.Now())
-			smallInstance := BuildLRPAuction("pg-small", 0, lucidRootFSURL, 10, 10, time.Now())
+			bigInstance := BuildLRPAuction("pg-big", 0, linuxRootFSURL, 10, 20, time.Now())
+			smallInstance := BuildLRPAuction("pg-small", 0, linuxRootFSURL, 10, 10, time.Now())
 
 			By("factoring in the amount of memory taken up by the instance")
 			bigScore, err := emptyCell.ScoreForLRPAuction(bigInstance)
@@ -73,12 +73,12 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in container usage", func() {
-			instance := BuildLRPAuction("pg-big", 0, lucidRootFSURL, 20, 20, time.Now())
+			instance := BuildLRPAuction("pg-big", 0, linuxRootFSURL, 20, 20, time.Now())
 
-			bigState := BuildCellState("the-zone", 100, 200, 50, false, lucidOnlyRootFSProviders, nil)
+			bigState := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, nil)
 			bigCell := auctionrunner.NewCell("big-cell", client, bigState)
 
-			smallState := BuildCellState("the-zone", 100, 200, 20, false, lucidOnlyRootFSProviders, nil)
+			smallState := BuildCellState("the-zone", 100, 200, 20, false, linuxOnlyRootFSProviders, nil)
 			smallCell := auctionrunner.NewCell("small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForLRPAuction(instance)
@@ -89,9 +89,9 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in process-guids that are already present", func() {
-			instanceWithTwoMatches := BuildLRPAuction("pg-1", 2, lucidRootFSURL, 10, 10, time.Now())
-			instanceWithOneMatch := BuildLRPAuction("pg-2", 1, lucidRootFSURL, 10, 10, time.Now())
-			instanceWithNoMatches := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
+			instanceWithTwoMatches := BuildLRPAuction("pg-1", 2, linuxRootFSURL, 10, 10, time.Now())
+			instanceWithOneMatch := BuildLRPAuction("pg-2", 1, linuxRootFSURL, 10, 10, time.Now())
+			instanceWithNoMatches := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10, 10, time.Now())
 
 			twoMatchesScore, err := cell.ScoreForLRPAuction(instanceWithTwoMatches)
 			Expect(err).NotTo(HaveOccurred())
@@ -107,7 +107,7 @@ var _ = Describe("Cell", func() {
 		Context("when the LRP does not fit", func() {
 			Context("because of memory constraints", func() {
 				It("should error", func() {
-					massiveMemoryInstance := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10000, 10, time.Now())
+					massiveMemoryInstance := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10000, 10, time.Now())
 					score, err := cell.ScoreForLRPAuction(massiveMemoryInstance)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
@@ -116,7 +116,7 @@ var _ = Describe("Cell", func() {
 
 			Context("because of disk constraints", func() {
 				It("should error", func() {
-					massiveDiskInstance := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10000, time.Now())
+					massiveDiskInstance := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10, 10000, time.Now())
 					score, err := cell.ScoreForLRPAuction(massiveDiskInstance)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
@@ -125,8 +125,8 @@ var _ = Describe("Cell", func() {
 
 			Context("because of container constraints", func() {
 				It("should error", func() {
-					instance := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
-					zeroState := BuildCellState("the-zone", 100, 100, 0, false, lucidOnlyRootFSProviders, nil)
+					instance := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10, 10, time.Now())
+					zeroState := BuildCellState("the-zone", 100, 100, 0, false, linuxOnlyRootFSProviders, nil)
 					zeroCell := auctionrunner.NewCell("zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForLRPAuction(instance)
 					Expect(score).To(BeZero())
@@ -237,8 +237,8 @@ var _ = Describe("Cell", func() {
 
 	Describe("ScoreForTask", func() {
 		It("factors in memory usage", func() {
-			bigTask := BuildTask("tg-big", lucidRootFSURL, 20, 10)
-			smallTask := BuildTask("tg-small", lucidRootFSURL, 10, 10)
+			bigTask := BuildTask("tg-big", linuxRootFSURL, 20, 10)
+			smallTask := BuildTask("tg-small", linuxRootFSURL, 10, 10)
 
 			By("factoring in the amount of memory taken up by the task")
 			bigScore, err := emptyCell.ScoreForTask(bigTask)
@@ -257,8 +257,8 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in disk usage", func() {
-			bigTask := BuildTask("tg-big", lucidRootFSURL, 10, 20)
-			smallTask := BuildTask("tg-small", lucidRootFSURL, 10, 10)
+			bigTask := BuildTask("tg-big", linuxRootFSURL, 10, 20)
+			smallTask := BuildTask("tg-small", linuxRootFSURL, 10, 10)
 
 			By("factoring in the amount of memory taken up by the task")
 			bigScore, err := emptyCell.ScoreForTask(bigTask)
@@ -277,12 +277,12 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in container usage", func() {
-			task := BuildTask("tg-big", lucidRootFSURL, 20, 20)
+			task := BuildTask("tg-big", linuxRootFSURL, 20, 20)
 
-			bigState := BuildCellState("the-zone", 100, 200, 50, false, lucidOnlyRootFSProviders, nil)
+			bigState := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, nil)
 			bigCell := auctionrunner.NewCell("big-cell", client, bigState)
 
-			smallState := BuildCellState("the-zone", 100, 200, 20, false, lucidOnlyRootFSProviders, nil)
+			smallState := BuildCellState("the-zone", 100, 200, 20, false, linuxOnlyRootFSProviders, nil)
 			smallCell := auctionrunner.NewCell("small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForTask(task)
@@ -295,7 +295,7 @@ var _ = Describe("Cell", func() {
 		Context("when the task does not fit", func() {
 			Context("because of memory constraints", func() {
 				It("should error", func() {
-					massiveMemoryTask := BuildTask("pg-new", lucidRootFSURL, 10000, 10)
+					massiveMemoryTask := BuildTask("pg-new", linuxRootFSURL, 10000, 10)
 					score, err := cell.ScoreForTask(massiveMemoryTask)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
@@ -304,7 +304,7 @@ var _ = Describe("Cell", func() {
 
 			Context("because of disk constraints", func() {
 				It("should error", func() {
-					massiveDiskTask := BuildTask("pg-new", lucidRootFSURL, 10, 10000)
+					massiveDiskTask := BuildTask("pg-new", linuxRootFSURL, 10, 10000)
 					score, err := cell.ScoreForTask(massiveDiskTask)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
@@ -313,8 +313,8 @@ var _ = Describe("Cell", func() {
 
 			Context("because of container constraints", func() {
 				It("should error", func() {
-					task := BuildTask("pg-new", lucidRootFSURL, 10, 10)
-					zeroState := BuildCellState("the-zone", 100, 100, 0, false, lucidOnlyRootFSProviders, nil)
+					task := BuildTask("pg-new", linuxRootFSURL, 10, 10)
+					zeroState := BuildCellState("the-zone", 100, 100, 0, false, linuxOnlyRootFSProviders, nil)
 					zeroCell := auctionrunner.NewCell("zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForTask(task)
 					Expect(score).To(BeZero())
@@ -426,8 +426,8 @@ var _ = Describe("Cell", func() {
 	Describe("ReserveLRP", func() {
 		Context("when there is room for the LRP", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
-				instance := BuildLRPAuction("pg-test", 0, lucidRootFSURL, 10, 10, time.Now())
-				instanceToAdd := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
+				instance := BuildLRPAuction("pg-test", 0, linuxRootFSURL, 10, 10, time.Now())
+				instanceToAdd := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10, 10, time.Now())
 
 				initialScore, err := cell.ScoreForLRPAuction(instance)
 				Expect(err).NotTo(HaveOccurred())
@@ -440,9 +440,9 @@ var _ = Describe("Cell", func() {
 			})
 
 			It("should register the LRP and keep it in mind when handling future requests", func() {
-				instance := BuildLRPAuction("pg-test", 0, lucidRootFSURL, 10, 10, time.Now())
-				instanceWithMatchingProcessGuid := BuildLRPAuction("pg-new", 1, lucidRootFSURL, 10, 10, time.Now())
-				instanceToAdd := BuildLRPAuction("pg-new", 0, lucidRootFSURL, 10, 10, time.Now())
+				instance := BuildLRPAuction("pg-test", 0, linuxRootFSURL, 10, 10, time.Now())
+				instanceWithMatchingProcessGuid := BuildLRPAuction("pg-new", 1, linuxRootFSURL, 10, 10, time.Now())
+				instanceToAdd := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10, 10, time.Now())
 
 				initialScore, err := cell.ScoreForLRPAuction(instance)
 				Expect(err).NotTo(HaveOccurred())
@@ -555,7 +555,7 @@ var _ = Describe("Cell", func() {
 
 		Context("when there is no room for the LRP", func() {
 			It("should error", func() {
-				instance := BuildLRPAuction("pg-test", 0, lucidRootFSURL, 10000, 10, time.Now())
+				instance := BuildLRPAuction("pg-test", 0, linuxRootFSURL, 10000, 10, time.Now())
 				err := cell.ReserveLRP(instance)
 				Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
@@ -565,8 +565,8 @@ var _ = Describe("Cell", func() {
 	Describe("ReserveTask", func() {
 		Context("when there is room for the task", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
-				task := BuildTask("tg-test", lucidRootFSURL, 10, 10)
-				taskToAdd := BuildTask("tg-new", lucidRootFSURL, 10, 10)
+				task := BuildTask("tg-test", linuxRootFSURL, 10, 10)
+				taskToAdd := BuildTask("tg-new", linuxRootFSURL, 10, 10)
 
 				initialScore, err := cell.ScoreForTask(task)
 				Expect(err).NotTo(HaveOccurred())
@@ -667,7 +667,7 @@ var _ = Describe("Cell", func() {
 
 		Context("when there is no room for the Task", func() {
 			It("should error", func() {
-				task := BuildTask("tg-test", lucidRootFSURL, 10000, 10)
+				task := BuildTask("tg-test", linuxRootFSURL, 10000, 10)
 				err := cell.ReserveTask(task)
 				Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
 			})
@@ -687,7 +687,7 @@ var _ = Describe("Cell", func() {
 			var lrpAuction auctiontypes.LRPAuction
 
 			BeforeEach(func() {
-				lrpAuction = BuildLRPAuction("pg-new", 0, lucidRootFSURL, 20, 10, time.Now())
+				lrpAuction = BuildLRPAuction("pg-new", 0, linuxRootFSURL, 20, 10, time.Now())
 
 				Expect(cell.ReserveLRP(lrpAuction)).To(Succeed())
 			})

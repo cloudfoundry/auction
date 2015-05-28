@@ -37,7 +37,7 @@ func main() {
 		panic("need http addr")
 	}
 
-	simulationRep := simulationrep.New("lucid64", *zone, auctiontypes.Resources{
+	simulationRep := simulationrep.New("cflinuxfs2", *zone, auctiontypes.Resources{
 		MemoryMB:   *memoryMB,
 		DiskMB:     *diskMB,
 		Containers: *containers,

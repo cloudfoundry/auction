@@ -33,7 +33,7 @@ var _ = Describe("Batch", func() {
 	Describe("adding work", func() {
 		Context("when adding start auctions", func() {
 			BeforeEach(func() {
-				lrpStart = BuildLRPStartRequest("pg-1", []uint{1}, "lucid64", 10, 10)
+				lrpStart = BuildLRPStartRequest("pg-1", []uint{1}, "linux", 10, 10)
 				batch.AddLRPStarts([]models.LRPStartRequest{lrpStart})
 			})
 
@@ -49,7 +49,7 @@ var _ = Describe("Batch", func() {
 
 		Context("when adding tasks", func() {
 			BeforeEach(func() {
-				task = BuildTask("tg-1", "lucid64", 10, 10)
+				task = BuildTask("tg-1", "linux", 10, 10)
 				batch.AddTasks([]models.Task{task})
 			})
 
@@ -67,31 +67,31 @@ var _ = Describe("Batch", func() {
 	Describe("DedupeAndDrain", func() {
 		BeforeEach(func() {
 			batch.AddLRPStarts([]models.LRPStartRequest{
-				BuildLRPStartRequest("pg-1", []uint{1}, "lucid64", 10, 10),
-				BuildLRPStartRequest("pg-1", []uint{1}, "lucid64", 10, 10),
-				BuildLRPStartRequest("pg-2", []uint{2}, "lucid64", 10, 10),
+				BuildLRPStartRequest("pg-1", []uint{1}, "linux", 10, 10),
+				BuildLRPStartRequest("pg-1", []uint{1}, "linux", 10, 10),
+				BuildLRPStartRequest("pg-2", []uint{2}, "linux", 10, 10),
 			})
 
 			batch.AddTasks([]models.Task{
-				BuildTask("tg-1", "lucid64", 10, 10),
-				BuildTask("tg-1", "lucid64", 10, 10),
-				BuildTask("tg-2", "lucid64", 10, 10)})
+				BuildTask("tg-1", "linux", 10, 10),
+				BuildTask("tg-1", "linux", 10, 10),
+				BuildTask("tg-2", "linux", 10, 10)})
 		})
 
 		It("should dedupe any duplicate start auctions and stop auctions", func() {
 			lrpAuctions, taskAuctions := batch.DedupeAndDrain()
 			Expect(lrpAuctions).To(Equal([]auctiontypes.LRPAuction{
-				BuildLRPAuction("pg-1", 1, "lucid64", 10, 10, clock.Now()),
-				BuildLRPAuction("pg-2", 2, "lucid64", 10, 10, clock.Now()),
+				BuildLRPAuction("pg-1", 1, "linux", 10, 10, clock.Now()),
+				BuildLRPAuction("pg-2", 2, "linux", 10, 10, clock.Now()),
 			}))
 
 			Expect(taskAuctions).To(Equal([]auctiontypes.TaskAuction{
 				BuildTaskAuction(
-					BuildTask("tg-1", "lucid64", 10, 10),
+					BuildTask("tg-1", "linux", 10, 10),
 					clock.Now(),
 				),
 				BuildTaskAuction(
-					BuildTask("tg-2", "lucid64", 10, 10),
+					BuildTask("tg-2", "linux", 10, 10),
 					clock.Now(),
 				),
 			}))

@@ -119,29 +119,28 @@ func (r *Report) WaitTimeStats() Stat {
 }
 
 func fetchStates(cells map[string]auctiontypes.CellRep) map[string]auctiontypes.CellState {
-	workPool, err := workpool.NewWorkPool(500)
-	if err != nil {
-		panic(err) // should never happen
-	}
-
-	wg := &sync.WaitGroup{}
-	wg.Add(len(cells))
 	lock := &sync.Mutex{}
 	states := map[string]auctiontypes.CellState{}
+	works := []func(){}
 
 	for repGuid, cell := range cells {
 		repGuid := repGuid
 		cell := cell
-		workPool.Submit(func() {
+		works = append(works, func() {
 			state, _ := cell.State()
 			lock.Lock()
 			states[repGuid] = state
 			lock.Unlock()
-			wg.Done()
 		})
 	}
-	wg.Wait()
-	workPool.Stop()
+
+	throttler, err := workpool.NewThrottler(500, works)
+	if err != nil {
+		panic(err) // should never happen
+	}
+
+	throttler.Work()
+
 	return states
 }
 

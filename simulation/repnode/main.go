@@ -24,9 +24,11 @@ var diskMB = flag.Int("diskMB", 100, "total available disk in MB")
 var containers = flag.Int("containers", 100, "total available containers")
 var repGuid = flag.String("repGuid", "", "rep-guid")
 var httpAddr = flag.String("httpAddr", "", "http server addres")
+var stack = flag.String("stack", "", "stack")
 var zone = flag.String("zone", "Z0", "availability zone")
 
 func main() {
+	cf_lager.AddFlags(flag.CommandLine)
 	flag.Parse()
 
 	if *repGuid == "" {
@@ -37,7 +39,7 @@ func main() {
 		panic("need http addr")
 	}
 
-	simulationRep := simulationrep.New("cflinuxfs2", *zone, auctiontypes.Resources{
+	simulationRep := simulationrep.New(*stack, *zone, auctiontypes.Resources{
 		MemoryMB:   *memoryMB,
 		DiskMB:     *diskMB,
 		Containers: *containers,

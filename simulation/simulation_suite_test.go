@@ -182,6 +182,7 @@ func launchExternalHTTPReps() map[string]auctiontypes.SimulationCellRep {
 			"-memoryMB", fmt.Sprintf("%d", repResources.MemoryMB),
 			"-diskMB", fmt.Sprintf("%d", repResources.DiskMB),
 			"-containers", fmt.Sprintf("%d", repResources.Containers),
+			"-stack", linuxStack,
 			"-zone", zone(i),
 		)
 

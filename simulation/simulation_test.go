@@ -8,7 +8,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/simulation/util"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/cloudfoundry-incubator/bbs/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -34,20 +34,20 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	newLRPStartAuction := func(processGuid string, index int, memoryMB int) models.LRPStartRequest {
+	newLRPStartAuction := func(processGuid string, index int, memoryMB int32) models.LRPStartRequest {
 		return models.LRPStartRequest{
-			DesiredLRP: models.DesiredLRP{
+			DesiredLRP: &models.DesiredLRP{
 				ProcessGuid: processGuid,
-				MemoryMB:    memoryMB,
-				DiskMB:      1,
-				RootFS:      linuxRootFSURL,
+				MemoryMb:    memoryMB,
+				DiskMb:      1,
+				RootFs:      linuxRootFSURL,
 				Domain:      "domain",
 			},
 			Indices: []uint{uint(index)},
 		}
 	}
 
-	generateUniqueLRPStartAuctions := func(numInstances int, memoryMB int) []models.LRPStartRequest {
+	generateUniqueLRPStartAuctions := func(numInstances int, memoryMB int32) []models.LRPStartRequest {
 		instances := []models.LRPStartRequest{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newLRPStartAuction(util.NewGrayscaleGuid("BBB"), i, memoryMB))
@@ -55,7 +55,7 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	generateLRPStartAuctionsWithRandomColor := func(numInstances int, memoryMB int, colors []string) []models.LRPStartRequest {
+	generateLRPStartAuctionsWithRandomColor := func(numInstances int, memoryMB int32, colors []string) []models.LRPStartRequest {
 		instances := []models.LRPStartRequest{}
 		for i := 0; i < numInstances; i++ {
 			color := colors[util.R.Intn(len(colors))]
@@ -64,7 +64,7 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	generateLRPStartAuctionsForProcessGuid := func(numInstances int, processGuid string, memoryMB int) []models.LRPStartRequest {
+	generateLRPStartAuctionsForProcessGuid := func(numInstances int, processGuid string, memoryMB int32) []models.LRPStartRequest {
 		instances := []models.LRPStartRequest{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newLRPStartAuction(processGuid, i, memoryMB))
@@ -76,11 +76,11 @@ var _ = Describe("Auction", func() {
 		work := auctiontypes.Work{}
 		for _, lrp := range lrps {
 			work.LRPs = append(work.LRPs, auctiontypes.LRPAuction{
-				DesiredLRP: models.DesiredLRP{
+				DesiredLRP: &models.DesiredLRP{
 					ProcessGuid: lrp.ProcessGuid,
-					MemoryMB:    lrp.MemoryMB,
-					DiskMB:      lrp.DiskMB,
-					RootFS:      linuxRootFSURL,
+					MemoryMb:    int32(lrp.MemoryMB),
+					DiskMb:      int32(lrp.DiskMB),
+					RootFs:      linuxRootFSURL,
 					Domain:      "domain",
 				},
 

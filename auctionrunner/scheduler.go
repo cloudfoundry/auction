@@ -194,7 +194,7 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction auctiontypes.LRPAuction) (auct
 
 	zones := accumulateZonesByInstances(s.zones, lrpAuction)
 
-	filteredZones := filterZonesByRootFS(zones, lrpAuction.DesiredLRP.RootFS)
+	filteredZones := filterZonesByRootFS(zones, lrpAuction.DesiredLRP.RootFs)
 
 	if len(filteredZones) == 0 {
 		return auctiontypes.LRPAuction{}, auctiontypes.ErrorCellMismatch
@@ -245,7 +245,7 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction auctiontypes.TaskAuction) (a
 	filteredZones := []Zone{}
 
 	for _, zone := range s.zones {
-		cells := zone.FilterCells(taskAuction.Task.RootFS)
+		cells := zone.FilterCells(taskAuction.Task.RootFs)
 		if len(cells) > 0 {
 			filteredZones = append(filteredZones, Zone(cells))
 		}

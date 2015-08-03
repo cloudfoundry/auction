@@ -4,38 +4,38 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/cloudfoundry-incubator/bbs/models"
 	. "github.com/onsi/gomega"
 )
 
-func BuildLRPStartRequest(processGuid string, indices []uint, rootFS string, memoryMB, diskMB int) models.LRPStartRequest {
+func BuildLRPStartRequest(processGuid string, indices []uint, rootFS string, memoryMB, diskMB int32) models.LRPStartRequest {
 	return models.LRPStartRequest{
-		DesiredLRP: models.DesiredLRP{
+		DesiredLRP: &models.DesiredLRP{
 			ProcessGuid: processGuid,
-			MemoryMB:    memoryMB,
-			DiskMB:      diskMB,
-			RootFS:      rootFS,
+			MemoryMb:    memoryMB,
+			DiskMb:      diskMB,
+			RootFs:      rootFS,
 		},
 		Indices: indices,
 	}
 }
 
-func BuildTask(taskGuid, rootFS string, memoryMB, diskMB int) models.Task {
-	return models.Task{
+func BuildTask(taskGuid, rootFS string, memoryMB, diskMB int32) *models.Task {
+	return &models.Task{
 		TaskGuid: taskGuid,
-		RootFS:   rootFS,
-		MemoryMB: memoryMB,
-		DiskMB:   diskMB,
+		RootFs:   rootFS,
+		MemoryMb: memoryMB,
+		DiskMb:   diskMB,
 	}
 }
 
-func BuildLRPAuction(processGuid string, index int, rootFS string, memoryMB, diskMB int, queueTime time.Time) auctiontypes.LRPAuction {
+func BuildLRPAuction(processGuid string, index int, rootFS string, memoryMB, diskMB int32, queueTime time.Time) auctiontypes.LRPAuction {
 	return auctiontypes.LRPAuction{
-		DesiredLRP: models.DesiredLRP{
+		DesiredLRP: &models.DesiredLRP{
 			ProcessGuid: processGuid,
-			MemoryMB:    memoryMB,
-			DiskMB:      diskMB,
-			RootFS:      rootFS,
+			MemoryMb:    memoryMB,
+			DiskMb:      diskMB,
+			RootFs:      rootFS,
 		},
 		Index: index,
 		AuctionRecord: auctiontypes.AuctionRecord{
@@ -44,13 +44,13 @@ func BuildLRPAuction(processGuid string, index int, rootFS string, memoryMB, dis
 	}
 }
 
-func BuildLRPAuctionWithPlacementError(processGuid string, index int, rootFS string, memoryMB, diskMB int, queueTime time.Time, placementError string) auctiontypes.LRPAuction {
+func BuildLRPAuctionWithPlacementError(processGuid string, index int, rootFS string, memoryMB, diskMB int32, queueTime time.Time, placementError string) auctiontypes.LRPAuction {
 	return auctiontypes.LRPAuction{
-		DesiredLRP: models.DesiredLRP{
+		DesiredLRP: &models.DesiredLRP{
 			ProcessGuid: processGuid,
-			MemoryMB:    memoryMB,
-			DiskMB:      diskMB,
-			RootFS:      rootFS,
+			MemoryMb:    memoryMB,
+			DiskMb:      diskMB,
+			RootFs:      rootFS,
 		},
 		Index: index,
 		AuctionRecord: auctiontypes.AuctionRecord{
@@ -75,7 +75,7 @@ func BuildLRPAuctions(lrpStart models.LRPStartRequest, queueTime time.Time) []au
 	return auctions
 }
 
-func BuildTaskAuction(task models.Task, queueTime time.Time) auctiontypes.TaskAuction {
+func BuildTaskAuction(task *models.Task, queueTime time.Time) auctiontypes.TaskAuction {
 	return auctiontypes.TaskAuction{
 		Task: task,
 		AuctionRecord: auctiontypes.AuctionRecord{

@@ -11,7 +11,7 @@ type FakeSimulationCellRep struct {
 	StateStub        func() (auctiontypes.CellState, error)
 	stateMutex       sync.RWMutex
 	stateArgsForCall []struct{}
-	stateReturns     struct {
+	stateReturns struct {
 		result1 auctiontypes.CellState
 		result2 error
 	}
@@ -27,7 +27,7 @@ type FakeSimulationCellRep struct {
 	ResetStub        func() error
 	resetMutex       sync.RWMutex
 	resetArgsForCall []struct{}
-	resetReturns     struct {
+	resetReturns struct {
 		result1 error
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/cloudfoundry-incubator/bbs/models"
 )
 
 type SimulationRep struct {
@@ -69,19 +69,19 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 
 	for _, start := range work.LRPs {
 		hasRoom := availableResources.Containers >= 0
-		hasRoom = hasRoom && availableResources.MemoryMB >= start.DesiredLRP.MemoryMB
-		hasRoom = hasRoom && availableResources.DiskMB >= start.DesiredLRP.DiskMB
+		hasRoom = hasRoom && availableResources.MemoryMB >= int(start.DesiredLRP.MemoryMb)
+		hasRoom = hasRoom && availableResources.DiskMB >= int(start.DesiredLRP.DiskMb)
 
 		if hasRoom {
 			rep.lrps[auctiontypes.IdentifierForLRP(start.DesiredLRP.ProcessGuid, start.Index)] = auctiontypes.LRP{
 				ProcessGuid: start.DesiredLRP.ProcessGuid,
 				Index:       start.Index,
-				MemoryMB:    start.DesiredLRP.MemoryMB,
-				DiskMB:      start.DesiredLRP.DiskMB,
+				MemoryMB:    int(start.DesiredLRP.MemoryMb),
+				DiskMB:      int(start.DesiredLRP.DiskMb),
 			}
 			availableResources.Containers -= 1
-			availableResources.MemoryMB -= start.DesiredLRP.MemoryMB
-			availableResources.DiskMB -= start.DesiredLRP.DiskMB
+			availableResources.MemoryMB -= int(start.DesiredLRP.MemoryMb)
+			availableResources.DiskMB -= int(start.DesiredLRP.DiskMb)
 		} else {
 			failedWork.LRPs = append(failedWork.LRPs, start)
 		}
@@ -89,18 +89,18 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 
 	for _, task := range work.Tasks {
 		hasRoom := availableResources.Containers >= 0
-		hasRoom = hasRoom && availableResources.MemoryMB >= task.MemoryMB
-		hasRoom = hasRoom && availableResources.DiskMB >= task.DiskMB
+		hasRoom = hasRoom && availableResources.MemoryMB >= int(task.MemoryMb)
+		hasRoom = hasRoom && availableResources.DiskMB >= int(task.DiskMb)
 
 		if hasRoom {
 			rep.tasks[task.TaskGuid] = auctiontypes.Task{
 				TaskGuid: task.TaskGuid,
-				MemoryMB: task.MemoryMB,
-				DiskMB:   task.DiskMB,
+				MemoryMB: int(task.MemoryMb),
+				DiskMB:   int(task.DiskMb),
 			}
 			availableResources.Containers -= 1
-			availableResources.MemoryMB -= task.MemoryMB
-			availableResources.DiskMB -= task.DiskMB
+			availableResources.MemoryMB -= int(task.MemoryMb)
+			availableResources.DiskMB -= int(task.DiskMb)
 		} else {
 			failedWork.Tasks = append(failedWork.Tasks, task)
 		}

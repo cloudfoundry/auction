@@ -7,7 +7,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/http/routes"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/cloudfoundry-incubator/bbs/models"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,20 +18,23 @@ var _ = Describe("Perform", func() {
 		var requestedWork, failedWork auctiontypes.Work
 		BeforeEach(func() {
 			requestedWork = auctiontypes.Work{
-				Tasks: []models.Task{
+				Tasks: []*models.Task{
 					{
 						TaskGuid: "tg-a",
+						Action:   models.WrapAction(&models.RunAction{Path: "true", ResourceLimits: &models.ResourceLimits{}}),
 					},
 					{
 						TaskGuid: "tg-b",
+						Action:   models.WrapAction(&models.RunAction{Path: "true", ResourceLimits: &models.ResourceLimits{}}),
 					},
 				},
 			}
 
 			failedWork = auctiontypes.Work{
-				Tasks: []models.Task{
+				Tasks: []*models.Task{
 					{
 						TaskGuid: "pg-a",
+						Action:   models.WrapAction(&models.RunAction{Path: "true", ResourceLimits: &models.ResourceLimits{}}),
 					},
 				},
 			}

@@ -8,7 +8,7 @@ import (
 	"github.com/pivotal-golang/lager"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/cloudfoundry-incubator/bbs/models"
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
@@ -116,6 +116,6 @@ func (a *auctionRunner) ScheduleLRPsForAuctions(lrpStarts []models.LRPStartReque
 	a.batch.AddLRPStarts(lrpStarts)
 }
 
-func (a *auctionRunner) ScheduleTasksForAuctions(tasks []models.Task) {
+func (a *auctionRunner) ScheduleTasksForAuctions(tasks []*models.Task) {
 	a.batch.AddTasks(tasks)
 }

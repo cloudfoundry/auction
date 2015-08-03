@@ -5,7 +5,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/cloudfoundry-incubator/bbs/models"
 	"github.com/pivotal-golang/clock"
 )
 
@@ -46,7 +46,7 @@ func (b *Batch) AddLRPStarts(starts []models.LRPStartRequest) {
 	b.lock.Unlock()
 }
 
-func (b *Batch) AddTasks(tasks []models.Task) {
+func (b *Batch) AddTasks(tasks []*models.Task) {
 	auctions := make([]auctiontypes.TaskAuction, 0, len(tasks))
 	now := b.clock.Now()
 	for _, t := range tasks {

@@ -9,8 +9,8 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
+	"github.com/cloudfoundry-incubator/bbs/models"
 	"github.com/cloudfoundry-incubator/runtime-schema/diego_errors"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -343,7 +343,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when the cell rejects the task", func() {
 			BeforeEach(func() {
-				clients["B-cell"].PerformReturns(auctiontypes.Work{Tasks: []models.Task{taskAuction.Task}}, nil)
+				clients["B-cell"].PerformReturns(auctiontypes.Work{Tasks: []*models.Task{taskAuction.Task}}, nil)
 				s := auctionrunner.NewScheduler(workPool, zones, clock)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
@@ -610,7 +610,7 @@ var _ = Describe("Scheduler", func() {
 				tg3 = BuildTaskAuction(BuildTask("tg-3", linuxRootFSURL, 30, 30), clock.Now())
 				lrps = []auctiontypes.LRPAuction{}
 				tasks = append(tasks, tg3)
-				memory = tg3.Task.MemoryMB + 1
+				memory = int(tg3.Task.MemoryMb + 1)
 			})
 
 			It("schedules boulders before pebbles", func() {

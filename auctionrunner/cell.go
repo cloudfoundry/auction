@@ -2,7 +2,7 @@ package auctionrunner
 
 import (
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/cloudfoundry-incubator/bbs/models"
 )
 
 type Cell struct {
@@ -39,8 +39,8 @@ func (c *Cell) ScoreForLRPAuction(lrpAuction auctiontypes.LRPAuction) (float64, 
 	}
 
 	remainingResources := c.state.AvailableResources
-	remainingResources.MemoryMB -= lrpAuction.DesiredLRP.MemoryMB
-	remainingResources.DiskMB -= lrpAuction.DesiredLRP.DiskMB
+	remainingResources.MemoryMB -= int(lrpAuction.DesiredLRP.MemoryMb)
+	remainingResources.DiskMB -= int(lrpAuction.DesiredLRP.DiskMb)
 	remainingResources.Containers -= 1
 
 	resourceScore := c.computeScore(remainingResources, numberOfInstancesWithMatchingProcessGuid)
@@ -48,15 +48,15 @@ func (c *Cell) ScoreForLRPAuction(lrpAuction auctiontypes.LRPAuction) (float64, 
 	return resourceScore, nil
 }
 
-func (c *Cell) ScoreForTask(task models.Task) (float64, error) {
+func (c *Cell) ScoreForTask(task *models.Task) (float64, error) {
 	err := c.canHandleTask(task)
 	if err != nil {
 		return 0, err
 	}
 
 	remainingResources := c.state.AvailableResources
-	remainingResources.MemoryMB -= task.MemoryMB
-	remainingResources.DiskMB -= task.DiskMB
+	remainingResources.MemoryMB -= int(task.MemoryMb)
+	remainingResources.DiskMB -= int(task.DiskMb)
 	remainingResources.Containers -= 1
 
 	resourceScore := c.computeTaskScore(remainingResources)
@@ -73,12 +73,12 @@ func (c *Cell) ReserveLRP(lrpAuction auctiontypes.LRPAuction) error {
 	c.state.LRPs = append(c.state.LRPs, auctiontypes.LRP{
 		ProcessGuid: lrpAuction.DesiredLRP.ProcessGuid,
 		Index:       lrpAuction.Index,
-		MemoryMB:    lrpAuction.DesiredLRP.MemoryMB,
-		DiskMB:      lrpAuction.DesiredLRP.DiskMB,
+		MemoryMB:    int(lrpAuction.DesiredLRP.MemoryMb),
+		DiskMB:      int(lrpAuction.DesiredLRP.DiskMb),
 	})
 
-	c.state.AvailableResources.MemoryMB -= lrpAuction.DesiredLRP.MemoryMB
-	c.state.AvailableResources.DiskMB -= lrpAuction.DesiredLRP.DiskMB
+	c.state.AvailableResources.MemoryMB -= int(lrpAuction.DesiredLRP.MemoryMb)
+	c.state.AvailableResources.DiskMB -= int(lrpAuction.DesiredLRP.DiskMb)
 	c.state.AvailableResources.Containers -= 1
 
 	c.workToCommit.LRPs = append(c.workToCommit.LRPs, lrpAuction)
@@ -86,7 +86,7 @@ func (c *Cell) ReserveLRP(lrpAuction auctiontypes.LRPAuction) error {
 	return nil
 }
 
-func (c *Cell) ReserveTask(task models.Task) error {
+func (c *Cell) ReserveTask(task *models.Task) error {
 	err := c.canHandleTask(task)
 	if err != nil {
 		return err
@@ -94,12 +94,12 @@ func (c *Cell) ReserveTask(task models.Task) error {
 
 	c.state.Tasks = append(c.state.Tasks, auctiontypes.Task{
 		TaskGuid: task.TaskGuid,
-		MemoryMB: task.MemoryMB,
-		DiskMB:   task.DiskMB,
+		MemoryMB: int(task.MemoryMb),
+		DiskMB:   int(task.DiskMb),
 	})
 
-	c.state.AvailableResources.MemoryMB -= task.MemoryMB
-	c.state.AvailableResources.DiskMB -= task.DiskMB
+	c.state.AvailableResources.MemoryMB -= int(task.MemoryMb)
+	c.state.AvailableResources.DiskMB -= int(task.DiskMb)
 	c.state.AvailableResources.Containers -= 1
 
 	c.workToCommit.Tasks = append(c.workToCommit.Tasks, task)
@@ -123,13 +123,13 @@ func (c *Cell) Commit() auctiontypes.Work {
 }
 
 func (c *Cell) canHandleLRPAuction(lrpAuction auctiontypes.LRPAuction) error {
-	if !c.MatchRootFS(lrpAuction.DesiredLRP.RootFS) {
+	if !c.MatchRootFS(lrpAuction.DesiredLRP.RootFs) {
 		return auctiontypes.ErrorCellMismatch
 	}
-	if c.state.AvailableResources.MemoryMB < lrpAuction.DesiredLRP.MemoryMB {
+	if c.state.AvailableResources.MemoryMB < int(lrpAuction.DesiredLRP.MemoryMb) {
 		return auctiontypes.ErrorInsufficientResources
 	}
-	if c.state.AvailableResources.DiskMB < lrpAuction.DesiredLRP.DiskMB {
+	if c.state.AvailableResources.DiskMB < int(lrpAuction.DesiredLRP.DiskMb) {
 		return auctiontypes.ErrorInsufficientResources
 	}
 	if c.state.AvailableResources.Containers < 1 {
@@ -139,14 +139,14 @@ func (c *Cell) canHandleLRPAuction(lrpAuction auctiontypes.LRPAuction) error {
 	return nil
 }
 
-func (c *Cell) canHandleTask(task models.Task) error {
-	if !c.MatchRootFS(task.RootFS) {
+func (c *Cell) canHandleTask(task *models.Task) error {
+	if !c.MatchRootFS(task.RootFs) {
 		return auctiontypes.ErrorCellMismatch
 	}
-	if c.state.AvailableResources.MemoryMB < task.MemoryMB {
+	if c.state.AvailableResources.MemoryMB < int(task.MemoryMb) {
 		return auctiontypes.ErrorInsufficientResources
 	}
-	if c.state.AvailableResources.DiskMB < task.DiskMB {
+	if c.state.AvailableResources.DiskMB < int(task.DiskMb) {
 		return auctiontypes.ErrorInsufficientResources
 	}
 	if c.state.AvailableResources.Containers < 1 {

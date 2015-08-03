@@ -84,7 +84,7 @@ func PrintReport(report *Report) {
 	}
 
 	for _, start := range report.AuctionResults.FailedLRPs {
-		fmt.Printf("Failed: %s %d %d\n", start.Identifier(), start.DesiredLRP.MemoryMB, start.DesiredLRP.DiskMB)
+		fmt.Printf("Failed: %s %d %d\n", start.Identifier(), start.DesiredLRP.MemoryMb, start.DesiredLRP.DiskMb)
 	}
 
 	waitDurations := []time.Duration{}

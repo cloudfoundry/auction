@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/cloudfoundry-incubator/bbs/models"
 	"github.com/cloudfoundry-incubator/runtime-schema/diego_errors"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
 	"github.com/tedsuo/ifrit"
 )
 
@@ -21,7 +21,7 @@ var ErrorNothingToStop = errors.New("nothing to stop")
 type AuctionRunner interface {
 	ifrit.Runner
 	ScheduleLRPsForAuctions([]models.LRPStartRequest)
-	ScheduleTasksForAuctions([]models.Task)
+	ScheduleTasksForAuctions([]*models.Task)
 }
 
 type AuctionRunnerDelegate interface {
@@ -59,7 +59,7 @@ type AuctionRecord struct {
 }
 
 type LRPAuction struct {
-	DesiredLRP models.DesiredLRP
+	DesiredLRP *models.DesiredLRP
 	Index      int
 	AuctionRecord
 }
@@ -73,7 +73,7 @@ func IdentifierForLRP(processGuid string, index int) string {
 }
 
 type TaskAuction struct {
-	Task models.Task
+	Task *models.Task
 	AuctionRecord
 }
 
@@ -81,7 +81,7 @@ func (t TaskAuction) Identifier() string {
 	return IdentifierForTask(t.Task)
 }
 
-func IdentifierForTask(t models.Task) string {
+func IdentifierForTask(t *models.Task) string {
 	return t.TaskGuid
 }
 
@@ -101,7 +101,7 @@ type SimulationCellRep interface {
 
 type Work struct {
 	LRPs  []LRPAuction
-	Tasks []models.Task
+	Tasks []*models.Task
 }
 
 type CellState struct {

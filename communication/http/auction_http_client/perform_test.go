@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/cloudfoundry-incubator/bbs/models"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,20 +15,23 @@ var _ = Describe("Perform", func() {
 
 	BeforeEach(func() {
 		work = auctiontypes.Work{
-			Tasks: []models.Task{
+			Tasks: []*models.Task{
 				{
 					TaskGuid: "tg-a",
+					Action:   models.WrapAction(&models.RunAction{Path: "true", ResourceLimits: &models.ResourceLimits{}}),
 				},
 				{
 					TaskGuid: "tg-b",
+					Action:   models.WrapAction(&models.RunAction{Path: "true", ResourceLimits: &models.ResourceLimits{}}),
 				},
 			},
 		}
 
 		failedWork = auctiontypes.Work{
-			Tasks: []models.Task{
+			Tasks: []*models.Task{
 				{
 					TaskGuid: "pg-a",
+					Action:   models.WrapAction(&models.RunAction{Path: "true", ResourceLimits: &models.ResourceLimits{}}),
 				},
 			},
 		}
@@ -37,6 +40,7 @@ var _ = Describe("Perform", func() {
 	It("should tell the rep to perform", func() {
 		Expect(auctionRep.PerformCallCount()).To(Equal(0))
 		client.Perform(work)
+		Expect(auctionRep.PerformCallCount()).To(Equal(1))
 		Expect(auctionRep.PerformArgsForCall(0)).To(Equal(work))
 	})
 

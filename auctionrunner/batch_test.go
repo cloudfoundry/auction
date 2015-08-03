@@ -5,7 +5,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/runtime-schema/models"
+	"github.com/cloudfoundry-incubator/bbs/models"
 	"github.com/pivotal-golang/clock/fakeclock"
 
 	. "github.com/onsi/ginkgo"
@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("Batch", func() {
 	var lrpStart models.LRPStartRequest
-	var task models.Task
+	var task *models.Task
 	var batch *auctionrunner.Batch
 	var clock *fakeclock.FakeClock
 
@@ -50,7 +50,7 @@ var _ = Describe("Batch", func() {
 		Context("when adding tasks", func() {
 			BeforeEach(func() {
 				task = BuildTask("tg-1", "linux", 10, 10)
-				batch.AddTasks([]models.Task{task})
+				batch.AddTasks([]*models.Task{task})
 			})
 
 			It("makes the stop auction available when drained", func() {
@@ -72,7 +72,7 @@ var _ = Describe("Batch", func() {
 				BuildLRPStartRequest("pg-2", []uint{2}, "linux", 10, 10),
 			})
 
-			batch.AddTasks([]models.Task{
+			batch.AddTasks([]*models.Task{
 				BuildTask("tg-1", "linux", 10, 10),
 				BuildTask("tg-1", "linux", 10, 10),
 				BuildTask("tg-2", "linux", 10, 10)})

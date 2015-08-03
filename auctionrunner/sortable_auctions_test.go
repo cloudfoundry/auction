@@ -40,7 +40,7 @@ var _ = Describe("Sortable Auctions", func() {
 			BeforeEach(func() {
 				lrps = make([]auctiontypes.LRPAuction, 5)
 				for i := cap(lrps) - 1; i >= 0; i-- {
-					lrps[i] = BuildLRPAuction("pg", i, "linux", 40+i, 40+i, time.Time{})
+					lrps[i] = BuildLRPAuction("pg", i, "linux", int32(40+i), int32(40+i), time.Time{})
 				}
 			})
 

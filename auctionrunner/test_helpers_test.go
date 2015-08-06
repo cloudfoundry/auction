@@ -23,9 +23,11 @@ func BuildLRPStartRequest(processGuid string, indices []uint, rootFS string, mem
 func BuildTask(taskGuid, rootFS string, memoryMB, diskMB int32) *models.Task {
 	return &models.Task{
 		TaskGuid: taskGuid,
-		RootFs:   rootFS,
-		MemoryMb: memoryMB,
-		DiskMb:   diskMB,
+		TaskDefinition: &models.TaskDefinition{
+			RootFs:   rootFS,
+			MemoryMb: memoryMB,
+			DiskMb:   diskMB,
+		},
 	}
 }
 

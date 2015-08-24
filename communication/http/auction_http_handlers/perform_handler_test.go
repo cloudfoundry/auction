@@ -8,7 +8,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/communication/http/routes"
 	"github.com/cloudfoundry-incubator/bbs/models"
-	"github.com/cloudfoundry-incubator/bbs/models/internal/model_helpers"
+	"github.com/cloudfoundry-incubator/bbs/models/test/model_helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -11,8 +11,6 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/cloudfoundry-incubator/auction/communication/http/auction_http_client"
-
 	"github.com/pivotal-golang/clock"
 
 	"github.com/cloudfoundry/gunk/workpool"
@@ -23,6 +21,7 @@ import (
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrep"
 	"github.com/cloudfoundry-incubator/auction/simulation/util"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
+	"github.com/cloudfoundry-incubator/rep"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -191,7 +190,7 @@ func launchExternalHTTPReps() map[string]auctiontypes.SimulationCellRep {
 		sessionsToTerminate = append(sessionsToTerminate, sess)
 		Eventually(sess).Should(gbytes.Say("listening"))
 
-		cells[cellGuid(i)] = auction_http_client.New(client, cellGuid(i), "http://"+httpAddr, logger)
+		cells[cellGuid(i)] = rep.NewClient(client, cellGuid(i), "http://"+httpAddr, logger)
 	}
 
 	return cells

@@ -6,17 +6,16 @@ import (
 	"log"
 
 	"github.com/cloudfoundry-incubator/auction/simulation/simulationrep"
-
-	"github.com/cloudfoundry-incubator/auction/communication/http/routes"
-
-	"github.com/tedsuo/rata"
-
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auction/communication/http/auction_http_handlers"
 	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
+	executorfakes "github.com/cloudfoundry-incubator/executor/fakes"
+	"github.com/cloudfoundry-incubator/rep"
+	"github.com/cloudfoundry-incubator/rep/evacuation/evacuation_context/fake_evacuation_context"
+	rephandlers "github.com/cloudfoundry-incubator/rep/handlers"
+	"github.com/cloudfoundry-incubator/rep/lrp_stopper/fake_lrp_stopper"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
+	"github.com/tedsuo/rata"
 )
 
 var memoryMB = flag.Int("memoryMB", 100, "total available memory in MB")
@@ -39,15 +38,20 @@ func main() {
 		panic("need http addr")
 	}
 
-	simulationRep := simulationrep.New(*stack, *zone, auctiontypes.Resources{
-		MemoryMB:   *memoryMB,
-		DiskMB:     *diskMB,
+	simulationRep := simulationrep.New(*stack, *zone, rep.Resources{
+		MemoryMB:   int32(*memoryMB),
+		DiskMB:     int32(*diskMB),
 		Containers: *containers,
 	})
 
 	logger, _ := cf_lager.New("repnode-http")
-	handlers := auction_http_handlers.New(simulationRep, logger.Session(*repGuid))
-	router, err := rata.NewRouter(routes.Routes, handlers)
+
+	fakeLRPStopper := new(fake_lrp_stopper.FakeLRPStopper)
+	fakeExecutorClient := new(executorfakes.FakeClient)
+	fakeEvacuatable := new(fake_evacuation_context.FakeEvacuatable)
+
+	handlers := rephandlers.New(simulationRep, fakeLRPStopper, fakeExecutorClient, fakeEvacuatable, logger.Session(*repGuid))
+	router, err := rata.NewRouter(rep.Routes, handlers)
 	if err != nil {
 		log.Fatalln("failed to make router:", err)
 	}

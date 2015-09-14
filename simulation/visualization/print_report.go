@@ -63,18 +63,19 @@ func PrintReport(report *Report) {
 				key = instance.ProcessGuid
 			}
 			if auctionedInstances[instance.Identifier()] {
-				newCounts[key] += instance.MemoryMB
+				newCounts[key] += int(instance.MemoryMB)
 				numNew += 1
 			} else {
-				originalCounts[key] += instance.MemoryMB
+				originalCounts[key] += int(instance.MemoryMB)
 			}
-			totalUsage += instance.MemoryMB
+			totalUsage += int(instance.MemoryMB)
 		}
 		for _, col := range availableColors {
 			instanceString += strings.Repeat(colorLookup[col]+"-"+defaultStyle, originalCounts[col])
 			instanceString += strings.Repeat(colorLookup[col]+"+"+defaultStyle, newCounts[col])
 		}
-		instanceString += strings.Repeat(grayColor+"."+defaultStyle, report.CellStates[cellID(i)].TotalResources.MemoryMB-totalUsage)
+		totalMemory := int(report.CellStates[cellID(i)].TotalResources.MemoryMB)
+		instanceString += strings.Repeat(grayColor+"."+defaultStyle, totalMemory-totalUsage)
 
 		fmt.Printf("  [%s] %s: %s\n", report.CellStates[cellID(i)].Zone, cellIDString, instanceString)
 	}
@@ -84,7 +85,7 @@ func PrintReport(report *Report) {
 	}
 
 	for _, start := range report.AuctionResults.FailedLRPs {
-		fmt.Printf("Failed: %s %d %d\n", start.Identifier(), start.DesiredLRP.MemoryMb, start.DesiredLRP.DiskMb)
+		fmt.Printf("Failed: %s %d %d\n", start.Identifier(), start.MemoryMB, start.DiskMB)
 	}
 
 	waitDurations := []time.Duration{}

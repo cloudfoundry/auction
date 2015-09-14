@@ -40,9 +40,9 @@ const linuxStack = "linux"
 
 const numCells = 100
 
-var cells map[string]auctiontypes.SimulationCellRep
+var cells map[string]rep.SimClient
 
-var repResources = auctiontypes.Resources{
+var repResources = rep.Resources{
 	MemoryMB:   100.0,
 	DiskMB:     100.0,
 	Containers: 100,
@@ -151,8 +151,8 @@ func zone(index int) string {
 	return fmt.Sprintf("Z%d", index%2)
 }
 
-func buildInProcessReps() map[string]auctiontypes.SimulationCellRep {
-	cells := map[string]auctiontypes.SimulationCellRep{}
+func buildInProcessReps() map[string]rep.SimClient {
+	cells := map[string]rep.SimClient{}
 
 	for i := 0; i < numCells; i++ {
 		cells[cellGuid(i)] = simulationrep.New(linuxStack, zone(i), repResources)
@@ -161,11 +161,11 @@ func buildInProcessReps() map[string]auctiontypes.SimulationCellRep {
 	return cells
 }
 
-func launchExternalHTTPReps() map[string]auctiontypes.SimulationCellRep {
+func launchExternalHTTPReps() map[string]rep.SimClient {
 	repNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/repnode")
 	Expect(err).NotTo(HaveOccurred())
 
-	cells := map[string]auctiontypes.SimulationCellRep{}
+	cells := map[string]rep.SimClient{}
 
 	client := &http.Client{
 		Timeout: timeout,
@@ -190,7 +190,7 @@ func launchExternalHTTPReps() map[string]auctiontypes.SimulationCellRep {
 		sessionsToTerminate = append(sessionsToTerminate, sess)
 		Eventually(sess).Should(gbytes.Say("listening"))
 
-		cells[cellGuid(i)] = rep.NewClient(client, cellGuid(i), "http://"+httpAddr, logger)
+		cells[cellGuid(i)] = rep.NewClient(client, "http://"+httpAddr).(rep.SimClient)
 	}
 
 	return cells

@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/bbs/models"
+	"github.com/cloudfoundry-incubator/auctioneer"
 )
 
 type FakeAuctionRunner struct {
@@ -19,15 +19,15 @@ type FakeAuctionRunner struct {
 	runReturns struct {
 		result1 error
 	}
-	ScheduleLRPsForAuctionsStub        func([]models.LRPStartRequest)
+	ScheduleLRPsForAuctionsStub        func([]auctioneer.LRPStartRequest)
 	scheduleLRPsForAuctionsMutex       sync.RWMutex
 	scheduleLRPsForAuctionsArgsForCall []struct {
-		arg1 []models.LRPStartRequest
+		arg1 []auctioneer.LRPStartRequest
 	}
-	ScheduleTasksForAuctionsStub        func([]*models.Task)
+	ScheduleTasksForAuctionsStub        func([]auctioneer.TaskStartRequest)
 	scheduleTasksForAuctionsMutex       sync.RWMutex
 	scheduleTasksForAuctionsArgsForCall []struct {
-		arg1 []*models.Task
+		arg1 []auctioneer.TaskStartRequest
 	}
 }
 
@@ -64,10 +64,10 @@ func (fake *FakeAuctionRunner) RunReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAuctionRunner) ScheduleLRPsForAuctions(arg1 []models.LRPStartRequest) {
+func (fake *FakeAuctionRunner) ScheduleLRPsForAuctions(arg1 []auctioneer.LRPStartRequest) {
 	fake.scheduleLRPsForAuctionsMutex.Lock()
 	fake.scheduleLRPsForAuctionsArgsForCall = append(fake.scheduleLRPsForAuctionsArgsForCall, struct {
-		arg1 []models.LRPStartRequest
+		arg1 []auctioneer.LRPStartRequest
 	}{arg1})
 	fake.scheduleLRPsForAuctionsMutex.Unlock()
 	if fake.ScheduleLRPsForAuctionsStub != nil {
@@ -81,16 +81,16 @@ func (fake *FakeAuctionRunner) ScheduleLRPsForAuctionsCallCount() int {
 	return len(fake.scheduleLRPsForAuctionsArgsForCall)
 }
 
-func (fake *FakeAuctionRunner) ScheduleLRPsForAuctionsArgsForCall(i int) []models.LRPStartRequest {
+func (fake *FakeAuctionRunner) ScheduleLRPsForAuctionsArgsForCall(i int) []auctioneer.LRPStartRequest {
 	fake.scheduleLRPsForAuctionsMutex.RLock()
 	defer fake.scheduleLRPsForAuctionsMutex.RUnlock()
 	return fake.scheduleLRPsForAuctionsArgsForCall[i].arg1
 }
 
-func (fake *FakeAuctionRunner) ScheduleTasksForAuctions(arg1 []*models.Task) {
+func (fake *FakeAuctionRunner) ScheduleTasksForAuctions(arg1 []auctioneer.TaskStartRequest) {
 	fake.scheduleTasksForAuctionsMutex.Lock()
 	fake.scheduleTasksForAuctionsArgsForCall = append(fake.scheduleTasksForAuctionsArgsForCall, struct {
-		arg1 []*models.Task
+		arg1 []auctioneer.TaskStartRequest
 	}{arg1})
 	fake.scheduleTasksForAuctionsMutex.Unlock()
 	if fake.ScheduleTasksForAuctionsStub != nil {
@@ -104,7 +104,7 @@ func (fake *FakeAuctionRunner) ScheduleTasksForAuctionsCallCount() int {
 	return len(fake.scheduleTasksForAuctionsArgsForCall)
 }
 
-func (fake *FakeAuctionRunner) ScheduleTasksForAuctionsArgsForCall(i int) []*models.Task {
+func (fake *FakeAuctionRunner) ScheduleTasksForAuctionsArgsForCall(i int) []auctioneer.TaskStartRequest {
 	fake.scheduleTasksForAuctionsMutex.RLock()
 	defer fake.scheduleTasksForAuctionsMutex.RUnlock()
 	return fake.scheduleTasksForAuctionsArgsForCall[i].arg1

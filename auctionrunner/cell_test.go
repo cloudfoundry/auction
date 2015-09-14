@@ -2,78 +2,77 @@ package auctionrunner_test
 
 import (
 	"errors"
-	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
+	"github.com/cloudfoundry-incubator/rep"
+	"github.com/cloudfoundry-incubator/rep/repfakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Cell", func() {
-	var client *fakes.FakeSimulationCellRep
+	var client *repfakes.FakeSimClient
 	var emptyCell, cell *auctionrunner.Cell
 
 	BeforeEach(func() {
-		client = &fakes.FakeSimulationCellRep{}
+		client = &repfakes.FakeSimClient{}
 		emptyState := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, nil)
 		emptyCell = auctionrunner.NewCell("empty-cell", client, emptyState)
 
-		state := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, []auctiontypes.LRP{
-			{"pg-1", 0, 10, 20},
-			{"pg-1", 1, 10, 20},
-			{"pg-2", 0, 10, 20},
-			{"pg-3", 0, 10, 20},
-			{"pg-4", 0, 10, 20},
+		state := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, []rep.LRP{
+			*BuildLRP("pg-1", "domain", 0, linuxRootFSURL, 10, 20),
+			*BuildLRP("pg-1", "domain", 1, linuxRootFSURL, 10, 20),
+			*BuildLRP("pg-2", "domain", 0, linuxRootFSURL, 10, 20),
+			*BuildLRP("pg-3", "domain", 0, linuxRootFSURL, 10, 20),
+			*BuildLRP("pg-4", "domain", 0, linuxRootFSURL, 10, 20),
 		})
 		cell = auctionrunner.NewCell("the-cell", client, state)
 	})
 
-	Describe("ScoreForLRPAuction", func() {
+	Describe("ScoreForLRP", func() {
 		It("factors in memory usage", func() {
-			bigInstance := BuildLRPAuction("pg-big", 0, linuxRootFSURL, 20, 10, time.Now())
-			smallInstance := BuildLRPAuction("pg-small", 0, linuxRootFSURL, 10, 10, time.Now())
+			bigInstance := BuildLRP("pg-big", "domain", 0, linuxRootFSURL, 20, 10)
+			smallInstance := BuildLRP("pg-small", "domain", 0, linuxRootFSURL, 10, 10)
 
 			By("factoring in the amount of memory taken up by the instance")
-			bigScore, err := emptyCell.ScoreForLRPAuction(bigInstance)
+			bigScore, err := emptyCell.ScoreForLRP(bigInstance)
 			Expect(err).NotTo(HaveOccurred())
-			smallScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
+			smallScore, err := emptyCell.ScoreForLRP(smallInstance)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(smallScore).To(BeNumerically("<", bigScore))
 
 			By("factoring in the relative emptiness of Cells")
-			emptyScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
+			emptyScore, err := emptyCell.ScoreForLRP(smallInstance)
 			Expect(err).NotTo(HaveOccurred())
-			score, err := cell.ScoreForLRPAuction(smallInstance)
+			score, err := cell.ScoreForLRP(smallInstance)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(emptyScore).To(BeNumerically("<", score))
 		})
 
 		It("factors in disk usage", func() {
-			bigInstance := BuildLRPAuction("pg-big", 0, linuxRootFSURL, 10, 20, time.Now())
-			smallInstance := BuildLRPAuction("pg-small", 0, linuxRootFSURL, 10, 10, time.Now())
+			bigInstance := BuildLRP("pg-big", "domain", 0, linuxRootFSURL, 10, 20)
+			smallInstance := BuildLRP("pg-small", "domain", 0, linuxRootFSURL, 10, 10)
 
 			By("factoring in the amount of memory taken up by the instance")
-			bigScore, err := emptyCell.ScoreForLRPAuction(bigInstance)
+			bigScore, err := emptyCell.ScoreForLRP(bigInstance)
 			Expect(err).NotTo(HaveOccurred())
-			smallScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
+			smallScore, err := emptyCell.ScoreForLRP(smallInstance)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(smallScore).To(BeNumerically("<", bigScore))
 
 			By("factoring in the relative emptiness of Cells")
-			emptyScore, err := emptyCell.ScoreForLRPAuction(smallInstance)
+			emptyScore, err := emptyCell.ScoreForLRP(smallInstance)
 			Expect(err).NotTo(HaveOccurred())
-			score, err := cell.ScoreForLRPAuction(smallInstance)
+			score, err := cell.ScoreForLRP(smallInstance)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(emptyScore).To(BeNumerically("<", score))
 		})
 
 		It("factors in container usage", func() {
-			instance := BuildLRPAuction("pg-big", 0, linuxRootFSURL, 20, 20, time.Now())
+			instance := BuildLRP("pg-big", "domain", 0, linuxRootFSURL, 20, 20)
 
 			bigState := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, nil)
 			bigCell := auctionrunner.NewCell("big-cell", client, bigState)
@@ -81,23 +80,23 @@ var _ = Describe("Cell", func() {
 			smallState := BuildCellState("the-zone", 100, 200, 20, false, linuxOnlyRootFSProviders, nil)
 			smallCell := auctionrunner.NewCell("small-cell", client, smallState)
 
-			bigScore, err := bigCell.ScoreForLRPAuction(instance)
+			bigScore, err := bigCell.ScoreForLRP(instance)
 			Expect(err).NotTo(HaveOccurred())
-			smallScore, err := smallCell.ScoreForLRPAuction(instance)
+			smallScore, err := smallCell.ScoreForLRP(instance)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(bigScore).To(BeNumerically("<", smallScore), "prefer Cells with more resources")
 		})
 
 		It("factors in process-guids that are already present", func() {
-			instanceWithTwoMatches := BuildLRPAuction("pg-1", 2, linuxRootFSURL, 10, 10, time.Now())
-			instanceWithOneMatch := BuildLRPAuction("pg-2", 1, linuxRootFSURL, 10, 10, time.Now())
-			instanceWithNoMatches := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10, 10, time.Now())
+			instanceWithTwoMatches := BuildLRP("pg-1", "domain", 2, linuxRootFSURL, 10, 10)
+			instanceWithOneMatch := BuildLRP("pg-2", "domain", 1, linuxRootFSURL, 10, 10)
+			instanceWithNoMatches := BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 10, 10)
 
-			twoMatchesScore, err := cell.ScoreForLRPAuction(instanceWithTwoMatches)
+			twoMatchesScore, err := cell.ScoreForLRP(instanceWithTwoMatches)
 			Expect(err).NotTo(HaveOccurred())
-			oneMatchesScore, err := cell.ScoreForLRPAuction(instanceWithOneMatch)
+			oneMatchesScore, err := cell.ScoreForLRP(instanceWithOneMatch)
 			Expect(err).NotTo(HaveOccurred())
-			noMatchesScore, err := cell.ScoreForLRPAuction(instanceWithNoMatches)
+			noMatchesScore, err := cell.ScoreForLRP(instanceWithNoMatches)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(noMatchesScore).To(BeNumerically("<", oneMatchesScore))
@@ -107,30 +106,30 @@ var _ = Describe("Cell", func() {
 		Context("when the LRP does not fit", func() {
 			Context("because of memory constraints", func() {
 				It("should error", func() {
-					massiveMemoryInstance := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10000, 10, time.Now())
-					score, err := cell.ScoreForLRPAuction(massiveMemoryInstance)
+					massiveMemoryInstance := BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 10000, 10)
+					score, err := cell.ScoreForLRP(massiveMemoryInstance)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
 				})
 			})
 
 			Context("because of disk constraints", func() {
 				It("should error", func() {
-					massiveDiskInstance := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10, 10000, time.Now())
-					score, err := cell.ScoreForLRPAuction(massiveDiskInstance)
+					massiveDiskInstance := BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 10, 10000)
+					score, err := cell.ScoreForLRP(massiveDiskInstance)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
 				})
 			})
 
 			Context("because of container constraints", func() {
 				It("should error", func() {
-					instance := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10, 10, time.Now())
+					instance := BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 10, 10)
 					zeroState := BuildCellState("the-zone", 100, 100, 0, false, linuxOnlyRootFSProviders, nil)
 					zeroCell := auctionrunner.NewCell("zero-cell", client, zeroState)
-					score, err := zeroCell.ScoreForLRPAuction(instance)
+					score, err := zeroCell.ScoreForLRP(instance)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
 				})
 			})
 		})
@@ -144,55 +143,55 @@ var _ = Describe("Cell", func() {
 						100,
 						100,
 						false,
-						auctiontypes.RootFSProviders{
-							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
-							"fixed-set-2": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
-							"arbitrary-1": auctiontypes.ArbitraryRootFSProvider{},
-							"arbitrary-2": auctiontypes.ArbitraryRootFSProvider{},
+						rep.RootFSProviders{
+							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"fixed-set-2": rep.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"arbitrary-1": rep.ArbitraryRootFSProvider{},
+							"arbitrary-2": rep.ArbitraryRootFSProvider{},
 						},
-						[]auctiontypes.LRP{},
+						[]rep.LRP{},
 					)
 					cell = auctionrunner.NewCell("the-cell", client, state)
 				})
 
 				It("should support LRPs with various stack requirements", func() {
-					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
+					score, err := cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "fixed-set-1:root-fs-1", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
+					score, err = cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "fixed-set-1:root-fs-2", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
+					score, err = cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "fixed-set-2:root-fs-1", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-2", 10, 10, time.Now()))
+					score, err = cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "fixed-set-2:root-fs-2", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary-1://random-root-fs", 10, 10, time.Now()))
+					score, err = cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "arbitrary-1://random-root-fs", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary-2://random-root-fs", 10, 10, time.Now()))
+					score, err = cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "arbitrary-2://random-root-fs", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for LRPs with unsupported stack requirements", func() {
-					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-3", 10, 10, time.Now()))
+					score, err := cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "fixed-set-1:root-fs-3", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-3:root-fs-1", 10, 10, time.Now()))
+					score, err = cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "fixed-set-3:root-fs-1", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary-3://random-root-fs", 10, 10, time.Now()))
+					score, err = cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "arbitrary-3://random-root-fs", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
 			})
 
@@ -204,32 +203,32 @@ var _ = Describe("Cell", func() {
 						100,
 						100,
 						false,
-						auctiontypes.RootFSProviders{
-							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1"),
+						rep.RootFSProviders{
+							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1"),
 						},
-						[]auctiontypes.LRP{},
+						[]rep.LRP{},
 					)
 					cell = auctionrunner.NewCell("the-cell", client, state)
 				})
 
 				It("should support LRPs requiring the stack supported by the cell", func() {
-					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
+					score, err := cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "fixed-set-1:root-fs-1", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for LRPs with unsupported stack requirements", func() {
-					score, err := cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
+					score, err := cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "fixed-set-1:root-fs-2", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
+					score, err = cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "fixed-set-2:root-fs-1", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForLRPAuction(BuildLRPAuction("pg", 0, "arbitrary://random-root-fs", 10, 10, time.Now()))
+					score, err = cell.ScoreForLRP(BuildLRP("pg", "domain", 0, "arbitrary://random-root-fs", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
 			})
 		})
@@ -237,8 +236,8 @@ var _ = Describe("Cell", func() {
 
 	Describe("ScoreForTask", func() {
 		It("factors in memory usage", func() {
-			bigTask := BuildTask("tg-big", linuxRootFSURL, 20, 10)
-			smallTask := BuildTask("tg-small", linuxRootFSURL, 10, 10)
+			bigTask := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 10)
+			smallTask := BuildTask("tg-small", "domain", linuxRootFSURL, 10, 10)
 
 			By("factoring in the amount of memory taken up by the task")
 			bigScore, err := emptyCell.ScoreForTask(bigTask)
@@ -257,8 +256,8 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in disk usage", func() {
-			bigTask := BuildTask("tg-big", linuxRootFSURL, 10, 20)
-			smallTask := BuildTask("tg-small", linuxRootFSURL, 10, 10)
+			bigTask := BuildTask("tg-big", "domain", linuxRootFSURL, 10, 20)
+			smallTask := BuildTask("tg-small", "domain", linuxRootFSURL, 10, 10)
 
 			By("factoring in the amount of memory taken up by the task")
 			bigScore, err := emptyCell.ScoreForTask(bigTask)
@@ -277,7 +276,7 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in container usage", func() {
-			task := BuildTask("tg-big", linuxRootFSURL, 20, 20)
+			task := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 20)
 
 			bigState := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, nil)
 			bigCell := auctionrunner.NewCell("big-cell", client, bigState)
@@ -295,30 +294,30 @@ var _ = Describe("Cell", func() {
 		Context("when the task does not fit", func() {
 			Context("because of memory constraints", func() {
 				It("should error", func() {
-					massiveMemoryTask := BuildTask("pg-new", linuxRootFSURL, 10000, 10)
+					massiveMemoryTask := BuildTask("pg-new", "domain", linuxRootFSURL, 10000, 10)
 					score, err := cell.ScoreForTask(massiveMemoryTask)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
 				})
 			})
 
 			Context("because of disk constraints", func() {
 				It("should error", func() {
-					massiveDiskTask := BuildTask("pg-new", linuxRootFSURL, 10, 10000)
+					massiveDiskTask := BuildTask("pg-new", "domain", linuxRootFSURL, 10, 10000)
 					score, err := cell.ScoreForTask(massiveDiskTask)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
 				})
 			})
 
 			Context("because of container constraints", func() {
 				It("should error", func() {
-					task := BuildTask("pg-new", linuxRootFSURL, 10, 10)
+					task := BuildTask("pg-new", "domain", linuxRootFSURL, 10, 10)
 					zeroState := BuildCellState("the-zone", 100, 100, 0, false, linuxOnlyRootFSProviders, nil)
 					zeroCell := auctionrunner.NewCell("zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForTask(task)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
+					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
 				})
 			})
 		})
@@ -332,55 +331,55 @@ var _ = Describe("Cell", func() {
 						100,
 						100,
 						false,
-						auctiontypes.RootFSProviders{
-							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
-							"fixed-set-2": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
-							"arbitrary-1": auctiontypes.ArbitraryRootFSProvider{},
-							"arbitrary-2": auctiontypes.ArbitraryRootFSProvider{},
+						rep.RootFSProviders{
+							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"fixed-set-2": rep.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"arbitrary-1": rep.ArbitraryRootFSProvider{},
+							"arbitrary-2": rep.ArbitraryRootFSProvider{},
 						},
-						[]auctiontypes.LRP{},
+						[]rep.LRP{},
 					)
 					cell = auctionrunner.NewCell("the-cell", client, state)
 				})
 
 				It("should support Tasks with various stack requirements", func() {
-					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-2:root-fs-2", 10, 10))
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-2", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary-1://random-root-fs", 10, 10))
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary-1://random-root-fs", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary-2://random-root-fs", 10, 10))
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary-2://random-root-fs", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
-					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-3", 10, 10))
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-3", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-3:root-fs-1", 10, 10))
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-3:root-fs-1", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary-3://random-root-fs", 10, 10))
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary-3://random-root-fs", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
 			})
 
@@ -392,32 +391,32 @@ var _ = Describe("Cell", func() {
 						100,
 						100,
 						false,
-						auctiontypes.RootFSProviders{
-							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1"),
+						rep.RootFSProviders{
+							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1"),
 						},
-						[]auctiontypes.LRP{},
+						[]rep.LRP{},
 					)
 					cell = auctionrunner.NewCell("the-cell", client, state)
 				})
 
 				It("should support Tasks requiring the stack supported by the cell", func() {
-					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10))
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
-					score, err := cell.ScoreForTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "arbitrary://random-root-fs", 10, 10))
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary://random-root-fs", 10, 10))
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
 			})
 		})
@@ -426,38 +425,38 @@ var _ = Describe("Cell", func() {
 	Describe("ReserveLRP", func() {
 		Context("when there is room for the LRP", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
-				instance := BuildLRPAuction("pg-test", 0, linuxRootFSURL, 10, 10, time.Now())
-				instanceToAdd := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10, 10, time.Now())
+				instance := BuildLRP("pg-test", "domain", 0, linuxRootFSURL, 10, 10)
+				instanceToAdd := BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 10, 10)
 
-				initialScore, err := cell.ScoreForLRPAuction(instance)
+				initialScore, err := cell.ScoreForLRP(instance)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(cell.ReserveLRP(instanceToAdd)).To(Succeed())
 
-				subsequentScore, err := cell.ScoreForLRPAuction(instance)
+				subsequentScore, err := cell.ScoreForLRP(instance)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(initialScore).To(BeNumerically("<", subsequentScore), "the score should have gotten worse")
 			})
 
 			It("should register the LRP and keep it in mind when handling future requests", func() {
-				instance := BuildLRPAuction("pg-test", 0, linuxRootFSURL, 10, 10, time.Now())
-				instanceWithMatchingProcessGuid := BuildLRPAuction("pg-new", 1, linuxRootFSURL, 10, 10, time.Now())
-				instanceToAdd := BuildLRPAuction("pg-new", 0, linuxRootFSURL, 10, 10, time.Now())
+				instance := BuildLRP("pg-test", "domain", 0, linuxRootFSURL, 10, 10)
+				instanceWithMatchingProcessGuid := BuildLRP("pg-new", "domain", 1, linuxRootFSURL, 10, 10)
+				instanceToAdd := BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 10, 10)
 
-				initialScore, err := cell.ScoreForLRPAuction(instance)
+				initialScore, err := cell.ScoreForLRP(instance)
 				Expect(err).NotTo(HaveOccurred())
 
-				initialScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRPAuction(instanceWithMatchingProcessGuid)
+				initialScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRP(instanceWithMatchingProcessGuid)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(initialScore).To(BeNumerically("==", initialScoreForInstanceWithMatchingProcessGuid))
 
 				Expect(cell.ReserveLRP(instanceToAdd)).To(Succeed())
 
-				subsequentScore, err := cell.ScoreForLRPAuction(instance)
+				subsequentScore, err := cell.ScoreForLRP(instance)
 				Expect(err).NotTo(HaveOccurred())
 
-				subsequentScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRPAuction(instanceWithMatchingProcessGuid)
+				subsequentScoreForInstanceWithMatchingProcessGuid, err := cell.ScoreForLRP(instanceWithMatchingProcessGuid)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(initialScore).To(BeNumerically("<", subsequentScore), "the score should have gotten worse")
@@ -476,46 +475,46 @@ var _ = Describe("Cell", func() {
 						100,
 						100,
 						false,
-						auctiontypes.RootFSProviders{
-							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
-							"fixed-set-2": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
-							"arbitrary-1": auctiontypes.ArbitraryRootFSProvider{},
-							"arbitrary-2": auctiontypes.ArbitraryRootFSProvider{},
+						rep.RootFSProviders{
+							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"fixed-set-2": rep.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"arbitrary-1": rep.ArbitraryRootFSProvider{},
+							"arbitrary-2": rep.ArbitraryRootFSProvider{},
 						},
-						[]auctiontypes.LRP{},
+						[]rep.LRP{},
 					)
 					cell = auctionrunner.NewCell("the-cell", client, state)
 				})
 
 				It("should support LRPs with various stack requirements", func() {
-					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
+					err := cell.ReserveLRP(BuildLRP("pg", "domain", 0, "fixed-set-1:root-fs-1", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
+					err = cell.ReserveLRP(BuildLRP("pg", "domain", 0, "fixed-set-1:root-fs-2", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
+					err = cell.ReserveLRP(BuildLRP("pg", "domain", 0, "fixed-set-2:root-fs-1", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-2", 10, 10, time.Now()))
+					err = cell.ReserveLRP(BuildLRP("pg", "domain", 0, "fixed-set-2:root-fs-2", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary-1://random-root-fs", 10, 10, time.Now()))
+					err = cell.ReserveLRP(BuildLRP("pg", "domain", 0, "arbitrary-1://random-root-fs", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary-2://random-root-fs", 10, 10, time.Now()))
+					err = cell.ReserveLRP(BuildLRP("pg", "domain", 0, "arbitrary-2://random-root-fs", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for LRPs with unsupported stack requirements", func() {
-					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-3", 10, 10, time.Now()))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err := cell.ReserveLRP(BuildLRP("pg", "domain", 0, "fixed-set-1:root-fs-3", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-3:root-fs-1", 10, 10, time.Now()))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err = cell.ReserveLRP(BuildLRP("pg", "domain", 0, "fixed-set-3:root-fs-1", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary-3://random-root-fs", 10, 10, time.Now()))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err = cell.ReserveLRP(BuildLRP("pg", "domain", 0, "arbitrary-3://random-root-fs", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
 			})
 
@@ -527,37 +526,37 @@ var _ = Describe("Cell", func() {
 						100,
 						100,
 						false,
-						auctiontypes.RootFSProviders{
-							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1"),
+						rep.RootFSProviders{
+							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1"),
 						},
-						[]auctiontypes.LRP{},
+						[]rep.LRP{},
 					)
 					cell = auctionrunner.NewCell("the-cell", client, state)
 				})
 
 				It("should support LRPs requiring the stack supported by the cell", func() {
-					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-1", 10, 10, time.Now()))
+					err := cell.ReserveLRP(BuildLRP("pg", "domain", 0, "fixed-set-1:root-fs-1", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for LRPs with unsupported stack requirements", func() {
-					err := cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-1:root-fs-2", 10, 10, time.Now()))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err := cell.ReserveLRP(BuildLRP("pg", "domain", 0, "fixed-set-1:root-fs-2", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "fixed-set-2:root-fs-1", 10, 10, time.Now()))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err = cell.ReserveLRP(BuildLRP("pg", "domain", 0, "fixed-set-2:root-fs-1", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveLRP(BuildLRPAuction("pg", 0, "arbitrary://random-root-fs", 10, 10, time.Now()))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err = cell.ReserveLRP(BuildLRP("pg", "domain", 0, "arbitrary://random-root-fs", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
 			})
 		})
 
 		Context("when there is no room for the LRP", func() {
 			It("should error", func() {
-				instance := BuildLRPAuction("pg-test", 0, linuxRootFSURL, 10000, 10, time.Now())
+				instance := BuildLRP("pg-test", "domain", 0, linuxRootFSURL, 10000, 10)
 				err := cell.ReserveLRP(instance)
-				Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
+				Expect(err).To(MatchError(rep.ErrorInsufficientResources))
 			})
 		})
 	})
@@ -565,8 +564,8 @@ var _ = Describe("Cell", func() {
 	Describe("ReserveTask", func() {
 		Context("when there is room for the task", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
-				task := BuildTask("tg-test", linuxRootFSURL, 10, 10)
-				taskToAdd := BuildTask("tg-new", linuxRootFSURL, 10, 10)
+				task := BuildTask("tg-test", "domain", linuxRootFSURL, 10, 10)
+				taskToAdd := BuildTask("tg-new", "domain", linuxRootFSURL, 10, 10)
 
 				initialScore, err := cell.ScoreForTask(task)
 				Expect(err).NotTo(HaveOccurred())
@@ -588,46 +587,46 @@ var _ = Describe("Cell", func() {
 						100,
 						100,
 						false,
-						auctiontypes.RootFSProviders{
-							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
-							"fixed-set-2": auctiontypes.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
-							"arbitrary-1": auctiontypes.ArbitraryRootFSProvider{},
-							"arbitrary-2": auctiontypes.ArbitraryRootFSProvider{},
+						rep.RootFSProviders{
+							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"fixed-set-2": rep.NewFixedSetRootFSProvider("root-fs-1", "root-fs-2"),
+							"arbitrary-1": rep.ArbitraryRootFSProvider{},
+							"arbitrary-2": rep.ArbitraryRootFSProvider{},
 						},
-						[]auctiontypes.LRP{},
+						[]rep.LRP{},
 					)
 					cell = auctionrunner.NewCell("the-cell", client, state)
 				})
 
 				It("should support Tasks with various stack requirements", func() {
-					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
+					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-2:root-fs-2", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-2", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary-1://random-root-fs", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary-1://random-root-fs", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary-2://random-root-fs", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary-2://random-root-fs", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
-					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-3", 10, 10))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-3", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-3:root-fs-1", 10, 10))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-3:root-fs-1", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary-3://random-root-fs", 10, 10))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary-3://random-root-fs", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
 			})
 
@@ -639,37 +638,37 @@ var _ = Describe("Cell", func() {
 						100,
 						100,
 						false,
-						auctiontypes.RootFSProviders{
-							"fixed-set-1": auctiontypes.NewFixedSetRootFSProvider("root-fs-1"),
+						rep.RootFSProviders{
+							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1"),
 						},
-						[]auctiontypes.LRP{},
+						[]rep.LRP{},
 					)
 					cell = auctionrunner.NewCell("the-cell", client, state)
 				})
 
 				It("should support Tasks requiring the stack supported by the cell", func() {
-					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-1", 10, 10))
+					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
-					err := cell.ReserveTask(BuildTask("task-guid", "fixed-set-1:root-fs-2", 10, 10))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveTask(BuildTask("task-guid", "fixed-set-2:root-fs-1", 10, 10))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveTask(BuildTask("task-guid", "arbitrary://random-root-fs", 10, 10))
-					Expect(err).To(MatchError(auctiontypes.ErrorCellMismatch))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary://random-root-fs", 10, 10))
+					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
 			})
 		})
 
 		Context("when there is no room for the Task", func() {
 			It("should error", func() {
-				task := BuildTask("tg-test", linuxRootFSURL, 10000, 10)
+				task := BuildTask("tg-test", "domain", linuxRootFSURL, 10000, 10)
 				err := cell.ReserveTask(task)
-				Expect(err).To(MatchError(auctiontypes.ErrorInsufficientResources))
+				Expect(err).To(MatchError(rep.ErrorInsufficientResources))
 			})
 		})
 	})
@@ -684,27 +683,26 @@ var _ = Describe("Cell", func() {
 		})
 
 		Context("with work to commit", func() {
-			var lrpAuction auctiontypes.LRPAuction
+			var lrp rep.LRP
 
 			BeforeEach(func() {
-				lrpAuction = BuildLRPAuction("pg-new", 0, linuxRootFSURL, 20, 10, time.Now())
-
-				Expect(cell.ReserveLRP(lrpAuction)).To(Succeed())
+				lrp = *BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 20, 10)
+				Expect(cell.ReserveLRP(&lrp)).To(Succeed())
 			})
 
 			It("asks the client to perform", func() {
 				cell.Commit()
 				Expect(client.PerformCallCount()).To(Equal(1))
-				Expect(client.PerformArgsForCall(0)).To(Equal(auctiontypes.Work{
-					LRPs: []auctiontypes.LRPAuction{lrpAuction},
+				Expect(client.PerformArgsForCall(0)).To(Equal(rep.Work{
+					LRPs: []rep.LRP{lrp},
 				}))
 
 			})
 
 			Context("when the client returns some failed work", func() {
 				It("forwards the failed work", func() {
-					failedWork := auctiontypes.Work{
-						LRPs: []auctiontypes.LRPAuction{lrpAuction},
+					failedWork := rep.Work{
+						LRPs: []rep.LRP{lrp},
 					}
 					client.PerformReturns(failedWork, nil)
 					Expect(cell.Commit()).To(Equal(failedWork))
@@ -713,7 +711,7 @@ var _ = Describe("Cell", func() {
 
 			Context("when the client returns an error", func() {
 				It("does not return any failed work", func() {
-					client.PerformReturns(auctiontypes.Work{}, errors.New("boom"))
+					client.PerformReturns(rep.Work{}, errors.New("boom"))
 					Expect(cell.Commit()).To(BeZero())
 				})
 			})

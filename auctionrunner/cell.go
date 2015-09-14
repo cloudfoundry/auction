@@ -1,19 +1,16 @@
 package auctionrunner
 
-import (
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/bbs/models"
-)
+import "github.com/cloudfoundry-incubator/rep"
 
 type Cell struct {
 	Guid   string
-	client auctiontypes.CellRep
-	state  auctiontypes.CellState
+	client rep.Client
+	state  rep.CellState
 
-	workToCommit auctiontypes.Work
+	workToCommit rep.Work
 }
 
-func NewCell(guid string, client auctiontypes.CellRep, state auctiontypes.CellState) *Cell {
+func NewCell(guid string, client rep.Client, state rep.CellState) *Cell {
 	return &Cell{
 		Guid:   guid,
 		client: client,
@@ -25,91 +22,57 @@ func (c *Cell) MatchRootFS(rootFS string) bool {
 	return c.state.MatchRootFS(rootFS)
 }
 
-func (c *Cell) ScoreForLRPAuction(lrpAuction auctiontypes.LRPAuction) (float64, error) {
-	err := c.canHandleLRPAuction(lrpAuction)
+func (c *Cell) ScoreForLRP(lrp *rep.LRP) (float64, error) {
+	err := c.state.ResourceMatch(&lrp.Resource)
 	if err != nil {
 		return 0, err
 	}
 
-	numberOfInstancesWithMatchingProcessGuid := 0
-	for _, lrp := range c.state.LRPs {
-		if lrp.ProcessGuid == lrpAuction.DesiredLRP.ProcessGuid {
+	var numberOfInstancesWithMatchingProcessGuid float64 = 0
+	for i := range c.state.LRPs {
+		if c.state.LRPs[i].ProcessGuid == lrp.ProcessGuid {
 			numberOfInstancesWithMatchingProcessGuid++
 		}
 	}
 
-	remainingResources := c.state.AvailableResources
-	remainingResources.MemoryMB -= int(lrpAuction.DesiredLRP.MemoryMb)
-	remainingResources.DiskMB -= int(lrpAuction.DesiredLRP.DiskMb)
-	remainingResources.Containers -= 1
-
-	resourceScore := c.computeScore(remainingResources, numberOfInstancesWithMatchingProcessGuid)
-
+	resourceScore := c.state.ComputeScore(&lrp.Resource) + numberOfInstancesWithMatchingProcessGuid
 	return resourceScore, nil
 }
 
-func (c *Cell) ScoreForTask(task *models.Task) (float64, error) {
-	err := c.canHandleTask(task)
+func (c *Cell) ScoreForTask(task *rep.Task) (float64, error) {
+	err := c.state.ResourceMatch(&task.Resource)
 	if err != nil {
 		return 0, err
 	}
 
-	remainingResources := c.state.AvailableResources
-	remainingResources.MemoryMB -= int(task.MemoryMb)
-	remainingResources.DiskMB -= int(task.DiskMb)
-	remainingResources.Containers -= 1
-
-	resourceScore := c.computeTaskScore(remainingResources)
-
-	return resourceScore, nil
+	return c.state.ComputeScore(&task.Resource), nil
 }
 
-func (c *Cell) ReserveLRP(lrpAuction auctiontypes.LRPAuction) error {
-	err := c.canHandleLRPAuction(lrpAuction)
+func (c *Cell) ReserveLRP(lrp *rep.LRP) error {
+	err := c.state.ResourceMatch(&lrp.Resource)
 	if err != nil {
 		return err
 	}
 
-	c.state.LRPs = append(c.state.LRPs, auctiontypes.LRP{
-		ProcessGuid: lrpAuction.DesiredLRP.ProcessGuid,
-		Index:       lrpAuction.Index,
-		MemoryMB:    int(lrpAuction.DesiredLRP.MemoryMb),
-		DiskMB:      int(lrpAuction.DesiredLRP.DiskMb),
-	})
-
-	c.state.AvailableResources.MemoryMB -= int(lrpAuction.DesiredLRP.MemoryMb)
-	c.state.AvailableResources.DiskMB -= int(lrpAuction.DesiredLRP.DiskMb)
-	c.state.AvailableResources.Containers -= 1
-
-	c.workToCommit.LRPs = append(c.workToCommit.LRPs, lrpAuction)
-
+	c.state.AddLRP(lrp)
+	c.workToCommit.LRPs = append(c.workToCommit.LRPs, *lrp)
 	return nil
 }
 
-func (c *Cell) ReserveTask(task *models.Task) error {
-	err := c.canHandleTask(task)
+func (c *Cell) ReserveTask(task *rep.Task) error {
+	err := c.state.ResourceMatch(&task.Resource)
 	if err != nil {
 		return err
 	}
 
-	c.state.Tasks = append(c.state.Tasks, auctiontypes.Task{
-		TaskGuid: task.TaskGuid,
-		MemoryMB: int(task.MemoryMb),
-		DiskMB:   int(task.DiskMb),
-	})
-
-	c.state.AvailableResources.MemoryMB -= int(task.MemoryMb)
-	c.state.AvailableResources.DiskMB -= int(task.DiskMb)
-	c.state.AvailableResources.Containers -= 1
-
-	c.workToCommit.Tasks = append(c.workToCommit.Tasks, task)
-
+	c.state.AddTask(task)
+	c.workToCommit.Tasks = append(c.workToCommit.Tasks, *task)
 	return nil
 }
 
-func (c *Cell) Commit() auctiontypes.Work {
+func (c *Cell) Commit() rep.Work {
 	if len(c.workToCommit.LRPs) == 0 && len(c.workToCommit.Tasks) == 0 {
-		return auctiontypes.Work{}
+		return rep.Work{}
 	}
 
 	failedWork, err := c.client.Perform(c.workToCommit)
@@ -117,62 +80,7 @@ func (c *Cell) Commit() auctiontypes.Work {
 		//an error may indicate partial failure
 		//in this case we don't reschedule work in order to make sure we don't
 		//create duplicates of things -- we'll let the converger figure things out for us later
-		return auctiontypes.Work{}
+		return rep.Work{}
 	}
 	return failedWork
-}
-
-func (c *Cell) canHandleLRPAuction(lrpAuction auctiontypes.LRPAuction) error {
-	if !c.MatchRootFS(lrpAuction.DesiredLRP.RootFs) {
-		return auctiontypes.ErrorCellMismatch
-	}
-	if c.state.AvailableResources.MemoryMB < int(lrpAuction.DesiredLRP.MemoryMb) {
-		return auctiontypes.ErrorInsufficientResources
-	}
-	if c.state.AvailableResources.DiskMB < int(lrpAuction.DesiredLRP.DiskMb) {
-		return auctiontypes.ErrorInsufficientResources
-	}
-	if c.state.AvailableResources.Containers < 1 {
-		return auctiontypes.ErrorInsufficientResources
-	}
-
-	return nil
-}
-
-func (c *Cell) canHandleTask(task *models.Task) error {
-	if !c.MatchRootFS(task.RootFs) {
-		return auctiontypes.ErrorCellMismatch
-	}
-	if c.state.AvailableResources.MemoryMB < int(task.MemoryMb) {
-		return auctiontypes.ErrorInsufficientResources
-	}
-	if c.state.AvailableResources.DiskMB < int(task.DiskMb) {
-		return auctiontypes.ErrorInsufficientResources
-	}
-	if c.state.AvailableResources.Containers < 1 {
-		return auctiontypes.ErrorInsufficientResources
-	}
-
-	return nil
-}
-
-func (c *Cell) computeScore(remainingResources auctiontypes.Resources, numInstances int) float64 {
-	fractionUsedMemory := 1.0 - float64(remainingResources.MemoryMB)/float64(c.state.TotalResources.MemoryMB)
-	fractionUsedDisk := 1.0 - float64(remainingResources.DiskMB)/float64(c.state.TotalResources.DiskMB)
-	fractionUsedContainers := 1.0 - float64(remainingResources.Containers)/float64(c.state.TotalResources.Containers)
-
-	resourceScore := (fractionUsedMemory + fractionUsedDisk + fractionUsedContainers) / 3.0
-	resourceScore += float64(numInstances)
-
-	return resourceScore
-}
-
-func (c *Cell) computeTaskScore(remainingResources auctiontypes.Resources) float64 {
-	fractionUsedMemory := 1.0 - float64(remainingResources.MemoryMB)/float64(c.state.TotalResources.MemoryMB)
-	fractionUsedDisk := 1.0 - float64(remainingResources.DiskMB)/float64(c.state.TotalResources.DiskMB)
-	fractionUsedContainers := 1.0 - float64(remainingResources.Containers)/float64(c.state.TotalResources.Containers)
-
-	resourceScore := (fractionUsedMemory + fractionUsedDisk + fractionUsedContainers) / 3.0
-
-	return resourceScore
 }

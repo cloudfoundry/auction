@@ -7,16 +7,17 @@ import (
 
 	"github.com/GaryBoone/GoStats/stats"
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"github.com/cloudfoundry-incubator/rep"
 	"github.com/cloudfoundry/gunk/workpool"
 )
 
 type Report struct {
-	Cells                        map[string]auctiontypes.CellRep
+	Cells                        map[string]rep.Client
 	NumAuctions                  int
 	AuctionResults               auctiontypes.AuctionResults
 	AuctionDuration              time.Duration
-	CellStates                   map[string]auctiontypes.CellState
-	InstancesByRep               map[string][]auctiontypes.LRP
+	CellStates                   map[string]rep.CellState
+	InstancesByRep               map[string][]rep.LRP
 	auctionedInstancesByInstGuid map[string]bool
 }
 
@@ -38,7 +39,7 @@ func NewStat(data []float64) Stat {
 	}
 }
 
-func NewReport(numAuctions int, cells map[string]auctiontypes.CellRep, results auctiontypes.AuctionResults, duration time.Duration) *Report {
+func NewReport(numAuctions int, cells map[string]rep.Client, results auctiontypes.AuctionResults, duration time.Duration) *Report {
 	states := fetchStates(cells)
 	return &Report{
 		Cells:           cells,
@@ -50,7 +51,7 @@ func NewReport(numAuctions int, cells map[string]auctiontypes.CellRep, results a
 	}
 }
 
-func (r *Report) IsAuctionedInstance(inst auctiontypes.LRP) bool {
+func (r *Report) IsAuctionedInstance(inst rep.LRP) bool {
 	if r.auctionedInstancesByInstGuid == nil {
 		r.auctionedInstancesByInstGuid = map[string]bool{}
 		for _, result := range r.AuctionResults.SuccessfulLRPs {
@@ -118,9 +119,9 @@ func (r *Report) WaitTimeStats() Stat {
 	return NewStat(waitTimes)
 }
 
-func fetchStates(cells map[string]auctiontypes.CellRep) map[string]auctiontypes.CellState {
+func fetchStates(cells map[string]rep.Client) map[string]rep.CellState {
 	lock := &sync.Mutex{}
-	states := map[string]auctiontypes.CellState{}
+	states := map[string]rep.CellState{}
 	works := []func(){}
 
 	for repGuid, cell := range cells {
@@ -144,8 +145,8 @@ func fetchStates(cells map[string]auctiontypes.CellRep) map[string]auctiontypes.
 	return states
 }
 
-func instancesByRepFromStates(states map[string]auctiontypes.CellState) map[string][]auctiontypes.LRP {
-	instancesByRepGuid := map[string][]auctiontypes.LRP{}
+func instancesByRepFromStates(states map[string]rep.CellState) map[string][]rep.LRP {
+	instancesByRepGuid := map[string][]rep.LRP{}
 	for repGuid, state := range states {
 		instances := state.LRPs
 		sort.Sort(ByProcessGuid(instances))
@@ -155,7 +156,7 @@ func instancesByRepFromStates(states map[string]auctiontypes.CellState) map[stri
 	return instancesByRepGuid
 }
 
-type ByProcessGuid []auctiontypes.LRP
+type ByProcessGuid []rep.LRP
 
 func (a ByProcessGuid) Len() int           { return len(a) }
 func (a ByProcessGuid) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }

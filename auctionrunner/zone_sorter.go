@@ -1,10 +1,6 @@
 package auctionrunner
 
-import (
-	"sort"
-
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-)
+import "sort"
 
 type lrpByZone struct {
 	zone      Zone
@@ -19,14 +15,14 @@ func (s zoneSorterByInstances) Len() int           { return len(s.zones) }
 func (s zoneSorterByInstances) Swap(i, j int)      { s.zones[i], s.zones[j] = s.zones[j], s.zones[i] }
 func (s zoneSorterByInstances) Less(i, j int) bool { return s.zones[i].instances < s.zones[j].instances }
 
-func accumulateZonesByInstances(zones map[string]Zone, lrpAuction auctiontypes.LRPAuction) []lrpByZone {
+func accumulateZonesByInstances(zones map[string]Zone, processGuid string) []lrpByZone {
 	lrpZones := []lrpByZone{}
 
 	for _, zone := range zones {
 		instances := 0
 		for _, cell := range zone {
-			for _, lrp := range cell.state.LRPs {
-				if lrp.ProcessGuid == lrpAuction.DesiredLRP.ProcessGuid {
+			for i := range cell.state.LRPs {
+				if cell.state.LRPs[i].ProcessGuid == processGuid {
 					instances++
 				}
 			}

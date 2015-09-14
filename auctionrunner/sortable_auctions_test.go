@@ -21,18 +21,18 @@ var _ = Describe("Sortable Auctions", func() {
 		Context("when LRP indexes match", func() {
 			BeforeEach(func() {
 				lrps = []auctiontypes.LRPAuction{
-					BuildLRPAuction("pg-6", 0, "linux", 10, 10, time.Time{}),
-					BuildLRPAuction("pg-7", 0, "linux", 20, 10, time.Time{}),
-					BuildLRPAuction("pg-8", 0, "linux", 30, 10, time.Time{}),
-					BuildLRPAuction("pg-9", 0, "linux", 40, 10, time.Time{}),
+					BuildLRPAuction("pg-6", "domain", 0, "linux", 10, 10, time.Time{}),
+					BuildLRPAuction("pg-7", "domain", 0, "linux", 20, 10, time.Time{}),
+					BuildLRPAuction("pg-8", "domain", 0, "linux", 30, 10, time.Time{}),
+					BuildLRPAuction("pg-9", "domain", 0, "linux", 40, 10, time.Time{}),
 				}
 			})
 
 			It("sorts boulders before pebbles", func() {
-				Expect(lrps[0].DesiredLRP.ProcessGuid).To((Equal("pg-9")))
-				Expect(lrps[1].DesiredLRP.ProcessGuid).To((Equal("pg-8")))
-				Expect(lrps[2].DesiredLRP.ProcessGuid).To((Equal("pg-7")))
-				Expect(lrps[3].DesiredLRP.ProcessGuid).To((Equal("pg-6")))
+				Expect(lrps[0].ProcessGuid).To((Equal("pg-9")))
+				Expect(lrps[1].ProcessGuid).To((Equal("pg-8")))
+				Expect(lrps[2].ProcessGuid).To((Equal("pg-7")))
+				Expect(lrps[3].ProcessGuid).To((Equal("pg-6")))
 			})
 		})
 
@@ -40,13 +40,13 @@ var _ = Describe("Sortable Auctions", func() {
 			BeforeEach(func() {
 				lrps = make([]auctiontypes.LRPAuction, 5)
 				for i := cap(lrps) - 1; i >= 0; i-- {
-					lrps[i] = BuildLRPAuction("pg", i, "linux", int32(40+i), int32(40+i), time.Time{})
+					lrps[i] = BuildLRPAuction("pg", "domain", i, "linux", int32(40+i), int32(40+i), time.Time{})
 				}
 			})
 
 			It("sorts by index", func() {
 				for i := 0; i < len(lrps); i++ {
-					Expect(lrps[i].Index).To(Equal(i))
+					Expect(lrps[i].Index).To(BeEquivalentTo(i))
 				}
 			})
 		})
@@ -57,10 +57,10 @@ var _ = Describe("Sortable Auctions", func() {
 
 		BeforeEach(func() {
 			tasks = []auctiontypes.TaskAuction{
-				BuildTaskAuction(BuildTask("tg-6", "linux", 10, 10), time.Time{}),
-				BuildTaskAuction(BuildTask("tg-7", "linux", 20, 10), time.Time{}),
-				BuildTaskAuction(BuildTask("tg-8", "linux", 30, 10), time.Time{}),
-				BuildTaskAuction(BuildTask("tg-9", "linux", 40, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-6", "domain", "linux", 10, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-7", "domain", "linux", 20, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-8", "domain", "linux", 30, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-9", "domain", "linux", 40, 10), time.Time{}),
 			}
 
 			sort.Sort(auctionrunner.SortableTaskAuctions(tasks))

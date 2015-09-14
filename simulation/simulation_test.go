@@ -5,58 +5,46 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auction/simulation/util"
 	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
+	"github.com/cloudfoundry-incubator/auctioneer"
 	"github.com/cloudfoundry-incubator/bbs/models"
+	"github.com/cloudfoundry-incubator/rep"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Auction", func() {
-	var initialDistributions map[int][]auctiontypes.LRP
+	var initialDistributions map[int][]rep.LRP
 	var linuxRootFSURL = models.PreloadedRootFS(linuxStack)
 
-	newLRP := func(processGuid string, index int, memoryMB int) auctiontypes.LRP {
-		return auctiontypes.LRP{
-			ProcessGuid: processGuid,
-			Index:       index,
-			MemoryMB:    memoryMB,
-			DiskMB:      1,
-		}
+	newLRP := func(processGuid string, index int, memoryMB int) rep.LRP {
+		lrpKey := models.NewActualLRPKey(processGuid, int32(index), "domain")
+		return rep.NewLRP(lrpKey, rep.NewResource(int32(memoryMB), 1, linuxRootFSURL))
 	}
 
-	generateUniqueLRPs := func(numInstances int, index int, memoryMB int) []auctiontypes.LRP {
-		instances := []auctiontypes.LRP{}
+	generateUniqueLRPs := func(numInstances int, index int, memoryMB int) []rep.LRP {
+		instances := []rep.LRP{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newLRP(util.NewGrayscaleGuid("AAA"), index, memoryMB))
 		}
 		return instances
 	}
 
-	newLRPStartAuction := func(processGuid string, index int, memoryMB int32) models.LRPStartRequest {
-		return models.LRPStartRequest{
-			DesiredLRP: &models.DesiredLRP{
-				ProcessGuid: processGuid,
-				MemoryMb:    memoryMB,
-				DiskMb:      1,
-				RootFs:      linuxRootFSURL,
-				Domain:      "domain",
-			},
-			Indices: []uint{uint(index)},
-		}
+	newLRPStartAuction := func(processGuid string, index int, memoryMB int32) auctioneer.LRPStartRequest {
+		return auctioneer.NewLRPStartRequest(processGuid, "domain", []int{index}, rep.NewResource(memoryMB, 1, linuxRootFSURL))
 	}
 
-	generateUniqueLRPStartAuctions := func(numInstances int, memoryMB int32) []models.LRPStartRequest {
-		instances := []models.LRPStartRequest{}
+	generateUniqueLRPStartAuctions := func(numInstances int, memoryMB int32) []auctioneer.LRPStartRequest {
+		instances := []auctioneer.LRPStartRequest{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newLRPStartAuction(util.NewGrayscaleGuid("BBB"), i, memoryMB))
 		}
 		return instances
 	}
 
-	generateLRPStartAuctionsWithRandomColor := func(numInstances int, memoryMB int32, colors []string) []models.LRPStartRequest {
-		instances := []models.LRPStartRequest{}
+	generateLRPStartAuctionsWithRandomColor := func(numInstances int, memoryMB int32, colors []string) []auctioneer.LRPStartRequest {
+		instances := []auctioneer.LRPStartRequest{}
 		for i := 0; i < numInstances; i++ {
 			color := colors[util.R.Intn(len(colors))]
 			instances = append(instances, newLRPStartAuction(color, i, memoryMB))
@@ -64,40 +52,26 @@ var _ = Describe("Auction", func() {
 		return instances
 	}
 
-	generateLRPStartAuctionsForProcessGuid := func(numInstances int, processGuid string, memoryMB int32) []models.LRPStartRequest {
-		instances := []models.LRPStartRequest{}
+	generateLRPStartAuctionsForProcessGuid := func(numInstances int, processGuid string, memoryMB int32) []auctioneer.LRPStartRequest {
+		instances := []auctioneer.LRPStartRequest{}
 		for i := 0; i < numInstances; i++ {
 			instances = append(instances, newLRPStartAuction(processGuid, i, memoryMB))
 		}
 		return instances
 	}
 
-	workForInstances := func(lrps []auctiontypes.LRP) auctiontypes.Work {
-		work := auctiontypes.Work{}
-		for _, lrp := range lrps {
-			work.LRPs = append(work.LRPs, auctiontypes.LRPAuction{
-				DesiredLRP: &models.DesiredLRP{
-					ProcessGuid: lrp.ProcessGuid,
-					MemoryMb:    int32(lrp.MemoryMB),
-					DiskMb:      int32(lrp.DiskMB),
-					RootFs:      linuxRootFSURL,
-					Domain:      "domain",
-				},
-
-				Index: lrp.Index,
-			})
-		}
-		return work
+	workForInstances := func(lrps []rep.LRP) rep.Work {
+		return rep.Work{LRPs: lrps}
 	}
 
-	runStartAuction := func(lrpStartAuctions []models.LRPStartRequest, numCells int) {
+	runStartAuction := func(lrpStartAuctions []auctioneer.LRPStartRequest, numCells int) {
 		runnerDelegate.SetCellLimit(numCells)
 		runner.ScheduleLRPsForAuctions(lrpStartAuctions)
 
 		Eventually(runnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStartAuctions)))
 	}
 
-	runAndReportStartAuction := func(lrpStartAuctions []models.LRPStartRequest, numCells int, i int, j int) *visualization.Report {
+	runAndReportStartAuction := func(lrpStartAuctions []auctioneer.LRPStartRequest, numCells int, i int, j int) *visualization.Report {
 		t := time.Now()
 		runStartAuction(lrpStartAuctions, numCells)
 
@@ -116,7 +90,7 @@ var _ = Describe("Auction", func() {
 
 	BeforeEach(func() {
 		util.ResetGuids()
-		initialDistributions = map[int][]auctiontypes.LRP{}
+		initialDistributions = map[int][]rep.LRP{}
 	})
 
 	JustBeforeEach(func() {
@@ -156,7 +130,7 @@ var _ = Describe("Auction", func() {
 				i := i
 				Context("with single-instance and multi-instance apps", func() {
 					It("should distribute evenly", func() {
-						instances := []models.LRPStartRequest{}
+						instances := []auctioneer.LRPStartRequest{}
 						colors := []string{"purple", "red", "orange", "teal", "gray", "blue", "pink", "green", "lime", "cyan", "lightseagreen", "brown"}
 
 						instances = append(instances, generateUniqueLRPStartAuctions(n1apps[i]/2, 1)...)
@@ -166,7 +140,7 @@ var _ = Describe("Auction", func() {
 						instances = append(instances, generateUniqueLRPStartAuctions(n4apps[i]/2, 4)...)
 						instances = append(instances, generateLRPStartAuctionsWithRandomColor(n4apps[i]/2, 4, colors[8:12])...)
 
-						permutedInstances := make([]models.LRPStartRequest, len(instances))
+						permutedInstances := make([]auctioneer.LRPStartRequest, len(instances))
 						for i, index := range util.R.Perm(len(instances)) {
 							permutedInstances[i] = instances[index]
 						}
@@ -252,7 +226,7 @@ var _ = Describe("Auction", func() {
 			nCells := 1
 
 			It("should place boulders in before pebbles, but prevent boulders from saturating available capacity", func() {
-				instances := []models.LRPStartRequest{}
+				instances := []auctioneer.LRPStartRequest{}
 				for i := 0; i < 80; i++ {
 					instances = append(instances, generateUniqueLRPStartAuctions(1, 1)...)
 				}
@@ -265,10 +239,10 @@ var _ = Describe("Auction", func() {
 				losers := []string{}
 
 				for _, result := range results.SuccessfulLRPs {
-					winners = append(winners, fmt.Sprintf("%s-%d", result.DesiredLRP.ProcessGuid, result.Index))
+					winners = append(winners, fmt.Sprintf("%s-%d", result.ProcessGuid, result.Index))
 				}
 				for _, result := range results.FailedLRPs {
-					losers = append(losers, fmt.Sprintf("%s-%d", result.DesiredLRP.ProcessGuid, result.Index))
+					losers = append(losers, fmt.Sprintf("%s-%d", result.ProcessGuid, result.Index))
 				}
 
 				Expect(winners).To(HaveLen(51))

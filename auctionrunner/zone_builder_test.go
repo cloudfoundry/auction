@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
+	"github.com/cloudfoundry-incubator/rep"
+	"github.com/cloudfoundry-incubator/rep/repfakes"
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
@@ -15,8 +15,8 @@ import (
 )
 
 var _ = Describe("ZoneBuilder", func() {
-	var repA, repB, repC *fakes.FakeSimulationCellRep
-	var clients map[string]auctiontypes.CellRep
+	var repA, repB, repC *repfakes.FakeSimClient
+	var clients map[string]rep.Client
 	var workPool *workpool.WorkPool
 	var logger lager.Logger
 
@@ -27,11 +27,11 @@ var _ = Describe("ZoneBuilder", func() {
 		workPool, err = workpool.NewWorkPool(5)
 		Expect(err).NotTo(HaveOccurred())
 
-		repA = &fakes.FakeSimulationCellRep{}
-		repB = &fakes.FakeSimulationCellRep{}
-		repC = &fakes.FakeSimulationCellRep{}
+		repA = new(repfakes.FakeSimClient)
+		repB = new(repfakes.FakeSimClient)
+		repC = new(repfakes.FakeSimClient)
 
-		clients = map[string]auctiontypes.CellRep{
+		clients = map[string]rep.Client{
 			"A": repA,
 			"B": repB,
 			"C": repC,

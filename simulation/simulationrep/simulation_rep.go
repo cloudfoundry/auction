@@ -3,85 +3,82 @@ package simulationrep
 import (
 	"sync"
 
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/bbs/models"
+	"github.com/cloudfoundry-incubator/rep"
 )
 
 type SimulationRep struct {
 	stack          string
 	zone           string
-	totalResources auctiontypes.Resources
-	lrps           map[string]auctiontypes.LRP
-	tasks          map[string]auctiontypes.Task
+	totalResources rep.Resources
+	lrps           map[string]rep.LRP
+	tasks          map[string]rep.Task
 
 	lock *sync.Mutex
 }
 
-func New(stack string, zone string, totalResources auctiontypes.Resources) auctiontypes.SimulationCellRep {
+func New(stack string, zone string, totalResources rep.Resources) rep.SimClient {
 	return &SimulationRep{
 		stack:          stack,
 		totalResources: totalResources,
-		lrps:           map[string]auctiontypes.LRP{},
-		tasks:          map[string]auctiontypes.Task{},
+		lrps:           map[string]rep.LRP{},
+		tasks:          map[string]rep.Task{},
 		zone:           zone,
 
 		lock: &sync.Mutex{},
 	}
 }
 
-func (rep *SimulationRep) State() (auctiontypes.CellState, error) {
-	rep.lock.Lock()
-	defer rep.lock.Unlock()
+func (r *SimulationRep) State() (rep.CellState, error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
-	lrps := []auctiontypes.LRP{}
-	for _, lrp := range rep.lrps {
+	lrps := []rep.LRP{}
+	for _, lrp := range r.lrps {
 		lrps = append(lrps, lrp)
 	}
 
-	tasks := []auctiontypes.Task{}
-	for _, task := range rep.tasks {
+	tasks := []rep.Task{}
+	for _, task := range r.tasks {
 		tasks = append(tasks, task)
 	}
 
-	availableResources := rep.availableResources()
+	availableResources := r.availableResources()
 
 	// util.RandomSleep(800, 900)
 
-	return auctiontypes.CellState{
-		RootFSProviders: auctiontypes.RootFSProviders{
-			models.PreloadedRootFSScheme: auctiontypes.NewFixedSetRootFSProvider(rep.stack),
+	return rep.CellState{
+		RootFSProviders: rep.RootFSProviders{
+			models.PreloadedRootFSScheme: rep.NewFixedSetRootFSProvider(r.stack),
 		},
 		AvailableResources: availableResources,
-		TotalResources:     rep.totalResources,
+		TotalResources:     r.totalResources,
 		LRPs:               lrps,
 		Tasks:              tasks,
-		Zone:               rep.zone,
+		Zone:               r.zone,
 	}, nil
 }
 
-func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, error) {
-	rep.lock.Lock()
-	defer rep.lock.Unlock()
+func (r *SimulationRep) Perform(work rep.Work) (rep.Work, error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
-	failedWork := auctiontypes.Work{}
+	failedWork := rep.Work{}
 
-	availableResources := rep.availableResources()
+	availableResources := r.availableResources()
 
 	for _, start := range work.LRPs {
+
 		hasRoom := availableResources.Containers >= 0
-		hasRoom = hasRoom && availableResources.MemoryMB >= int(start.DesiredLRP.MemoryMb)
-		hasRoom = hasRoom && availableResources.DiskMB >= int(start.DesiredLRP.DiskMb)
+		hasRoom = hasRoom && availableResources.MemoryMB >= start.MemoryMB
+		hasRoom = hasRoom && availableResources.DiskMB >= start.DiskMB
 
 		if hasRoom {
-			rep.lrps[auctiontypes.IdentifierForLRP(start.DesiredLRP.ProcessGuid, start.Index)] = auctiontypes.LRP{
-				ProcessGuid: start.DesiredLRP.ProcessGuid,
-				Index:       start.Index,
-				MemoryMB:    int(start.DesiredLRP.MemoryMb),
-				DiskMB:      int(start.DesiredLRP.DiskMb),
-			}
+			r.lrps[start.Identifier()] = start
+
 			availableResources.Containers -= 1
-			availableResources.MemoryMB -= int(start.DesiredLRP.MemoryMb)
-			availableResources.DiskMB -= int(start.DesiredLRP.DiskMb)
+			availableResources.MemoryMB -= start.MemoryMB
+			availableResources.DiskMB -= start.DiskMB
 		} else {
 			failedWork.LRPs = append(failedWork.LRPs, start)
 		}
@@ -89,18 +86,15 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 
 	for _, task := range work.Tasks {
 		hasRoom := availableResources.Containers >= 0
-		hasRoom = hasRoom && availableResources.MemoryMB >= int(task.MemoryMb)
-		hasRoom = hasRoom && availableResources.DiskMB >= int(task.DiskMb)
+		hasRoom = hasRoom && availableResources.MemoryMB >= task.MemoryMB
+		hasRoom = hasRoom && availableResources.DiskMB >= task.DiskMB
 
 		if hasRoom {
-			rep.tasks[task.TaskGuid] = auctiontypes.Task{
-				TaskGuid: task.TaskGuid,
-				MemoryMB: int(task.MemoryMb),
-				DiskMB:   int(task.DiskMb),
-			}
+			r.tasks[task.TaskGuid] = task
+
 			availableResources.Containers -= 1
-			availableResources.MemoryMB -= int(task.MemoryMb)
-			availableResources.DiskMB -= int(task.DiskMb)
+			availableResources.MemoryMB -= task.MemoryMB
+			availableResources.DiskMB -= task.DiskMB
 		} else {
 			failedWork.Tasks = append(failedWork.Tasks, task)
 		}
@@ -111,18 +105,28 @@ func (rep *SimulationRep) Perform(work auctiontypes.Work) (auctiontypes.Work, er
 
 //simulation only
 
-func (rep *SimulationRep) Reset() error {
-	rep.lock.Lock()
-	defer rep.lock.Unlock()
+func (r *SimulationRep) Reset() error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
-	rep.lrps = map[string]auctiontypes.LRP{}
-	rep.tasks = map[string]auctiontypes.Task{}
+	r.lrps = map[string]rep.LRP{}
+	r.tasks = map[string]rep.Task{}
 	return nil
+}
+
+//these are rep client methods the auction does not use
+
+func (rep *SimulationRep) StopLRPInstance(models.ActualLRPKey, models.ActualLRPInstanceKey) error {
+	panic("UNIMPLEMENTED METHOD")
+}
+
+func (rep *SimulationRep) CancelTask(string) error {
+	panic("UNIMPLEMENTED METHOD")
 }
 
 //internal -- no locks here
 
-func (rep *SimulationRep) availableResources() auctiontypes.Resources {
+func (rep *SimulationRep) availableResources() rep.Resources {
 	resources := rep.totalResources
 	for _, lrp := range rep.lrps {
 		resources.MemoryMB -= lrp.MemoryMB

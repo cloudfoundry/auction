@@ -2,30 +2,27 @@ package auctiontypes
 
 import (
 	"errors"
-	"fmt"
-	"net/url"
 	"time"
 
-	"github.com/cloudfoundry-incubator/bbs/models"
-	"github.com/cloudfoundry-incubator/runtime-schema/diego_errors"
+	"github.com/cloudfoundry-incubator/auctioneer"
+	"github.com/cloudfoundry-incubator/rep"
 	"github.com/tedsuo/ifrit"
 )
 
 // Auction Runners
 
-var ErrorCellMismatch = errors.New(diego_errors.CELL_MISMATCH_MESSAGE)
-var ErrorInsufficientResources = errors.New(diego_errors.INSUFFICIENT_RESOURCES_MESSAGE)
+var ErrorCellMismatch = errors.New("found no compatible cell")
 var ErrorNothingToStop = errors.New("nothing to stop")
 
 //go:generate counterfeiter -o fakes/fake_auction_runner.go . AuctionRunner
 type AuctionRunner interface {
 	ifrit.Runner
-	ScheduleLRPsForAuctions([]models.LRPStartRequest)
-	ScheduleTasksForAuctions([]*models.Task)
+	ScheduleLRPsForAuctions([]auctioneer.LRPStartRequest)
+	ScheduleTasksForAuctions([]auctioneer.TaskStartRequest)
 }
 
 type AuctionRunnerDelegate interface {
-	FetchCellReps() (map[string]CellRep, error)
+	FetchCellReps() (map[string]rep.Client, error)
 	AuctionCompleted(AuctionResults)
 }
 
@@ -58,90 +55,38 @@ type AuctionRecord struct {
 	PlacementError string
 }
 
+func NewAuctionRecord(now time.Time) AuctionRecord {
+	return AuctionRecord{QueueTime: now}
+}
+
 type LRPAuction struct {
-	DesiredLRP *models.DesiredLRP
-	Index      int
+	rep.LRP
 	AuctionRecord
 }
 
-func (s LRPAuction) Identifier() string {
-	return IdentifierForLRP(s.DesiredLRP.ProcessGuid, s.Index)
+func NewLRPAuction(lrp rep.LRP, now time.Time) LRPAuction {
+	return LRPAuction{
+		lrp,
+		NewAuctionRecord(now),
+	}
 }
 
-func IdentifierForLRP(processGuid string, index int) string {
-	return fmt.Sprintf("%s.%d", processGuid, index)
+func (a *LRPAuction) Copy() LRPAuction {
+	return LRPAuction{a.LRP.Copy(), a.AuctionRecord}
 }
 
 type TaskAuction struct {
-	Task *models.Task
+	rep.Task
 	AuctionRecord
 }
 
-func (t TaskAuction) Identifier() string {
-	return IdentifierForTask(t.Task)
-}
-
-func IdentifierForTask(t *models.Task) string {
-	return t.TaskGuid
-}
-
-// Cell Representatives
-
-type CellRep interface {
-	State() (CellState, error)
-	Perform(Work) (Work, error)
-}
-
-//go:generate counterfeiter -o fakes/fake_simulation_auction_runner.go . SimulationCellRep
-type SimulationCellRep interface {
-	CellRep
-
-	Reset() error
-}
-
-type Work struct {
-	LRPs  []LRPAuction
-	Tasks []*models.Task
-}
-
-type CellState struct {
-	RootFSProviders    RootFSProviders
-	AvailableResources Resources
-	TotalResources     Resources
-	LRPs               []LRP
-	Tasks              []Task
-	Zone               string
-	Evacuating         bool
-}
-
-func (cell CellState) MatchRootFS(rootfs string) bool {
-	rootFSURL, err := url.Parse(rootfs)
-	if err != nil {
-		return false
+func NewTaskAuction(task rep.Task, now time.Time) TaskAuction {
+	return TaskAuction{
+		task,
+		NewAuctionRecord(now),
 	}
-
-	return cell.RootFSProviders.Match(*rootFSURL)
 }
 
-type LRP struct {
-	ProcessGuid string
-	Index       int
-	MemoryMB    int
-	DiskMB      int
-}
-
-func (s LRP) Identifier() string {
-	return IdentifierForLRP(s.ProcessGuid, s.Index)
-}
-
-type Task struct {
-	TaskGuid string
-	MemoryMB int
-	DiskMB   int
-}
-
-type Resources struct {
-	DiskMB     int
-	MemoryMB   int
-	Containers int
+func (a *TaskAuction) Copy() TaskAuction {
+	return TaskAuction{a.Task.Copy(), a.AuctionRecord}
 }

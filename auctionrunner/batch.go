@@ -4,8 +4,10 @@ import (
 	"sync"
 
 	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-
+	"github.com/cloudfoundry-incubator/auctioneer"
 	"github.com/cloudfoundry-incubator/bbs/models"
+	"github.com/cloudfoundry-incubator/rep"
+
 	"github.com/pivotal-golang/clock"
 )
 
@@ -26,17 +28,15 @@ func NewBatch(clock clock.Clock) *Batch {
 	}
 }
 
-func (b *Batch) AddLRPStarts(starts []models.LRPStartRequest) {
+func (b *Batch) AddLRPStarts(starts []auctioneer.LRPStartRequest) {
 	auctions := make([]auctiontypes.LRPAuction, 0, len(starts))
 	now := b.clock.Now()
-	for _, start := range starts {
-		for _, i := range start.Indices {
-			auctions = append(auctions, auctiontypes.LRPAuction{
-				DesiredLRP: start.DesiredLRP,
-				Index:      int(i),
-				AuctionRecord: auctiontypes.AuctionRecord{
-					QueueTime: now,
-				}})
+	for i := range starts {
+		start := &starts[i]
+		for _, index := range start.Indices {
+			lrpKey := models.NewActualLRPKey(start.ProcessGuid, int32(index), start.Domain)
+			auction := auctiontypes.NewLRPAuction(rep.NewLRP(lrpKey, start.Resource), now)
+			auctions = append(auctions, auction)
 		}
 	}
 
@@ -46,16 +46,11 @@ func (b *Batch) AddLRPStarts(starts []models.LRPStartRequest) {
 	b.lock.Unlock()
 }
 
-func (b *Batch) AddTasks(tasks []*models.Task) {
+func (b *Batch) AddTasks(tasks []auctioneer.TaskStartRequest) {
 	auctions := make([]auctiontypes.TaskAuction, 0, len(tasks))
 	now := b.clock.Now()
-	for _, t := range tasks {
-		auctions = append(auctions, auctiontypes.TaskAuction{
-			Task: t,
-			AuctionRecord: auctiontypes.AuctionRecord{
-				QueueTime: now,
-			},
-		})
+	for i := range tasks {
+		auctions = append(auctions, auctiontypes.NewTaskAuction(tasks[i].Task, now))
 	}
 
 	b.lock.Lock()

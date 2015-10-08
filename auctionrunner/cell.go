@@ -1,8 +1,12 @@
 package auctionrunner
 
-import "github.com/cloudfoundry-incubator/rep"
+import (
+	"github.com/cloudfoundry-incubator/rep"
+	"github.com/pivotal-golang/lager"
+)
 
 type Cell struct {
+	logger lager.Logger
 	Guid   string
 	client rep.Client
 	state  rep.CellState
@@ -10,8 +14,9 @@ type Cell struct {
 	workToCommit rep.Work
 }
 
-func NewCell(guid string, client rep.Client, state rep.CellState) *Cell {
+func NewCell(logger lager.Logger, guid string, client rep.Client, state rep.CellState) *Cell {
 	return &Cell{
+		logger: logger,
 		Guid:   guid,
 		client: client,
 		state:  state,
@@ -77,6 +82,7 @@ func (c *Cell) Commit() rep.Work {
 
 	failedWork, err := c.client.Perform(c.workToCommit)
 	if err != nil {
+		c.logger.Error("failed-to-commit", err, lager.Data{"cell-guid": c.Guid})
 		//an error may indicate partial failure
 		//in this case we don't reschedule work in order to make sure we don't
 		//create duplicates of things -- we'll let the converger figure things out for us later

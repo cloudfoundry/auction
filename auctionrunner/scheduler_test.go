@@ -78,6 +78,7 @@ var _ = Describe("Scheduler", func() {
 			clients["A-cell"] = &repfakes.FakeSimClient{}
 			zones["A-zone"] = auctionrunner.Zone{
 				auctionrunner.NewCell(
+					logger,
 					"A-cell",
 					clients["A-cell"],
 					BuildCellState("A-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
@@ -90,6 +91,7 @@ var _ = Describe("Scheduler", func() {
 			clients["B-cell"] = &repfakes.FakeSimClient{}
 			zones["B-zone"] = auctionrunner.Zone{
 				auctionrunner.NewCell(
+					logger,
 					"B-cell",
 					clients["B-cell"],
 					BuildCellState("B-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
@@ -104,6 +106,7 @@ var _ = Describe("Scheduler", func() {
 				clients["C-cell"] = &repfakes.FakeSimClient{}
 				zones["C-zone"] = auctionrunner.Zone{
 					auctionrunner.NewCell(
+						logger,
 						"C-cell",
 						clients["C-cell"],
 						BuildCellState("C-zone", 100, 100, 100, false, windowsOnlyRootFSProviders, []rep.LRP{
@@ -251,13 +254,13 @@ var _ = Describe("Scheduler", func() {
 
 		BeforeEach(func() {
 			clients["A-cell"] = &repfakes.FakeSimClient{}
-			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
+			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10),
 				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10),
 			}))}
 
 			clients["B-cell"] = &repfakes.FakeSimClient{}
-			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
+			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10),
 			}))}
 
@@ -270,6 +273,7 @@ var _ = Describe("Scheduler", func() {
 				clients["C-cell"] = &repfakes.FakeSimClient{}
 				zones["C-zone"] = auctionrunner.Zone{
 					auctionrunner.NewCell(
+						logger,
 						"C-cell",
 						clients["C-cell"],
 						BuildCellState("C-zone", 100, 100, 100, false, windowsOnlyRootFSProviders, []rep.LRP{
@@ -406,13 +410,13 @@ var _ = Describe("Scheduler", func() {
 	Describe("a comprehensive scenario", func() {
 		BeforeEach(func() {
 			clients["A-cell"] = &repfakes.FakeSimClient{}
-			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell("A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
+			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("pg-1", "domain", 0, "", 10, 10),
 				*BuildLRP("pg-2", "domain", 0, "", 10, 10),
 			}))}
 
 			clients["B-cell"] = &repfakes.FakeSimClient{}
-			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell("B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
+			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("pg-3", "domain", 0, "", 10, 10),
 				*BuildLRP("pg-4", "domain", 0, "", 20, 20),
 			}))}
@@ -521,7 +525,7 @@ var _ = Describe("Scheduler", func() {
 
 		JustBeforeEach(func() {
 			zones["zone"] = auctionrunner.Zone{
-				auctionrunner.NewCell("cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, false, linuxOnlyRootFSProviders, []rep.LRP{})),
+				auctionrunner.NewCell(logger, "cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, false, linuxOnlyRootFSProviders, []rep.LRP{})),
 			}
 
 			auctionRequest := auctiontypes.AuctionRequest{

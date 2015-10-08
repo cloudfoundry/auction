@@ -28,7 +28,7 @@ func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 				return
 			}
 
-			cell := NewCell(guid, client, state)
+			cell := NewCell(logger, guid, client, state)
 			lock.Lock()
 			zones[state.Zone] = append(zones[state.Zone], cell)
 			lock.Unlock()

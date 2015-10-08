@@ -12,13 +12,15 @@ import (
 )
 
 var _ = Describe("Cell", func() {
-	var client *repfakes.FakeSimClient
-	var emptyCell, cell *auctionrunner.Cell
+	var (
+		client          *repfakes.FakeSimClient
+		emptyCell, cell *auctionrunner.Cell
+	)
 
 	BeforeEach(func() {
 		client = &repfakes.FakeSimClient{}
 		emptyState := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, nil)
-		emptyCell = auctionrunner.NewCell("empty-cell", client, emptyState)
+		emptyCell = auctionrunner.NewCell(logger, "empty-cell", client, emptyState)
 
 		state := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, []rep.LRP{
 			*BuildLRP("pg-1", "domain", 0, linuxRootFSURL, 10, 20),
@@ -27,7 +29,7 @@ var _ = Describe("Cell", func() {
 			*BuildLRP("pg-3", "domain", 0, linuxRootFSURL, 10, 20),
 			*BuildLRP("pg-4", "domain", 0, linuxRootFSURL, 10, 20),
 		})
-		cell = auctionrunner.NewCell("the-cell", client, state)
+		cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 	})
 
 	Describe("ScoreForLRP", func() {
@@ -75,10 +77,10 @@ var _ = Describe("Cell", func() {
 			instance := BuildLRP("pg-big", "domain", 0, linuxRootFSURL, 20, 20)
 
 			bigState := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, nil)
-			bigCell := auctionrunner.NewCell("big-cell", client, bigState)
+			bigCell := auctionrunner.NewCell(logger, "big-cell", client, bigState)
 
 			smallState := BuildCellState("the-zone", 100, 200, 20, false, linuxOnlyRootFSProviders, nil)
-			smallCell := auctionrunner.NewCell("small-cell", client, smallState)
+			smallCell := auctionrunner.NewCell(logger, "small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForLRP(instance)
 			Expect(err).NotTo(HaveOccurred())
@@ -126,7 +128,7 @@ var _ = Describe("Cell", func() {
 				It("should error", func() {
 					instance := BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 10, 10)
 					zeroState := BuildCellState("the-zone", 100, 100, 0, false, linuxOnlyRootFSProviders, nil)
-					zeroCell := auctionrunner.NewCell("zero-cell", client, zeroState)
+					zeroCell := auctionrunner.NewCell(logger, "zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForLRP(instance)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
@@ -151,7 +153,7 @@ var _ = Describe("Cell", func() {
 						},
 						[]rep.LRP{},
 					)
-					cell = auctionrunner.NewCell("the-cell", client, state)
+					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support LRPs with various stack requirements", func() {
@@ -208,7 +210,7 @@ var _ = Describe("Cell", func() {
 						},
 						[]rep.LRP{},
 					)
-					cell = auctionrunner.NewCell("the-cell", client, state)
+					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support LRPs requiring the stack supported by the cell", func() {
@@ -279,10 +281,10 @@ var _ = Describe("Cell", func() {
 			task := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 20)
 
 			bigState := BuildCellState("the-zone", 100, 200, 50, false, linuxOnlyRootFSProviders, nil)
-			bigCell := auctionrunner.NewCell("big-cell", client, bigState)
+			bigCell := auctionrunner.NewCell(logger, "big-cell", client, bigState)
 
 			smallState := BuildCellState("the-zone", 100, 200, 20, false, linuxOnlyRootFSProviders, nil)
-			smallCell := auctionrunner.NewCell("small-cell", client, smallState)
+			smallCell := auctionrunner.NewCell(logger, "small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForTask(task)
 			Expect(err).NotTo(HaveOccurred())
@@ -314,7 +316,7 @@ var _ = Describe("Cell", func() {
 				It("should error", func() {
 					task := BuildTask("pg-new", "domain", linuxRootFSURL, 10, 10)
 					zeroState := BuildCellState("the-zone", 100, 100, 0, false, linuxOnlyRootFSProviders, nil)
-					zeroCell := auctionrunner.NewCell("zero-cell", client, zeroState)
+					zeroCell := auctionrunner.NewCell(logger, "zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForTask(task)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
@@ -339,7 +341,7 @@ var _ = Describe("Cell", func() {
 						},
 						[]rep.LRP{},
 					)
-					cell = auctionrunner.NewCell("the-cell", client, state)
+					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support Tasks with various stack requirements", func() {
@@ -396,7 +398,7 @@ var _ = Describe("Cell", func() {
 						},
 						[]rep.LRP{},
 					)
-					cell = auctionrunner.NewCell("the-cell", client, state)
+					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support Tasks requiring the stack supported by the cell", func() {
@@ -483,7 +485,7 @@ var _ = Describe("Cell", func() {
 						},
 						[]rep.LRP{},
 					)
-					cell = auctionrunner.NewCell("the-cell", client, state)
+					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support LRPs with various stack requirements", func() {
@@ -531,7 +533,7 @@ var _ = Describe("Cell", func() {
 						},
 						[]rep.LRP{},
 					)
-					cell = auctionrunner.NewCell("the-cell", client, state)
+					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support LRPs requiring the stack supported by the cell", func() {
@@ -595,7 +597,7 @@ var _ = Describe("Cell", func() {
 						},
 						[]rep.LRP{},
 					)
-					cell = auctionrunner.NewCell("the-cell", client, state)
+					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support Tasks with various stack requirements", func() {
@@ -643,7 +645,7 @@ var _ = Describe("Cell", func() {
 						},
 						[]rep.LRP{},
 					)
-					cell = auctionrunner.NewCell("the-cell", client, state)
+					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support Tasks requiring the stack supported by the cell", func() {

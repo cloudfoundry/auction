@@ -104,5 +104,10 @@ var _ = Describe("ZoneBuilder", func() {
 			Expect(cells).To(HaveLen(1))
 			Expect(cells[0].Guid).To(Equal("C"))
 		})
+
+		It("retries 3 times before giving up", func() {
+			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
+			Expect(repB.StateCallCount()).To(Equal(3))
+		})
 	})
 })

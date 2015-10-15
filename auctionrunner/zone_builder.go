@@ -18,10 +18,17 @@ func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 		guid, client := guid, client
 		workPool.Submit(func() {
 			defer wg.Done()
-			state, err := client.State()
-			if err != nil {
-				logger.Error("failed-to-get-state", err, lager.Data{"cell-guid": guid})
-				return
+			var state rep.CellState
+			var err error
+			for i := 0; i < 3; i++ {
+				state, err = client.State()
+				if err != nil && i == 2 {
+					logger.Error("failed-to-get-state", err, lager.Data{"cell-guid": guid})
+					return
+				}
+				if err == nil {
+					break
+				}
 			}
 
 			if state.Evacuating {

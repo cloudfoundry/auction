@@ -95,7 +95,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				Tasks: taskAuctions,
 			}
 
-			scheduler := NewScheduler(a.workPool, zones, a.clock)
+			scheduler := NewScheduler(a.workPool, zones, a.clock, logger)
 			auctionResults := scheduler.Schedule(auctionRequest)
 			logger.Info("scheduled", lager.Data{
 				"successful-lrp-start-auctions": len(auctionResults.SuccessfulLRPs),

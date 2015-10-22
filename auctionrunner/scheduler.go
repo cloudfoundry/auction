@@ -9,6 +9,7 @@ import (
 
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/pivotal-golang/clock"
+	"github.com/pivotal-golang/lager"
 )
 
 type Zone []*Cell
@@ -29,17 +30,20 @@ type Scheduler struct {
 	workPool *workpool.WorkPool
 	zones    map[string]Zone
 	clock    clock.Clock
+	logger   lager.Logger
 }
 
 func NewScheduler(
 	workPool *workpool.WorkPool,
 	zones map[string]Zone,
 	clock clock.Clock,
+	logger lager.Logger,
 ) *Scheduler {
 	return &Scheduler{
 		workPool: workPool,
 		zones:    zones,
 		clock:    clock,
+		logger:   logger,
 	}
 }
 
@@ -111,23 +115,28 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 		for _, failedStart := range failedWork.LRPs {
 			identifier := failedStart.Identifier()
 			delete(successfulLRPs, identifier)
+
+			s.logger.Info("lrp-failed-to-be-placed", lager.Data{"lrp-guid": failedStart.Identifier()})
 			results.FailedLRPs = append(results.FailedLRPs, *lrpStartAuctionLookup[identifier])
 		}
 
 		for _, failedTask := range failedWork.Tasks {
 			identifier := failedTask.Identifier()
 			delete(successfulTasks, identifier)
+
+			s.logger.Info("task-failed-to-be-placed", lager.Data{"task-guid": failedTask.Identifier()})
 			results.FailedTasks = append(results.FailedTasks, *taskAuctionLookup[identifier])
 		}
 	}
 
 	for _, successfulStart := range successfulLRPs {
+		s.logger.Info("lrp-added-to-cell", lager.Data{"lrp-guid": successfulStart.Identifier(), "cell-guid": successfulStart.Winner})
 		results.SuccessfulLRPs = append(results.SuccessfulLRPs, *successfulStart)
 	}
 	for _, successfulTask := range successfulTasks {
+		s.logger.Info("task-added-to-cell", lager.Data{"task-guid": successfulTask.Identifier(), "cell-guid": successfulTask.Winner})
 		results.SuccessfulTasks = append(results.SuccessfulTasks, *successfulTask)
 	}
-
 	return s.markResults(results)
 }
 
@@ -234,6 +243,7 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 
 	err := winnerCell.ReserveLRP(&lrpAuction.LRP)
 	if err != nil {
+		s.logger.Error("lrp-failed-to-reserve-cell", err, lager.Data{"cell-guid": winnerCell.Guid, "lrp-guid": lrpAuction.Identifier()})
 		return nil, err
 	}
 
@@ -279,6 +289,7 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction) (
 
 	err := winnerCell.ReserveTask(&taskAuction.Task)
 	if err != nil {
+		s.logger.Error("task-failed-to-reserve-cell", err, lager.Data{"cell-guid": winnerCell.Guid, "task-guid": taskAuction.Identifier()})
 		return nil, err
 	}
 

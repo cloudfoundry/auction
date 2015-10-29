@@ -42,7 +42,7 @@ var _ = Describe("Scheduler", func() {
 		workPool.Stop()
 	})
 
-	Context("when the cells are empty", func() {
+	Context("when there are no cells", func() {
 		It("immediately returns everything as having failed, incrementing the attempt number", func() {
 			startAuction := BuildLRPAuction("pg-7", "domain", 0, linuxRootFSURL, 10, 10, clock.Now())
 
@@ -73,7 +73,6 @@ var _ = Describe("Scheduler", func() {
 			Expect(failedTask.Attempts).To(Equal(taskAuction.Attempts + 1))
 			Expect(failedLRPStart.PlacementError).To(Equal(auctiontypes.ErrorCellMismatch.Error()))
 		})
-
 	})
 
 	Describe("handling start auctions", func() {

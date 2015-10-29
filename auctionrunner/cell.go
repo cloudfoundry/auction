@@ -50,7 +50,7 @@ func (c *Cell) ScoreForTask(task *rep.Task) (float64, error) {
 		return 0, err
 	}
 
-	return c.state.ComputeScore(&task.Resource), nil
+	return c.state.ComputeScore(&task.Resource) + float64(len(c.state.Tasks)), nil
 }
 
 func (c *Cell) ReserveLRP(lrp *rep.LRP) error {

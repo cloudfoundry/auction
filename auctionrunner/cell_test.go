@@ -237,6 +237,26 @@ var _ = Describe("Cell", func() {
 	})
 
 	Describe("ScoreForTask", func() {
+		It("factors in number of tasks currently running", func() {
+			bigTask := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 10)
+			smallTask := BuildTask("tg-small", "domain", linuxRootFSURL, 10, 10)
+
+			By("factoring in the amount of memory taken up by the task")
+			bigScore, err := emptyCell.ScoreForTask(bigTask)
+			Expect(err).NotTo(HaveOccurred())
+			smallScore, err := emptyCell.ScoreForTask(smallTask)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(smallScore).To(BeNumerically("<", bigScore))
+
+			By("factoring in the relative emptiness of Cells")
+			emptyScore, err := emptyCell.ScoreForTask(smallTask)
+			Expect(err).NotTo(HaveOccurred())
+			score, err := cell.ScoreForTask(smallTask)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(emptyScore).To(BeNumerically("<", score))
+		})
+
 		It("factors in memory usage", func() {
 			bigTask := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 10)
 			smallTask := BuildTask("tg-small", "domain", linuxRootFSURL, 10, 10)
@@ -577,6 +597,26 @@ var _ = Describe("Cell", func() {
 				subsequentScore, err := cell.ScoreForTask(task)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(initialScore).To(BeNumerically("<", subsequentScore), "the score should have gotten worse")
+			})
+
+			It("should register the Task and keep it in mind when handling future requests", func() {
+				task := BuildTask("tg-test", "domain", linuxRootFSURL, 10, 10)
+				taskToAdd := BuildTask("tg-new", "domain", linuxRootFSURL, 10, 10)
+
+				initialScore, err := cell.ScoreForTask(task)
+				Expect(err).NotTo(HaveOccurred())
+
+				initialScoreForTaskToAdd, err := cell.ScoreForTask(taskToAdd)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(initialScore).To(BeNumerically("==", initialScoreForTaskToAdd))
+
+				Expect(cell.ReserveTask(taskToAdd)).To(Succeed())
+
+				subsequentScore, err := cell.ScoreForTask(task)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(subsequentScore).To(BeNumerically(">", initialScore+1), "the score should have gotten worse by at least 1")
 			})
 		})
 

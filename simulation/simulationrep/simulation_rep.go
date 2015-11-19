@@ -1,7 +1,9 @@
 package simulationrep
 
 import (
+	"net/http"
 	"sync"
+	"time"
 
 	"github.com/cloudfoundry-incubator/bbs/models"
 	"github.com/cloudfoundry-incubator/rep"
@@ -121,6 +123,14 @@ func (rep *SimulationRep) StopLRPInstance(models.ActualLRPKey, models.ActualLRPI
 }
 
 func (rep *SimulationRep) CancelTask(string) error {
+	panic("UNIMPLEMENTED METHOD")
+}
+
+func (rep *SimulationRep) SetStateClient(client *http.Client) {
+	panic("UNIMPLEMENTED METHOD")
+}
+
+func (rep *SimulationRep) StateClientTimeout() time.Duration {
 	panic("UNIMPLEMENTED METHOD")
 }
 

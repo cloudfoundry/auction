@@ -2,6 +2,8 @@ package auctionrunner_test
 
 import (
 	"errors"
+	"net/http"
+	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/rep"
@@ -103,6 +105,47 @@ var _ = Describe("ZoneBuilder", func() {
 			cells = zones["other-zone"]
 			Expect(cells).To(HaveLen(1))
 			Expect(cells[0].Guid).To(Equal("C"))
+		})
+	})
+
+	Context("when clients are slow to respond", func() {
+		BeforeEach(func() {
+			repA.StateReturns(BuildCellState("the-zone", 10, 10, 100, false, linuxOnlyRootFSProviders, nil), errors.New("timeout"))
+			repA.StateClientTimeoutReturns(5 * time.Second)
+			repA.SetStateClientStub = func(client *http.Client) {
+				repA.StateClientTimeoutReturns(client.Timeout)
+			}
+			repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, false, linuxOnlyRootFSProviders, nil), errors.New("timeout"))
+			repB.StateClientTimeoutReturns(2 * time.Second)
+			repB.SetStateClientStub = func(client *http.Client) {
+				repB.StateClientTimeoutReturns(client.Timeout)
+			}
+			repC.StateReturns(BuildCellState("the-zone", 10, 10, 100, false, linuxOnlyRootFSProviders, nil), errors.New("timeout"))
+			repC.StateClientTimeoutReturns(4 * time.Second)
+			repC.SetStateClientStub = func(client *http.Client) {
+				repC.StateClientTimeoutReturns(client.Timeout)
+			}
+		})
+
+		It("retries with a backing off delay", func() {
+			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
+			Expect(zones).To(HaveLen(0))
+
+			Expect(repA.StateCallCount()).To(Equal(4))
+			Expect(repA.SetStateClientCallCount()).To(Equal(3))
+			Expect(repA.SetStateClientArgsForCall(0).Timeout).To(Equal(10 * time.Second))
+			Expect(repA.SetStateClientArgsForCall(1).Timeout).To(Equal(20 * time.Second))
+			Expect(repA.SetStateClientArgsForCall(2).Timeout).To(Equal(40 * time.Second))
+			Expect(repB.StateCallCount()).To(Equal(4))
+			Expect(repB.SetStateClientCallCount()).To(Equal(3))
+			Expect(repB.SetStateClientArgsForCall(0).Timeout).To(Equal(4 * time.Second))
+			Expect(repB.SetStateClientArgsForCall(1).Timeout).To(Equal(8 * time.Second))
+			Expect(repB.SetStateClientArgsForCall(2).Timeout).To(Equal(16 * time.Second))
+			Expect(repC.StateCallCount()).To(Equal(4))
+			Expect(repC.SetStateClientCallCount()).To(Equal(3))
+			Expect(repC.SetStateClientArgsForCall(0).Timeout).To(Equal(8 * time.Second))
+			Expect(repC.SetStateClientArgsForCall(1).Timeout).To(Equal(16 * time.Second))
+			Expect(repC.SetStateClientArgsForCall(2).Timeout).To(Equal(32 * time.Second))
 		})
 	})
 })

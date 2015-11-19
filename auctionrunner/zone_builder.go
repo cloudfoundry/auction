@@ -3,12 +3,28 @@ package auctionrunner
 import (
 	"sync"
 
+	"github.com/cloudfoundry-incubator/cf_http"
 	"github.com/cloudfoundry-incubator/rep"
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/pivotal-golang/lager"
 )
 
 func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client) map[string]Zone {
+	var zones map[string]Zone
+	for i := 0; ; i++ {
+		zones = fetchStateAndBuildZones(logger, workPool, clients)
+		if len(zones) > 0 || i == 3 {
+			break
+		}
+		for _, client := range clients {
+			stateClient := cf_http.NewCustomTimeoutClient(client.StateClientTimeout() * 2)
+			client.SetStateClient(stateClient)
+		}
+	}
+	return zones
+}
+
+func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client) map[string]Zone {
 	wg := &sync.WaitGroup{}
 	zones := map[string]Zone{}
 	lock := &sync.Mutex{}

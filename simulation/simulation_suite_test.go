@@ -190,7 +190,7 @@ func launchExternalHTTPReps() map[string]rep.SimClient {
 		sessionsToTerminate = append(sessionsToTerminate, sess)
 		Eventually(sess).Should(gbytes.Say("listening"))
 
-		cells[cellGuid(i)] = rep.NewClient(client, "http://"+httpAddr).(rep.SimClient)
+		cells[cellGuid(i)] = rep.NewClient(client, client, "http://"+httpAddr).(rep.SimClient)
 	}
 
 	return cells

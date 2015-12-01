@@ -13,6 +13,7 @@ import (
 
 var ErrorCellMismatch = errors.New("found no compatible cell")
 var ErrorNothingToStop = errors.New("nothing to stop")
+var ErrorCellCommunication = errors.New("unable to communicate to compatible cells")
 
 //go:generate counterfeiter -o fakes/fake_auction_runner.go . AuctionRunner
 type AuctionRunner interface {

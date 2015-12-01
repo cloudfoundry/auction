@@ -2,6 +2,7 @@ package auctionrunner
 
 import (
 	"sync"
+	"time"
 
 	"github.com/cloudfoundry-incubator/cf_http"
 	"github.com/cloudfoundry-incubator/rep"
@@ -11,15 +12,22 @@ import (
 
 func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client) map[string]Zone {
 	var zones map[string]Zone
+	var oldTimeout time.Duration
 	for i := 0; ; i++ {
 		zones = fetchStateAndBuildZones(logger, workPool, clients)
-		if len(zones) > 0 || i == 3 {
+		if len(zones) > 0 {
+			break
+		}
+		if i == 3 {
+			logger.Info("failed-to-communicate-to-cells-abort", lager.Data{"state-client-timeout-seconds": oldTimeout * 2 / time.Second})
 			break
 		}
 		for _, client := range clients {
+			oldTimeout = client.StateClientTimeout()
 			stateClient := cf_http.NewCustomTimeoutClient(client.StateClientTimeout() * 2)
 			client.SetStateClient(stateClient)
 		}
+		logger.Info("failed-to-communicate-to-cells-retry", lager.Data{"state-client-timeout-seconds": oldTimeout / time.Second})
 	}
 	return zones
 }

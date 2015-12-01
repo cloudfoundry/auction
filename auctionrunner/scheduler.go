@@ -61,11 +61,11 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 	if len(s.zones) == 0 {
 		results.FailedLRPs = auctionRequest.LRPs
 		for i, _ := range results.FailedLRPs {
-			results.FailedLRPs[i].PlacementError = auctiontypes.ErrorCellMismatch.Error()
+			results.FailedLRPs[i].PlacementError = auctiontypes.ErrorCellCommunication.Error()
 		}
 		results.FailedTasks = auctionRequest.Tasks
 		for i, _ := range results.FailedTasks {
-			results.FailedTasks[i].PlacementError = auctiontypes.ErrorCellMismatch.Error()
+			results.FailedTasks[i].PlacementError = auctiontypes.ErrorCellCommunication.Error()
 		}
 		return s.markResults(results)
 	}

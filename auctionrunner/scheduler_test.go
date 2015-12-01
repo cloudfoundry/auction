@@ -64,14 +64,14 @@ var _ = Describe("Scheduler", func() {
 			failedLRPStart := results.FailedLRPs[0]
 			Expect(failedLRPStart.Identifier()).To(Equal(startAuction.Identifier()))
 			Expect(failedLRPStart.Attempts).To(Equal(startAuction.Attempts + 1))
-			Expect(failedLRPStart.PlacementError).To(Equal(auctiontypes.ErrorCellMismatch.Error()))
+			Expect(failedLRPStart.PlacementError).To(Equal(auctiontypes.ErrorCellCommunication.Error()))
 
 			By("all tasks are marked failed, and their attempts are incremented")
 			Expect(results.FailedTasks).To(HaveLen(1))
 			failedTask := results.FailedTasks[0]
 			Expect(failedTask.Identifier()).To(Equal(taskAuction.Identifier()))
 			Expect(failedTask.Attempts).To(Equal(taskAuction.Attempts + 1))
-			Expect(failedLRPStart.PlacementError).To(Equal(auctiontypes.ErrorCellMismatch.Error()))
+			Expect(failedLRPStart.PlacementError).To(Equal(auctiontypes.ErrorCellCommunication.Error()))
 		})
 	})
 

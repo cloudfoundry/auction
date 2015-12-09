@@ -11,7 +11,6 @@ import (
 	"github.com/cloudfoundry-incubator/rep"
 	"github.com/cloudfoundry-incubator/rep/evacuation/evacuation_context/fake_evacuation_context"
 	rephandlers "github.com/cloudfoundry-incubator/rep/handlers"
-	"github.com/cloudfoundry-incubator/rep/lrp_stopper/fake_lrp_stopper"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
@@ -46,11 +45,10 @@ func main() {
 
 	logger, _ := cf_lager.New("repnode-http")
 
-	fakeLRPStopper := new(fake_lrp_stopper.FakeLRPStopper)
 	fakeExecutorClient := new(executorfakes.FakeClient)
 	fakeEvacuatable := new(fake_evacuation_context.FakeEvacuatable)
 
-	handlers := rephandlers.New(simulationRep, fakeLRPStopper, fakeExecutorClient, fakeEvacuatable, logger.Session(*repGuid))
+	handlers := rephandlers.New(simulationRep, fakeExecutorClient, fakeEvacuatable, logger.Session(*repGuid))
 	router, err := rata.NewRouter(rep.Routes, handlers)
 	if err != nil {
 		log.Fatalln("failed to make router:", err)

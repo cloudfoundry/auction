@@ -11,6 +11,10 @@ The Auctioneers run on the Diego "Brain" nodes, and there is only ever one activ
 
 The Auctioneer communicates with Reps on all Cells when holding an auction.
 
+## The Auction Runner
+
+The `auctionrunner` package provides an [*ifrit* process runner](https://github.com/tedsuo/ifrit/blob/master/runner.go) which consumes an incoming stream of requested auction work, batches it up, communicates with the Cell reps, picks winners, and then instructs the Cells to perform the work.
+
 ## The Simulation
 
 The `simulation` package contains a Ginkgo test suite that describes a number of scheduling scenarios.  These scenarios can be run in a number of different modes, all controlled by passing flags to the test suite.  The `simulation` generates comprehensive output to the command line, and an SVG describing, visually, the results of the simulation run.

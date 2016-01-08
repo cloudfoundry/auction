@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/auction/auctionrunner"
+	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
 	"github.com/cloudfoundry-incubator/rep"
 	"github.com/cloudfoundry-incubator/rep/repfakes"
 	"github.com/cloudfoundry/gunk/workpool"
@@ -21,6 +22,7 @@ var _ = Describe("ZoneBuilder", func() {
 	var clients map[string]rep.Client
 	var workPool *workpool.WorkPool
 	var logger lager.Logger
+	var metricEmitter *fakes.FakeAuctionMetricEmitterDelegate
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test")
@@ -42,6 +44,8 @@ var _ = Describe("ZoneBuilder", func() {
 		repA.StateReturns(BuildCellState("the-zone", 100, 200, 100, false, linuxOnlyRootFSProviders, nil), nil)
 		repB.StateReturns(BuildCellState("the-zone", 10, 10, 100, false, linuxOnlyRootFSProviders, nil), nil)
 		repC.StateReturns(BuildCellState("other-zone", 100, 10, 100, false, linuxOnlyRootFSProviders, nil), nil)
+
+		metricEmitter = new(fakes.FakeAuctionMetricEmitterDelegate)
 	})
 
 	AfterEach(func() {
@@ -49,7 +53,7 @@ var _ = Describe("ZoneBuilder", func() {
 	})
 
 	It("fetches state by calling each client", func() {
-		zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
+		zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 		Expect(zones).To(HaveLen(2))
 
 		cells := map[string]*auctionrunner.Cell{}
@@ -76,7 +80,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("does not include them in the map", func() {
-			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
+			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 			Expect(zones).To(HaveLen(2))
 
 			cells := zones["the-zone"]
@@ -95,7 +99,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("does not include the client in the map", func() {
-			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
+			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 			Expect(zones).To(HaveLen(2))
 
 			cells := zones["the-zone"]
@@ -105,6 +109,12 @@ var _ = Describe("ZoneBuilder", func() {
 			cells = zones["other-zone"]
 			Expect(cells).To(HaveLen(1))
 			Expect(cells[0].Guid).To(Equal("C"))
+		})
+
+		It("it emits metrics for the failure", func() {
+			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+			Expect(zones).To(HaveLen(2))
+			Expect(metricEmitter.FailedCellStateRequestCallCount()).To(Equal(1))
 		})
 	})
 
@@ -128,7 +138,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("retries with a backing off delay", func() {
-			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients)
+			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 			Expect(zones).To(HaveLen(0))
 
 			Expect(repA.StateCallCount()).To(Equal(4))

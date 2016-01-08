@@ -64,7 +64,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 
 			logger.Info("fetching-zone-state")
 			fetchStatesStartTime := time.Now()
-			zones := FetchStateAndBuildZones(logger, a.workPool, clients)
+			zones := FetchStateAndBuildZones(logger, a.workPool, clients, a.metricEmitter)
 			fetchStateDuration := time.Since(fetchStatesStartTime)
 			a.metricEmitter.FetchStatesCompleted(fetchStateDuration)
 			cellCount := 0

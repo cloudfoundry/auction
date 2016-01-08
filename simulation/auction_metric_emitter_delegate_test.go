@@ -14,4 +14,6 @@ func NewAuctionMetricEmitterDelegate() auctionMetricEmitterDelegate {
 
 func (_ auctionMetricEmitterDelegate) FetchStatesCompleted(_ time.Duration) {}
 
+func (_ auctionMetricEmitterDelegate) FailedCellStateRequest() {}
+
 func (_ auctionMetricEmitterDelegate) AuctionCompleted(_ auctiontypes.AuctionResults) {}

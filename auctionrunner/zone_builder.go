@@ -4,17 +4,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/cf_http"
 	"github.com/cloudfoundry-incubator/rep"
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/pivotal-golang/lager"
 )
 
-func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client) map[string]Zone {
+func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client, metricEmitter auctiontypes.AuctionMetricEmitterDelegate) map[string]Zone {
 	var zones map[string]Zone
 	var oldTimeout time.Duration
 	for i := 0; ; i++ {
-		zones = fetchStateAndBuildZones(logger, workPool, clients)
+		zones = fetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 		if len(zones) > 0 {
 			break
 		}
@@ -32,7 +33,7 @@ func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 	return zones
 }
 
-func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client) map[string]Zone {
+func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client, metricEmitter auctiontypes.AuctionMetricEmitterDelegate) map[string]Zone {
 	wg := &sync.WaitGroup{}
 	zones := map[string]Zone{}
 	lock := &sync.Mutex{}
@@ -44,6 +45,7 @@ func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 			defer wg.Done()
 			state, err := client.State()
 			if err != nil {
+				metricEmitter.FailedCellStateRequest()
 				logger.Error("failed-to-get-state", err, lager.Data{"cell-guid": guid})
 				return
 			}

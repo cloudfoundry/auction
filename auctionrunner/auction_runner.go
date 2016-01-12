@@ -66,7 +66,11 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			fetchStatesStartTime := time.Now()
 			zones := FetchStateAndBuildZones(logger, a.workPool, clients, a.metricEmitter)
 			fetchStateDuration := time.Since(fetchStatesStartTime)
-			a.metricEmitter.FetchStatesCompleted(fetchStateDuration)
+			err = a.metricEmitter.FetchStatesCompleted(fetchStateDuration)
+			if err != nil {
+				logger.Error("failed-sending-fetch-states-completed-metric", err)
+			}
+
 			cellCount := 0
 			for zone, cells := range zones {
 				logger.Info("zone-state", lager.Data{"zone": zone, "cell-count": len(cells)})

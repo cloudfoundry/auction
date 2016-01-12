@@ -29,7 +29,7 @@ type AuctionRunnerDelegate interface {
 
 //go:generate counterfeiter -o fakes/fake_metric_emitter.go . AuctionMetricEmitterDelegate
 type AuctionMetricEmitterDelegate interface {
-	FetchStatesCompleted(time.Duration)
+	FetchStatesCompleted(time.Duration) error
 	FailedCellStateRequest()
 	AuctionCompleted(AuctionResults)
 }

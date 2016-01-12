@@ -9,10 +9,13 @@ import (
 )
 
 type FakeAuctionMetricEmitterDelegate struct {
-	FetchStatesCompletedStub        func(time.Duration)
+	FetchStatesCompletedStub        func(time.Duration) error
 	fetchStatesCompletedMutex       sync.RWMutex
 	fetchStatesCompletedArgsForCall []struct {
 		arg1 time.Duration
+	}
+	fetchStatesCompletedReturns struct {
+		result1 error
 	}
 	FailedCellStateRequestStub        func()
 	failedCellStateRequestMutex       sync.RWMutex
@@ -24,14 +27,16 @@ type FakeAuctionMetricEmitterDelegate struct {
 	}
 }
 
-func (fake *FakeAuctionMetricEmitterDelegate) FetchStatesCompleted(arg1 time.Duration) {
+func (fake *FakeAuctionMetricEmitterDelegate) FetchStatesCompleted(arg1 time.Duration) error {
 	fake.fetchStatesCompletedMutex.Lock()
 	fake.fetchStatesCompletedArgsForCall = append(fake.fetchStatesCompletedArgsForCall, struct {
 		arg1 time.Duration
 	}{arg1})
 	fake.fetchStatesCompletedMutex.Unlock()
 	if fake.FetchStatesCompletedStub != nil {
-		fake.FetchStatesCompletedStub(arg1)
+		return fake.FetchStatesCompletedStub(arg1)
+	} else {
+		return fake.fetchStatesCompletedReturns.result1
 	}
 }
 
@@ -45,6 +50,13 @@ func (fake *FakeAuctionMetricEmitterDelegate) FetchStatesCompletedArgsForCall(i 
 	fake.fetchStatesCompletedMutex.RLock()
 	defer fake.fetchStatesCompletedMutex.RUnlock()
 	return fake.fetchStatesCompletedArgsForCall[i].arg1
+}
+
+func (fake *FakeAuctionMetricEmitterDelegate) FetchStatesCompletedReturns(result1 error) {
+	fake.FetchStatesCompletedStub = nil
+	fake.fetchStatesCompletedReturns = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeAuctionMetricEmitterDelegate) FailedCellStateRequest() {

@@ -27,10 +27,11 @@ func (z *Zone) FilterCells(rootFS string) []*Cell {
 }
 
 type Scheduler struct {
-	workPool *workpool.WorkPool
-	zones    map[string]Zone
-	clock    clock.Clock
-	logger   lager.Logger
+	workPool                *workpool.WorkPool
+	zones                   map[string]Zone
+	clock                   clock.Clock
+	logger                  lager.Logger
+	startingContainerWeight float64
 }
 
 func NewScheduler(
@@ -38,12 +39,14 @@ func NewScheduler(
 	zones map[string]Zone,
 	clock clock.Clock,
 	logger lager.Logger,
+	startingContainerWeight float64,
 ) *Scheduler {
 	return &Scheduler{
-		workPool: workPool,
-		zones:    zones,
-		clock:    clock,
-		logger:   logger,
+		workPool:                workPool,
+		zones:                   zones,
+		clock:                   clock,
+		logger:                  logger,
+		startingContainerWeight: startingContainerWeight,
 	}
 }
 
@@ -99,7 +102,7 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 	for i := range auctionRequest.Tasks {
 		taskAuction := &auctionRequest.Tasks[i]
 		taskAuctionLookup[taskAuction.Identifier()] = taskAuction
-		successfulTask, err := s.scheduleTaskAuction(taskAuction)
+		successfulTask, err := s.scheduleTaskAuction(taskAuction, s.startingContainerWeight)
 		if err != nil {
 			taskAuction.PlacementError = err.Error()
 			results.FailedTasks = append(results.FailedTasks, *taskAuction)
@@ -216,7 +219,7 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 
 	for zoneIndex, lrpByZone := range sortedZones {
 		for _, cell := range lrpByZone.zone {
-			score, err := cell.ScoreForLRP(&lrpAuction.LRP)
+			score, err := cell.ScoreForLRP(&lrpAuction.LRP, s.startingContainerWeight)
 			if err != nil {
 				continue
 			}
@@ -227,6 +230,8 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 			}
 		}
 
+		// if (not last zone) && (this zone has the same # of instances as the next sorted zone)
+		// acts as a tie breaker
 		if zoneIndex+1 < len(sortedZones) &&
 			lrpByZone.instances == sortedZones[zoneIndex+1].instances {
 			continue
@@ -252,7 +257,7 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 	return &winningAuction, nil
 }
 
-func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction) (*auctiontypes.TaskAuction, error) {
+func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction, startingContainerWeight float64) (*auctiontypes.TaskAuction, error) {
 	var winnerCell *Cell
 	winnerScore := 1e20
 
@@ -271,7 +276,7 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction) (
 
 	for _, zone := range filteredZones {
 		for _, cell := range zone {
-			score, err := cell.ScoreForTask(&taskAuction.Task)
+			score, err := cell.ScoreForTask(&taskAuction.Task, startingContainerWeight)
 			if err != nil {
 				continue
 			}

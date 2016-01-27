@@ -23,6 +23,7 @@ var _ = Describe("Scheduler", func() {
 	var workPool *workpool.WorkPool
 	var results auctiontypes.AuctionResults
 	var logger lager.Logger
+	var scheduler *auctionrunner.Scheduler
 
 	BeforeEach(func() {
 		clock = fakeclock.NewFakeClock(time.Now())
@@ -36,6 +37,8 @@ var _ = Describe("Scheduler", func() {
 
 		logger = lager.NewLogger("fakelogger")
 		logger.RegisterSink(lager.NewWriterSink(GinkgoWriter, lager.DEBUG))
+
+		scheduler = auctionrunner.NewScheduler(workPool, map[string]auctionrunner.Zone{}, clock, logger, 0.0)
 	})
 
 	AfterEach(func() {
@@ -54,7 +57,6 @@ var _ = Describe("Scheduler", func() {
 			}
 
 			By("no auctions are marked successful")
-			scheduler := auctionrunner.NewScheduler(workPool, map[string]auctionrunner.Zone{}, clock, logger)
 			results := scheduler.Schedule(auctionRequest)
 			Expect(results.SuccessfulLRPs).To(BeEmpty())
 			Expect(results.SuccessfulTasks).To(BeEmpty())
@@ -85,7 +87,7 @@ var _ = Describe("Scheduler", func() {
 					logger,
 					"A-cell",
 					clients["A-cell"],
-					BuildCellState("A-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
+					BuildCellState("A-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 						*BuildLRP("pg-1", "domain", 0, "", 10, 10),
 						*BuildLRP("pg-2", "domain", 0, "", 10, 10),
 					}),
@@ -98,7 +100,7 @@ var _ = Describe("Scheduler", func() {
 					logger,
 					"B-cell",
 					clients["B-cell"],
-					BuildCellState("B-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
+					BuildCellState("B-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 						*BuildLRP("pg-3", "domain", 0, "", 10, 10),
 					}),
 				),
@@ -113,7 +115,7 @@ var _ = Describe("Scheduler", func() {
 						logger,
 						"C-cell",
 						clients["C-cell"],
-						BuildCellState("C-zone", 100, 100, 100, false, windowsOnlyRootFSProviders, []rep.LRP{
+						BuildCellState("C-zone", 100, 100, 100, false, 0, windowsOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-win-1", "domain", 0, "", 10, 10),
 						}),
 					),
@@ -129,7 +131,7 @@ var _ = Describe("Scheduler", func() {
 				Context("when it picks a winner", func() {
 					BeforeEach(func() {
 						clock.Increment(time.Minute)
-						s := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+						s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 						results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 					})
 
@@ -162,7 +164,7 @@ var _ = Describe("Scheduler", func() {
 				BeforeEach(func() {
 					clock.Increment(time.Minute)
 
-					s := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+					s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 					results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 				})
 
@@ -192,7 +194,7 @@ var _ = Describe("Scheduler", func() {
 			Context("when it picks a winner", func() {
 				BeforeEach(func() {
 					clock.Increment(time.Minute)
-					s := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+					s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 					results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 				})
 
@@ -222,7 +224,7 @@ var _ = Describe("Scheduler", func() {
 				clients["B-cell"].PerformReturns(rep.Work{LRPs: []rep.LRP{startAuction.LRP}}, nil)
 
 				clock.Increment(time.Minute)
-				s := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+				s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 				results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 			})
 
@@ -237,7 +239,7 @@ var _ = Describe("Scheduler", func() {
 			BeforeEach(func() {
 				startAuction = BuildLRPAuctionWithPlacementError("pg-4", "domain", 0, linuxRootFSURL, 1000, 1000, clock.Now(), rep.ErrorInsufficientResources.Error())
 				clock.Increment(time.Minute)
-				s := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+				s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 				results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
 			})
 
@@ -259,13 +261,13 @@ var _ = Describe("Scheduler", func() {
 
 		BeforeEach(func() {
 			clients["A-cell"] = &repfakes.FakeSimClient{}
-			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
+			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10),
 				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10),
 			}))}
 
 			clients["B-cell"] = &repfakes.FakeSimClient{}
-			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
+			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10),
 			}))}
 
@@ -281,7 +283,7 @@ var _ = Describe("Scheduler", func() {
 						logger,
 						"C-cell",
 						clients["C-cell"],
-						BuildCellState("C-zone", 100, 100, 100, false, windowsOnlyRootFSProviders, []rep.LRP{
+						BuildCellState("C-zone", 100, 100, 100, false, 0, windowsOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("tg-win-1", "domain", 0, "", 10, 10),
 						}),
 					),
@@ -296,7 +298,7 @@ var _ = Describe("Scheduler", func() {
 				Context("when it picks a winner", func() {
 					BeforeEach(func() {
 						clock.Increment(time.Minute)
-						s := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+						s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 						results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 					})
 
@@ -322,7 +324,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when it picks a winner", func() {
 			BeforeEach(func() {
-				s := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+				s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -352,7 +354,7 @@ var _ = Describe("Scheduler", func() {
 		Context("when the cell rejects the task", func() {
 			BeforeEach(func() {
 				clients["B-cell"].PerformReturns(rep.Work{Tasks: []rep.Task{taskAuction.Task}}, nil)
-				s := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+				s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -369,7 +371,7 @@ var _ = Describe("Scheduler", func() {
 			BeforeEach(func() {
 				taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 1000, 1000), clock.Now())
 				clock.Increment(time.Minute)
-				s := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+				s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -392,7 +394,7 @@ var _ = Describe("Scheduler", func() {
 			BeforeEach(func() {
 				taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", "unsupported:rootfs", 100, 100), clock.Now())
 				clock.Increment(time.Minute)
-				s := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+				s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
 			})
 
@@ -415,13 +417,13 @@ var _ = Describe("Scheduler", func() {
 	Describe("a comprehensive scenario", func() {
 		BeforeEach(func() {
 			clients["A-cell"] = &repfakes.FakeSimClient{}
-			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
+			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("pg-1", "domain", 0, "", 10, 10),
 				*BuildLRP("pg-2", "domain", 0, "", 10, 10),
 			}))}
 
 			clients["B-cell"] = &repfakes.FakeSimClient{}
-			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, linuxOnlyRootFSProviders, []rep.LRP{
+			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("pg-3", "domain", 0, "", 10, 10),
 				*BuildLRP("pg-4", "domain", 0, "", 20, 20),
 			}))}
@@ -460,7 +462,7 @@ var _ = Describe("Scheduler", func() {
 				Tasks: []auctiontypes.TaskAuction{taskAuction1, taskAuction2, taskAuctionNope},
 			}
 
-			s := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+			s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 			results = s.Schedule(auctionRequest)
 
 			Expect(clients["A-cell"].PerformCallCount()).To(Equal(1))
@@ -530,7 +532,7 @@ var _ = Describe("Scheduler", func() {
 
 		JustBeforeEach(func() {
 			zones["zone"] = auctionrunner.Zone{
-				auctionrunner.NewCell(logger, "cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, false, linuxOnlyRootFSProviders, []rep.LRP{})),
+				auctionrunner.NewCell(logger, "cell", clients["cell"], BuildCellState("zone", memory, 1000, 1000, false, 0, linuxOnlyRootFSProviders, []rep.LRP{})),
 			}
 
 			auctionRequest := auctiontypes.AuctionRequest{
@@ -538,7 +540,7 @@ var _ = Describe("Scheduler", func() {
 				Tasks: tasks,
 			}
 
-			scheduler := auctionrunner.NewScheduler(workPool, zones, clock, logger)
+			scheduler := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 			results = scheduler.Schedule(auctionRequest)
 		})
 

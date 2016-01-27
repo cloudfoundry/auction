@@ -13,28 +13,32 @@ import (
 )
 
 type auctionRunner struct {
-	delegate      auctiontypes.AuctionRunnerDelegate
-	metricEmitter auctiontypes.AuctionMetricEmitterDelegate
-	batch         *Batch
-	clock         clock.Clock
-	workPool      *workpool.WorkPool
-	logger        lager.Logger
+	logger lager.Logger
+
+	delegate                auctiontypes.AuctionRunnerDelegate
+	metricEmitter           auctiontypes.AuctionMetricEmitterDelegate
+	batch                   *Batch
+	clock                   clock.Clock
+	workPool                *workpool.WorkPool
+	startingContainerWeight float64
 }
 
 func New(
+	logger lager.Logger,
 	delegate auctiontypes.AuctionRunnerDelegate,
 	metricEmitter auctiontypes.AuctionMetricEmitterDelegate,
 	clock clock.Clock,
 	workPool *workpool.WorkPool,
-	logger lager.Logger,
+	startingContainerWeight float64,
 ) *auctionRunner {
 	return &auctionRunner{
+		logger: logger,
+
 		delegate:      delegate,
 		metricEmitter: metricEmitter,
 		batch:         NewBatch(clock),
 		clock:         clock,
 		workPool:      workPool,
-		logger:        logger,
 	}
 }
 
@@ -99,7 +103,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				Tasks: taskAuctions,
 			}
 
-			scheduler := NewScheduler(a.workPool, zones, a.clock, logger)
+			scheduler := NewScheduler(a.workPool, zones, a.clock, logger, a.startingContainerWeight)
 			auctionResults := scheduler.Schedule(auctionRequest)
 			logger.Info("scheduled", lager.Data{
 				"successful-lrp-start-auctions": len(auctionResults.SuccessfulLRPs),

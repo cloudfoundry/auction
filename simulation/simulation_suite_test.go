@@ -118,11 +118,12 @@ var _ = BeforeEach(func() {
 	runnerDelegate = NewAuctionRunnerDelegate(cells)
 	metricEmitterDelegate := NewAuctionMetricEmitterDelegate()
 	runner = auctionrunner.New(
+		logger,
 		runnerDelegate,
 		metricEmitterDelegate,
 		clock.NewClock(),
 		workPool,
-		logger,
+		0.25,
 	)
 	runnerProcess = ifrit.Invoke(runner)
 })

@@ -32,7 +32,7 @@ var _ = Describe("Auction", func() {
 	}
 
 	newLRPStartAuction := func(processGuid string, index int, memoryMB int32) auctioneer.LRPStartRequest {
-		return auctioneer.NewLRPStartRequest(processGuid, "domain", []int{index}, rep.NewResource(memoryMB, 1, linuxRootFSURL))
+		return auctioneer.NewLRPStartRequest(processGuid, "auction", []int{index}, rep.NewResource(memoryMB, 1, linuxRootFSURL))
 	}
 
 	generateUniqueLRPStartAuctions := func(numInstances int, memoryMB int32) []auctioneer.LRPStartRequest {
@@ -165,7 +165,7 @@ var _ = Describe("Auction", func() {
 						}
 					})
 
-					It("should distribute evenly", func() {
+					It("should distribute evenly without overloading empty cells", func() {
 						instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
 						runAndReportStartAuction(instances, ncells[i], i+2, 1)

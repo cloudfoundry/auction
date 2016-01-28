@@ -34,11 +34,12 @@ func New(
 	return &auctionRunner{
 		logger: logger,
 
-		delegate:      delegate,
-		metricEmitter: metricEmitter,
-		batch:         NewBatch(clock),
-		clock:         clock,
-		workPool:      workPool,
+		delegate:                delegate,
+		metricEmitter:           metricEmitter,
+		batch:                   NewBatch(clock),
+		clock:                   clock,
+		workPool:                workPool,
+		startingContainerWeight: startingContainerWeight,
 	}
 }
 

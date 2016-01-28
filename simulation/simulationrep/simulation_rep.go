@@ -10,11 +10,12 @@ import (
 )
 
 type SimulationRep struct {
-	stack          string
-	zone           string
-	totalResources rep.Resources
-	lrps           map[string]rep.LRP
-	tasks          map[string]rep.Task
+	stack                  string
+	zone                   string
+	totalResources         rep.Resources
+	lrps                   map[string]rep.LRP
+	tasks                  map[string]rep.Task
+	startingContainerCount int
 
 	lock *sync.Mutex
 }
@@ -25,7 +26,8 @@ func New(stack string, zone string, totalResources rep.Resources) rep.SimClient 
 		totalResources: totalResources,
 		lrps:           map[string]rep.LRP{},
 		tasks:          map[string]rep.Task{},
-		zone:           zone,
+		startingContainerCount: 0,
+		zone: zone,
 
 		lock: &sync.Mutex{},
 	}
@@ -57,7 +59,8 @@ func (r *SimulationRep) State() (rep.CellState, error) {
 		TotalResources:     r.totalResources,
 		LRPs:               lrps,
 		Tasks:              tasks,
-		Zone:               r.zone,
+		StartingContainerCount: r.startingContainerCount,
+		Zone: r.zone,
 	}, nil
 }
 
@@ -70,7 +73,6 @@ func (r *SimulationRep) Perform(work rep.Work) (rep.Work, error) {
 	availableResources := r.availableResources()
 
 	for _, start := range work.LRPs {
-
 		hasRoom := availableResources.Containers >= 0
 		hasRoom = hasRoom && availableResources.MemoryMB >= start.MemoryMB
 		hasRoom = hasRoom && availableResources.DiskMB >= start.DiskMB
@@ -79,6 +81,9 @@ func (r *SimulationRep) Perform(work rep.Work) (rep.Work, error) {
 			r.lrps[start.Identifier()] = start
 
 			availableResources.Containers -= 1
+			if start.Domain == "auction" {
+				r.startingContainerCount++
+			}
 			availableResources.MemoryMB -= start.MemoryMB
 			availableResources.DiskMB -= start.DiskMB
 		} else {
@@ -95,6 +100,9 @@ func (r *SimulationRep) Perform(work rep.Work) (rep.Work, error) {
 			r.tasks[task.TaskGuid] = task
 
 			availableResources.Containers -= 1
+			if task.Domain == "auction" {
+				r.startingContainerCount++
+			}
 			availableResources.MemoryMB -= task.MemoryMB
 			availableResources.DiskMB -= task.DiskMB
 		} else {
@@ -113,6 +121,7 @@ func (r *SimulationRep) Reset() error {
 
 	r.lrps = map[string]rep.LRP{}
 	r.tasks = map[string]rep.Task{}
+	r.startingContainerCount = 0
 	return nil
 }
 

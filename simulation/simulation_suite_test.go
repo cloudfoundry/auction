@@ -48,6 +48,8 @@ var repResources = rep.Resources{
 	Containers: 100,
 }
 
+var defaultDrivers = []string{"my-driver"}
+
 var timeout time.Duration
 var workers int
 
@@ -156,7 +158,7 @@ func buildInProcessReps() map[string]rep.SimClient {
 	cells := map[string]rep.SimClient{}
 
 	for i := 0; i < numCells; i++ {
-		cells[cellGuid(i)] = simulationrep.New(linuxStack, zone(i), repResources)
+		cells[cellGuid(i)] = simulationrep.New(linuxStack, zone(i), repResources, defaultDrivers)
 	}
 
 	return cells

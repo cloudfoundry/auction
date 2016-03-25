@@ -16,18 +16,20 @@ type SimulationRep struct {
 	lrps                   map[string]rep.LRP
 	tasks                  map[string]rep.Task
 	startingContainerCount int
+	volumeDrivers          []string
 
 	lock *sync.Mutex
 }
 
-func New(stack string, zone string, totalResources rep.Resources) rep.SimClient {
+func New(stack string, zone string, totalResources rep.Resources, volumeDrivers []string) rep.SimClient {
 	return &SimulationRep{
 		stack:          stack,
 		totalResources: totalResources,
 		lrps:           map[string]rep.LRP{},
 		tasks:          map[string]rep.Task{},
 		startingContainerCount: 0,
-		zone: zone,
+		zone:          zone,
+		volumeDrivers: volumeDrivers,
 
 		lock: &sync.Mutex{},
 	}
@@ -60,7 +62,8 @@ func (r *SimulationRep) State() (rep.CellState, error) {
 		LRPs:               lrps,
 		Tasks:              tasks,
 		StartingContainerCount: r.startingContainerCount,
-		Zone: r.zone,
+		Zone:          r.zone,
+		VolumeDrivers: r.volumeDrivers,
 	}, nil
 }
 

@@ -20,7 +20,7 @@ var _ = Describe("Cell", func() {
 
 	BeforeEach(func() {
 		client = &repfakes.FakeSimClient{}
-		emptyState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil)
+		emptyState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{})
 		emptyCell = auctionrunner.NewCell(logger, "empty-cell", client, emptyState)
 
 		state := BuildCellState("the-zone", 100, 200, 50, false, 10, linuxOnlyRootFSProviders, []rep.LRP{
@@ -29,7 +29,9 @@ var _ = Describe("Cell", func() {
 			*BuildLRP("pg-2", "domain", 0, linuxRootFSURL, 10, 20),
 			*BuildLRP("pg-3", "domain", 0, linuxRootFSURL, 10, 20),
 			*BuildLRP("pg-4", "domain", 0, linuxRootFSURL, 10, 20),
-		})
+		},
+			[]string{},
+		)
 		cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 	})
 
@@ -77,10 +79,10 @@ var _ = Describe("Cell", func() {
 		It("factors in container usage", func() {
 			instance := BuildLRP("pg-big", "domain", 0, linuxRootFSURL, 20, 20)
 
-			bigState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil)
+			bigState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{})
 			bigCell := auctionrunner.NewCell(logger, "big-cell", client, bigState)
 
-			smallState := BuildCellState("the-zone", 100, 200, 20, false, 0, linuxOnlyRootFSProviders, nil)
+			smallState := BuildCellState("the-zone", 100, 200, 20, false, 0, linuxOnlyRootFSProviders, nil, []string{})
 			smallCell := auctionrunner.NewCell(logger, "small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForLRP(instance, 0.0)
@@ -98,10 +100,10 @@ var _ = Describe("Cell", func() {
 			BeforeEach(func() {
 				instance = BuildLRP("pg-busy", "domain", 0, linuxRootFSURL, 20, 20)
 
-				busyState = BuildCellState("the-zone", 100, 200, 50, false, 10, linuxOnlyRootFSProviders, []rep.LRP{{ActualLRPKey: models.ActualLRPKey{ProcessGuid: "not-HA"}}})
+				busyState = BuildCellState("the-zone", 100, 200, 50, false, 10, linuxOnlyRootFSProviders, []rep.LRP{{ActualLRPKey: models.ActualLRPKey{ProcessGuid: "not-HA"}}}, []string{})
 				busyCell = auctionrunner.NewCell(logger, "busy-cell", client, busyState)
 
-				boredState = BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, []rep.LRP{{ActualLRPKey: models.ActualLRPKey{ProcessGuid: "HA"}}})
+				boredState = BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, []rep.LRP{{ActualLRPKey: models.ActualLRPKey{ProcessGuid: "HA"}}}, []string{})
 				boredCell = auctionrunner.NewCell(logger, "bored-cell", client, boredState)
 			})
 
@@ -115,7 +117,7 @@ var _ = Describe("Cell", func() {
 
 				Expect(busyScore).To(BeNumerically(">", boredScore), "prefer Cells that have less starting containers")
 
-				smallerWeightState := BuildCellState("the-zone", 100, 200, 50, false, 10, linuxOnlyRootFSProviders, nil)
+				smallerWeightState := BuildCellState("the-zone", 100, 200, 50, false, 10, linuxOnlyRootFSProviders, nil, []string{})
 				smallerWeightCell := auctionrunner.NewCell(logger, "busy-cell", client, smallerWeightState)
 				smallerWeightScore, err := smallerWeightCell.ScoreForLRP(instance, startingContainerWeight-0.1)
 				Expect(err).NotTo(HaveOccurred())
@@ -185,7 +187,7 @@ var _ = Describe("Cell", func() {
 			Context("because of container constraints", func() {
 				It("should error", func() {
 					instance := BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 10, 10)
-					zeroState := BuildCellState("the-zone", 100, 100, 0, false, 0, linuxOnlyRootFSProviders, nil)
+					zeroState := BuildCellState("the-zone", 100, 100, 0, false, 0, linuxOnlyRootFSProviders, nil, []string{})
 					zeroCell := auctionrunner.NewCell(logger, "zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForLRP(instance, 0.0)
 					Expect(score).To(BeZero())
@@ -211,6 +213,7 @@ var _ = Describe("Cell", func() {
 							"arbitrary-2": rep.ArbitraryRootFSProvider{},
 						},
 						[]rep.LRP{},
+						[]string{},
 					)
 					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
@@ -269,6 +272,7 @@ var _ = Describe("Cell", func() {
 							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1"),
 						},
 						[]rep.LRP{},
+						[]string{},
 					)
 					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
@@ -298,8 +302,8 @@ var _ = Describe("Cell", func() {
 
 	Describe("ScoreForTask", func() {
 		It("factors in number of tasks currently running", func() {
-			bigTask := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 10)
-			smallTask := BuildTask("tg-small", "domain", linuxRootFSURL, 10, 10)
+			bigTask := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 10, []string{})
+			smallTask := BuildTask("tg-small", "domain", linuxRootFSURL, 10, 10, []string{})
 
 			By("factoring in the amount of memory taken up by the task")
 			bigScore, err := emptyCell.ScoreForTask(bigTask, 0.0)
@@ -318,8 +322,8 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in memory usage", func() {
-			bigTask := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 10)
-			smallTask := BuildTask("tg-small", "domain", linuxRootFSURL, 10, 10)
+			bigTask := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 10, []string{})
+			smallTask := BuildTask("tg-small", "domain", linuxRootFSURL, 10, 10, []string{})
 
 			By("factoring in the amount of memory taken up by the task")
 			bigScore, err := emptyCell.ScoreForTask(bigTask, 0.0)
@@ -338,8 +342,8 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in disk usage", func() {
-			bigTask := BuildTask("tg-big", "domain", linuxRootFSURL, 10, 20)
-			smallTask := BuildTask("tg-small", "domain", linuxRootFSURL, 10, 10)
+			bigTask := BuildTask("tg-big", "domain", linuxRootFSURL, 10, 20, []string{})
+			smallTask := BuildTask("tg-small", "domain", linuxRootFSURL, 10, 10, []string{})
 
 			By("factoring in the amount of memory taken up by the task")
 			bigScore, err := emptyCell.ScoreForTask(bigTask, 0.0)
@@ -358,12 +362,12 @@ var _ = Describe("Cell", func() {
 		})
 
 		It("factors in container usage", func() {
-			task := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 20)
+			task := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 20, []string{})
 
-			bigState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil)
+			bigState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{})
 			bigCell := auctionrunner.NewCell(logger, "big-cell", client, bigState)
 
-			smallState := BuildCellState("the-zone", 100, 200, 20, false, 0, linuxOnlyRootFSProviders, nil)
+			smallState := BuildCellState("the-zone", 100, 200, 20, false, 0, linuxOnlyRootFSProviders, nil, []string{})
 			smallCell := auctionrunner.NewCell(logger, "small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForTask(task, 0.0)
@@ -379,12 +383,12 @@ var _ = Describe("Cell", func() {
 			var busyCell, boredCell *auctionrunner.Cell
 
 			BeforeEach(func() {
-				task = BuildTask("tg-big", "domain", linuxRootFSURL, 20, 20)
+				task = BuildTask("tg-big", "domain", linuxRootFSURL, 20, 20, []string{})
 
-				busyState = BuildCellState("the-zone", 100, 200, 50, false, 10, linuxOnlyRootFSProviders, nil)
+				busyState = BuildCellState("the-zone", 100, 200, 50, false, 10, linuxOnlyRootFSProviders, nil, []string{})
 				busyCell = auctionrunner.NewCell(logger, "busy-cell", client, busyState)
 
-				boredState = BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil)
+				boredState = BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{})
 				boredCell = auctionrunner.NewCell(logger, "bored-cell", client, boredState)
 			})
 
@@ -410,7 +414,7 @@ var _ = Describe("Cell", func() {
 		Context("when the task does not fit", func() {
 			Context("because of memory constraints", func() {
 				It("should error", func() {
-					massiveMemoryTask := BuildTask("pg-new", "domain", linuxRootFSURL, 10000, 10)
+					massiveMemoryTask := BuildTask("pg-new", "domain", linuxRootFSURL, 10000, 10, []string{})
 					score, err := cell.ScoreForTask(massiveMemoryTask, 0.0)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
@@ -419,7 +423,7 @@ var _ = Describe("Cell", func() {
 
 			Context("because of disk constraints", func() {
 				It("should error", func() {
-					massiveDiskTask := BuildTask("pg-new", "domain", linuxRootFSURL, 10, 10000)
+					massiveDiskTask := BuildTask("pg-new", "domain", linuxRootFSURL, 10, 10000, []string{})
 					score, err := cell.ScoreForTask(massiveDiskTask, 0.0)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
@@ -428,8 +432,8 @@ var _ = Describe("Cell", func() {
 
 			Context("because of container constraints", func() {
 				It("should error", func() {
-					task := BuildTask("pg-new", "domain", linuxRootFSURL, 10, 10)
-					zeroState := BuildCellState("the-zone", 100, 100, 0, false, 0, linuxOnlyRootFSProviders, nil)
+					task := BuildTask("pg-new", "domain", linuxRootFSURL, 10, 10, []string{})
+					zeroState := BuildCellState("the-zone", 100, 100, 0, false, 0, linuxOnlyRootFSProviders, nil, []string{})
 					zeroCell := auctionrunner.NewCell(logger, "zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForTask(task, 0.0)
 					Expect(score).To(BeZero())
@@ -455,46 +459,47 @@ var _ = Describe("Cell", func() {
 							"arbitrary-2": rep.ArbitraryRootFSProvider{},
 						},
 						[]rep.LRP{},
+						[]string{},
 					)
 					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support Tasks with various stack requirements", func() {
-					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10), 0.0)
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10), 0.0)
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10), 0.0)
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-2", 10, 10), 0.0)
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-2", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary-1://random-root-fs", 10, 10), 0.0)
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary-1://random-root-fs", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary-2://random-root-fs", 10, 10), 0.0)
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary-2://random-root-fs", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
-					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-3", 10, 10), 0.0)
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-3", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-3:root-fs-1", 10, 10), 0.0)
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-3:root-fs-1", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary-3://random-root-fs", 10, 10), 0.0)
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary-3://random-root-fs", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
@@ -513,26 +518,27 @@ var _ = Describe("Cell", func() {
 							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1"),
 						},
 						[]rep.LRP{},
+						[]string{},
 					)
 					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support Tasks requiring the stack supported by the cell", func() {
-					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10), 0.0)
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeNumerically(">", 0))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
-					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10), 0.0)
+					score, err := cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10), 0.0)
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary://random-root-fs", 10, 10), 0.0)
+					score, err = cell.ScoreForTask(BuildTask("task-guid", "domain", "arbitrary://random-root-fs", 10, 10, []string{}), 0.0)
 					Expect(score).To(BeZero())
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
@@ -601,6 +607,7 @@ var _ = Describe("Cell", func() {
 							"arbitrary-2": rep.ArbitraryRootFSProvider{},
 						},
 						[]rep.LRP{},
+						[]string{},
 					)
 					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
@@ -650,6 +657,7 @@ var _ = Describe("Cell", func() {
 							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1"),
 						},
 						[]rep.LRP{},
+						[]string{},
 					)
 					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
@@ -684,8 +692,8 @@ var _ = Describe("Cell", func() {
 	Describe("ReserveTask", func() {
 		Context("when there is room for the task", func() {
 			It("should register its resources usage and keep it in mind when handling future requests", func() {
-				task := BuildTask("tg-test", "domain", linuxRootFSURL, 10, 10)
-				taskToAdd := BuildTask("tg-new", "domain", linuxRootFSURL, 10, 10)
+				task := BuildTask("tg-test", "domain", linuxRootFSURL, 10, 10, []string{})
+				taskToAdd := BuildTask("tg-new", "domain", linuxRootFSURL, 10, 10, []string{})
 
 				initialScore, err := cell.ScoreForTask(task, 0.0)
 				Expect(err).NotTo(HaveOccurred())
@@ -698,8 +706,8 @@ var _ = Describe("Cell", func() {
 			})
 
 			It("should register the Task and keep it in mind when handling future requests", func() {
-				task := BuildTask("tg-test", "domain", linuxRootFSURL, 10, 10)
-				taskToAdd := BuildTask("tg-new", "domain", linuxRootFSURL, 10, 10)
+				task := BuildTask("tg-test", "domain", linuxRootFSURL, 10, 10, []string{})
+				taskToAdd := BuildTask("tg-new", "domain", linuxRootFSURL, 10, 10, []string{})
 
 				initialScore, err := cell.ScoreForTask(task, 0.25)
 				Expect(err).NotTo(HaveOccurred())
@@ -735,38 +743,39 @@ var _ = Describe("Cell", func() {
 							"arbitrary-2": rep.ArbitraryRootFSProvider{},
 						},
 						[]rep.LRP{},
+						[]string{},
 					)
 					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support Tasks with various stack requirements", func() {
-					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10))
+					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10, []string{}))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10, []string{}))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10, []string{}))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-2", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-2", 10, 10, []string{}))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary-1://random-root-fs", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary-1://random-root-fs", 10, 10, []string{}))
 					Expect(err).NotTo(HaveOccurred())
 
-					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary-2://random-root-fs", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary-2://random-root-fs", 10, 10, []string{}))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
-					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-3", 10, 10))
+					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-3", 10, 10, []string{}))
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-3:root-fs-1", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-3:root-fs-1", 10, 10, []string{}))
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary-3://random-root-fs", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary-3://random-root-fs", 10, 10, []string{}))
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
 			})
@@ -784,23 +793,24 @@ var _ = Describe("Cell", func() {
 							"fixed-set-1": rep.NewFixedSetRootFSProvider("root-fs-1"),
 						},
 						[]rep.LRP{},
+						[]string{},
 					)
 					cell = auctionrunner.NewCell(logger, "the-cell", client, state)
 				})
 
 				It("should support Tasks requiring the stack supported by the cell", func() {
-					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10))
+					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-1", 10, 10, []string{}))
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should error for Tasks with unsupported stack requirements", func() {
-					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10))
+					err := cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-1:root-fs-2", 10, 10, []string{}))
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "fixed-set-2:root-fs-1", 10, 10, []string{}))
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 
-					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary://random-root-fs", 10, 10))
+					err = cell.ReserveTask(BuildTask("task-guid", "domain", "arbitrary://random-root-fs", 10, 10, []string{}))
 					Expect(err).To(MatchError(rep.ErrorIncompatibleRootfs))
 				})
 			})
@@ -808,7 +818,7 @@ var _ = Describe("Cell", func() {
 
 		Context("when there is no room for the Task", func() {
 			It("should error", func() {
-				task := BuildTask("tg-test", "domain", linuxRootFSURL, 10000, 10)
+				task := BuildTask("tg-test", "domain", linuxRootFSURL, 10000, 10, []string{})
 				err := cell.ReserveTask(task)
 				Expect(err).To(MatchError(rep.ErrorInsufficientResources))
 			})

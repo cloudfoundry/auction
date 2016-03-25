@@ -29,6 +29,10 @@ func (c *Cell) MatchRootFS(rootFS string) bool {
 	return c.state.MatchRootFS(rootFS)
 }
 
+func (c *Cell) MatchVolumeDrivers(volumeDrivers []string) bool {
+	return c.state.MatchVolumeDrivers(volumeDrivers)
+}
+
 func (c *Cell) ScoreForLRP(lrp *rep.LRP, startingContainerWeight float64) (float64, error) {
 	err := c.state.ResourceMatch(&lrp.Resource)
 	if err != nil {

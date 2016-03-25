@@ -14,11 +14,11 @@ import (
 
 type Zone []*Cell
 
-func (z *Zone) FilterCells(rootFS string) []*Cell {
+func (z *Zone) filterCells(resource rep.Resource) []*Cell {
 	var cells = make([]*Cell, 0, len(*z))
 
 	for _, cell := range *z {
-		if cell.MatchRootFS(rootFS) {
+		if cell.MatchRootFS(resource.RootFs) && cell.MatchVolumeDrivers(resource.VolumeDrivers) {
 			cells = append(cells, cell)
 		}
 	}
@@ -209,7 +209,7 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 
 	zones := accumulateZonesByInstances(s.zones, lrpAuction.ProcessGuid)
 
-	filteredZones := filterZonesByRootFS(zones, lrpAuction.RootFs)
+	filteredZones := filterZonesByRootFS(zones, lrpAuction)
 
 	if len(filteredZones) == 0 {
 		return nil, auctiontypes.ErrorCellMismatch
@@ -264,7 +264,7 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction, s
 	filteredZones := []Zone{}
 
 	for _, zone := range s.zones {
-		cells := zone.FilterCells(taskAuction.RootFs)
+		cells := zone.filterCells(taskAuction.Resource)
 		if len(cells) > 0 {
 			filteredZones = append(filteredZones, Zone(cells))
 		}

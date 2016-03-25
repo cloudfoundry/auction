@@ -11,32 +11,32 @@ import (
 )
 
 func BuildLRPStartRequest(processGuid, domain string, indices []int, rootFS string, memoryMB, diskMB int32) auctioneer.LRPStartRequest {
-	return auctioneer.NewLRPStartRequest(processGuid, domain, indices, rep.NewResource(memoryMB, diskMB, rootFS))
+	return auctioneer.NewLRPStartRequest(processGuid, domain, indices, rep.NewResource(memoryMB, diskMB, rootFS, []string{}))
 }
 
 func BuildTaskStartRequest(taskGuid, domain, rootFS string, memoryMB, diskMB int32) auctioneer.TaskStartRequest {
-	return auctioneer.NewTaskStartRequest(*BuildTask(taskGuid, domain, rootFS, memoryMB, diskMB))
+	return auctioneer.NewTaskStartRequest(*BuildTask(taskGuid, domain, rootFS, memoryMB, diskMB, []string{}))
 }
 
 func BuildLRP(guid, domain string, index int, rootFS string, memoryMB, diskMB int32) *rep.LRP {
 	lrpKey := models.NewActualLRPKey(guid, int32(index), domain)
-	lrp := rep.NewLRP(lrpKey, rep.NewResource(memoryMB, diskMB, rootFS))
+	lrp := rep.NewLRP(lrpKey, rep.NewResource(memoryMB, diskMB, rootFS, []string{}))
 	return &lrp
 }
 
-func BuildTask(taskGuid, domain, rootFS string, memoryMB, diskMB int32) *rep.Task {
-	task := rep.NewTask(taskGuid, domain, rep.NewResource(memoryMB, diskMB, rootFS))
+func BuildTask(taskGuid, domain, rootFS string, memoryMB, diskMB int32, volumeDrivers []string) *rep.Task {
+	task := rep.NewTask(taskGuid, domain, rep.NewResource(memoryMB, diskMB, rootFS, volumeDrivers))
 	return &task
 }
 
 func BuildLRPAuction(processGuid, domain string, index int, rootFS string, memoryMB, diskMB int32, queueTime time.Time) auctiontypes.LRPAuction {
 	lrpKey := models.NewActualLRPKey(processGuid, int32(index), domain)
-	return auctiontypes.NewLRPAuction(rep.NewLRP(lrpKey, rep.NewResource(memoryMB, diskMB, rootFS)), queueTime)
+	return auctiontypes.NewLRPAuction(rep.NewLRP(lrpKey, rep.NewResource(memoryMB, diskMB, rootFS, []string{})), queueTime)
 }
 
 func BuildLRPAuctionWithPlacementError(processGuid, domain string, index int, rootFS string, memoryMB, diskMB int32, queueTime time.Time, placementError string) auctiontypes.LRPAuction {
 	lrpKey := models.NewActualLRPKey(processGuid, int32(index), domain)
-	a := auctiontypes.NewLRPAuction(rep.NewLRP(lrpKey, rep.NewResource(memoryMB, diskMB, rootFS)), queueTime)
+	a := auctiontypes.NewLRPAuction(rep.NewLRP(lrpKey, rep.NewResource(memoryMB, diskMB, rootFS, []string{})), queueTime)
 	a.PlacementError = placementError
 	return a
 }
@@ -76,6 +76,7 @@ func BuildCellState(
 	startingContainerCount int,
 	rootFSProviders rep.RootFSProviders,
 	lrps []rep.LRP,
+	volumeDrivers []string,
 ) rep.CellState {
 	totalResources := rep.NewResources(memoryMB, diskMB, containers)
 
@@ -88,5 +89,5 @@ func BuildCellState(
 	Expect(availableResources.DiskMB).To(BeNumerically(">=", 0), "Check your math!")
 	Expect(availableResources.Containers).To(BeNumerically(">=", 0), "Check your math!")
 
-	return rep.NewCellState(rootFSProviders, availableResources, totalResources, lrps, nil, zone, startingContainerCount, evacuating, []string{})
+	return rep.NewCellState(rootFSProviders, availableResources, totalResources, lrps, nil, zone, startingContainerCount, evacuating, volumeDrivers)
 }

@@ -57,10 +57,10 @@ var _ = Describe("Sortable Auctions", func() {
 
 		BeforeEach(func() {
 			tasks = []auctiontypes.TaskAuction{
-				BuildTaskAuction(BuildTask("tg-6", "domain", "linux", 10, 10), time.Time{}),
-				BuildTaskAuction(BuildTask("tg-7", "domain", "linux", 20, 10), time.Time{}),
-				BuildTaskAuction(BuildTask("tg-8", "domain", "linux", 30, 10), time.Time{}),
-				BuildTaskAuction(BuildTask("tg-9", "domain", "linux", 40, 10), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-6", "domain", "linux", 10, 10, []string{}), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-7", "domain", "linux", 20, 10, []string{}), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-8", "domain", "linux", 30, 10, []string{}), time.Time{}),
+				BuildTaskAuction(BuildTask("tg-9", "domain", "linux", 40, 10, []string{}), time.Time{}),
 			}
 
 			sort.Sort(auctionrunner.SortableTaskAuctions(tasks))

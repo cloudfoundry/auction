@@ -1,6 +1,10 @@
 package auctionrunner
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+)
 
 type lrpByZone struct {
 	zone      Zone
@@ -38,11 +42,11 @@ func sortZonesByInstances(zones []lrpByZone) []lrpByZone {
 	return sorter.zones
 }
 
-func filterZonesByRootFS(zones []lrpByZone, rootFS string) []lrpByZone {
+func filterZonesByRootFS(zones []lrpByZone, lrpAuction *auctiontypes.LRPAuction) []lrpByZone {
 	filteredZones := []lrpByZone{}
 
 	for _, lrpZone := range zones {
-		cells := lrpZone.zone.FilterCells(rootFS)
+		cells := lrpZone.zone.filterCells(lrpAuction.Resource)
 		if len(cells) > 0 {
 			filteredZone := lrpByZone{
 				zone:      Zone(cells),

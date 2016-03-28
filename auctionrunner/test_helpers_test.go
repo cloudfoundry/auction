@@ -10,8 +10,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func BuildLRPStartRequest(processGuid, domain string, indices []int, rootFS string, memoryMB, diskMB int32) auctioneer.LRPStartRequest {
-	return auctioneer.NewLRPStartRequest(processGuid, domain, indices, rep.NewResource(memoryMB, diskMB, rootFS, []string{}))
+func BuildLRPStartRequest(processGuid, domain string, indices []int, rootFS string, memoryMB, diskMB int32, volumeDriver []string) auctioneer.LRPStartRequest {
+	return auctioneer.NewLRPStartRequest(processGuid, domain, indices, rep.NewResource(memoryMB, diskMB, rootFS, volumeDriver))
 }
 
 func BuildTaskStartRequest(taskGuid, domain, rootFS string, memoryMB, diskMB int32) auctioneer.TaskStartRequest {
@@ -29,14 +29,14 @@ func BuildTask(taskGuid, domain, rootFS string, memoryMB, diskMB int32, volumeDr
 	return &task
 }
 
-func BuildLRPAuction(processGuid, domain string, index int, rootFS string, memoryMB, diskMB int32, queueTime time.Time) auctiontypes.LRPAuction {
+func BuildLRPAuction(processGuid, domain string, index int, rootFS string, memoryMB, diskMB int32, queueTime time.Time, volumeDrivers []string) auctiontypes.LRPAuction {
 	lrpKey := models.NewActualLRPKey(processGuid, int32(index), domain)
-	return auctiontypes.NewLRPAuction(rep.NewLRP(lrpKey, rep.NewResource(memoryMB, diskMB, rootFS, []string{})), queueTime)
+	return auctiontypes.NewLRPAuction(rep.NewLRP(lrpKey, rep.NewResource(memoryMB, diskMB, rootFS, volumeDrivers)), queueTime)
 }
 
-func BuildLRPAuctionWithPlacementError(processGuid, domain string, index int, rootFS string, memoryMB, diskMB int32, queueTime time.Time, placementError string) auctiontypes.LRPAuction {
+func BuildLRPAuctionWithPlacementError(processGuid, domain string, index int, rootFS string, memoryMB, diskMB int32, queueTime time.Time, placementError string, volumeDrivers []string) auctiontypes.LRPAuction {
 	lrpKey := models.NewActualLRPKey(processGuid, int32(index), domain)
-	a := auctiontypes.NewLRPAuction(rep.NewLRP(lrpKey, rep.NewResource(memoryMB, diskMB, rootFS, []string{})), queueTime)
+	a := auctiontypes.NewLRPAuction(rep.NewLRP(lrpKey, rep.NewResource(memoryMB, diskMB, rootFS, volumeDrivers)), queueTime)
 	a.PlacementError = placementError
 	return a
 }

@@ -42,7 +42,7 @@ func sortZonesByInstances(zones []lrpByZone) []lrpByZone {
 	return sorter.zones
 }
 
-func filterZonesByRootFS(zones []lrpByZone, lrpAuction *auctiontypes.LRPAuction) []lrpByZone {
+func filterZones(zones []lrpByZone, lrpAuction *auctiontypes.LRPAuction) []lrpByZone {
 	filteredZones := []lrpByZone{}
 
 	for _, lrpZone := range zones {

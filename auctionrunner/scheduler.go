@@ -209,7 +209,7 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 
 	zones := accumulateZonesByInstances(s.zones, lrpAuction.ProcessGuid)
 
-	filteredZones := filterZonesByRootFS(zones, lrpAuction)
+	filteredZones := filterZones(zones, lrpAuction)
 
 	if len(filteredZones) == 0 {
 		return nil, auctiontypes.ErrorCellMismatch

@@ -1,5 +1,7 @@
 # Auction
 
+**Note**: This repository should be imported as `code.cloudfoundry.org/auction`.
+
 ####Learn more about Diego and its components at [diego-design-notes](https://github.com/cloudfoundry/diego-design-notes)
 
 The `auction` package in this repository encodes the details behind Diego's scheduling mechanism.  There are two components in Diego that participate in auctions:

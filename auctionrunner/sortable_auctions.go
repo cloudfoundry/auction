@@ -1,6 +1,6 @@
 package auctionrunner
 
-import "github.com/cloudfoundry-incubator/auction/auctiontypes"
+import "code.cloudfoundry.org/auction/auctiontypes"
 
 type SortableLRPAuctions []auctiontypes.LRPAuction
 

@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudfoundry-incubator/auction/simulation/util"
-	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
+	"code.cloudfoundry.org/auction/simulation/util"
+	"code.cloudfoundry.org/auction/simulation/visualization"
 	"github.com/cloudfoundry-incubator/auctioneer"
 	"github.com/cloudfoundry-incubator/bbs/models"
 	"github.com/cloudfoundry-incubator/rep"

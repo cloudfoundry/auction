@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cloudfoundry-incubator/auction/auctionrunner"
-	"github.com/cloudfoundry-incubator/auction/auctiontypes/fakes"
+	"code.cloudfoundry.org/auction/auctionrunner"
+	"code.cloudfoundry.org/auction/auctiontypes/fakes"
 	"github.com/cloudfoundry-incubator/rep"
 	"github.com/cloudfoundry-incubator/rep/repfakes"
 	"github.com/cloudfoundry/gunk/workpool"

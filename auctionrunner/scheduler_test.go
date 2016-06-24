@@ -7,8 +7,8 @@ import (
 	"github.com/pivotal-golang/clock/fakeclock"
 	"github.com/pivotal-golang/lager"
 
-	"github.com/cloudfoundry-incubator/auction/auctionrunner"
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"code.cloudfoundry.org/auction/auctionrunner"
+	"code.cloudfoundry.org/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/rep"
 	"github.com/cloudfoundry-incubator/rep/repfakes"
 

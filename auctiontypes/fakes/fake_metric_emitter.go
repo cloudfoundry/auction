@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"code.cloudfoundry.org/auction/auctiontypes"
 )
 
 type FakeAuctionMetricEmitterDelegate struct {
@@ -20,9 +20,9 @@ type FakeAuctionMetricEmitterDelegate struct {
 	FailedCellStateRequestStub        func()
 	failedCellStateRequestMutex       sync.RWMutex
 	failedCellStateRequestArgsForCall []struct{}
-	AuctionCompletedStub        func(auctiontypes.AuctionResults)
-	auctionCompletedMutex       sync.RWMutex
-	auctionCompletedArgsForCall []struct {
+	AuctionCompletedStub              func(auctiontypes.AuctionResults)
+	auctionCompletedMutex             sync.RWMutex
+	auctionCompletedArgsForCall       []struct {
 		arg1 auctiontypes.AuctionResults
 	}
 }

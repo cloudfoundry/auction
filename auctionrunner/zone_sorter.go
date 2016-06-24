@@ -3,7 +3,7 @@ package auctionrunner
 import (
 	"sort"
 
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"code.cloudfoundry.org/auction/auctiontypes"
 )
 
 type lrpByZone struct {

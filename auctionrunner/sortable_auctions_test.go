@@ -4,8 +4,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/cloudfoundry-incubator/auction/auctionrunner"
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"code.cloudfoundry.org/auction/auctionrunner"
+	"code.cloudfoundry.org/auction/auctiontypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

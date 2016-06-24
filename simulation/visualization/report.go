@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"code.cloudfoundry.org/auction/auctiontypes"
 	"github.com/GaryBoone/GoStats/stats"
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/rep"
 	"github.com/cloudfoundry/gunk/workpool"
 )

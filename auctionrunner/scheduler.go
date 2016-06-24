@@ -4,7 +4,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"code.cloudfoundry.org/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/rep"
 
 	"github.com/cloudfoundry/gunk/workpool"

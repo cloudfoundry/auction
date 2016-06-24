@@ -16,11 +16,11 @@ import (
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/tedsuo/ifrit"
 
-	"github.com/cloudfoundry-incubator/auction/auctionrunner"
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auction/simulation/simulationrep"
-	"github.com/cloudfoundry-incubator/auction/simulation/util"
-	"github.com/cloudfoundry-incubator/auction/simulation/visualization"
+	"code.cloudfoundry.org/auction/auctionrunner"
+	"code.cloudfoundry.org/auction/auctiontypes"
+	"code.cloudfoundry.org/auction/simulation/simulationrep"
+	"code.cloudfoundry.org/auction/simulation/util"
+	"code.cloudfoundry.org/auction/simulation/visualization"
 	"github.com/cloudfoundry-incubator/rep"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -165,7 +165,7 @@ func buildInProcessReps() map[string]rep.SimClient {
 }
 
 func launchExternalHTTPReps() map[string]rep.SimClient {
-	repNodeBinary, err := gexec.Build("github.com/cloudfoundry-incubator/auction/simulation/repnode")
+	repNodeBinary, err := gexec.Build("code.cloudfoundry.org/auction/simulation/repnode")
 	Expect(err).NotTo(HaveOccurred())
 
 	cells := map[string]rep.SimClient{}

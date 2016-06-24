@@ -7,7 +7,7 @@ import (
 	"github.com/pivotal-golang/clock"
 	"github.com/pivotal-golang/lager"
 
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"code.cloudfoundry.org/auction/auctiontypes"
 	"github.com/cloudfoundry-incubator/auctioneer"
 	"github.com/cloudfoundry/gunk/workpool"
 )

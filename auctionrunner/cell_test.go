@@ -3,7 +3,7 @@ package auctionrunner_test
 import (
 	"errors"
 
-	"github.com/cloudfoundry-incubator/auction/auctionrunner"
+	"code.cloudfoundry.org/auction/auctionrunner"
 	"github.com/cloudfoundry-incubator/bbs/models"
 	"github.com/cloudfoundry-incubator/rep"
 	"github.com/cloudfoundry-incubator/rep/repfakes"

@@ -3,7 +3,7 @@ package simulation_test
 import (
 	"time"
 
-	"github.com/cloudfoundry-incubator/auction/auctiontypes"
+	"code.cloudfoundry.org/auction/auctiontypes"
 )
 
 type auctionMetricEmitterDelegate struct{}

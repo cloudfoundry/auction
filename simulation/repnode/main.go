@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cloudfoundry-incubator/auction/simulation/simulationrep"
+	"code.cloudfoundry.org/auction/simulation/simulationrep"
 	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 	executorfakes "github.com/cloudfoundry-incubator/executor/fakes"
 	"github.com/cloudfoundry-incubator/rep"

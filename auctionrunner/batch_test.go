@@ -5,7 +5,7 @@ import (
 
 	"code.cloudfoundry.org/auction/auctionrunner"
 	"code.cloudfoundry.org/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auctioneer"
+	"code.cloudfoundry.org/auctioneer"
 	"github.com/pivotal-golang/clock/fakeclock"
 
 	. "github.com/onsi/ginkgo"

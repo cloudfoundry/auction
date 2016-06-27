@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cloudfoundry-incubator/auctioneer"
+	"code.cloudfoundry.org/auctioneer"
 	"github.com/cloudfoundry-incubator/rep"
 	"github.com/tedsuo/ifrit"
 )

@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
+	"code.cloudfoundry.org/auctioneer"
 	"code.cloudfoundry.org/bbs/models"
-	"github.com/cloudfoundry-incubator/auctioneer"
 	"github.com/cloudfoundry-incubator/rep"
 	. "github.com/onsi/gomega"
 )

@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/auctioneer"
+	"code.cloudfoundry.org/auctioneer"
 )
 
 type FakeAuctionRunner struct {

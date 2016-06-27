@@ -4,8 +4,8 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
+	"code.cloudfoundry.org/bbs/models"
 	"github.com/cloudfoundry-incubator/auctioneer"
-	"github.com/cloudfoundry-incubator/bbs/models"
 	"github.com/cloudfoundry-incubator/rep"
 
 	"github.com/pivotal-golang/clock"

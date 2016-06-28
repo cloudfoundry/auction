@@ -6,8 +6,8 @@
 
 The `auction` package in this repository encodes the details behind Diego's scheduling mechanism.  There are two components in Diego that participate in auctions:
 
-- The [Auctioneer](https://github.com/cloudfoundry-incubator/auctioneer) is responsible for holding auctions whenever a Task or LongRunningProcess needs to be scheduled.
-- The [Rep](https://github.com/cloudfoundry-incubator/rep) represents a Diego Cell in the auction by making bids and, if picked as the winner, running the Task or LongRunningProcess.
+- The [Auctioneer](https://github.com/cloudfoundry/auctioneer) is responsible for holding auctions whenever a Task or LongRunningProcess needs to be scheduled.
+- The [Rep](https://github.com/cloudfoundry/rep) represents a Diego Cell in the auction by making bids and, if picked as the winner, running the Task or LongRunningProcess.
 
 The Auctioneers run on the Diego "Brain" nodes, and there is only ever one active Auctioneer at a time (determined by acquiring a lock in [Consul](https://github.com/cloudfoundry-incubator/consul-release)). There is one Rep running on every Diego Cell.
 
@@ -23,7 +23,7 @@ The `simulation` package contains a Ginkgo test suite that describes a number of
 
 ### In-Process Communication
 
-By default, the simulation runs with an "in-process" communication model.  In this mode, the simulation spins up a number of in-process [`SimulationRep`](https://github.com/cloudfoundry-incubator/auction/blob/master/simulation/simulationrep/simulation_rep.go)s.  They implement the [Rep client interface](https://github.com/cloudfoundry-incubator/rep/blob/master/client.go#L41-L54).
+By default, the simulation runs with an "in-process" communication model.  In this mode, the simulation spins up a number of in-process [`SimulationRep`](https://github.com/cloudfoundry/auction/blob/master/simulation/simulationrep/simulation_rep.go)s.  They implement the [Rep client interface](https://github.com/cloudfoundry-incubator/rep/blob/master/client.go#L41-L54).
 
 This in-process communication mode allows us to isolate the algorithmic details from the communication details.  It allows us to iterate on the scoring math and scheduling details quickly and efficiently.
 

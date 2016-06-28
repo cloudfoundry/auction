@@ -6,11 +6,11 @@ import (
 	"log"
 
 	"code.cloudfoundry.org/auction/simulation/simulationrep"
+	"code.cloudfoundry.org/cflager"
 	executorfakes "code.cloudfoundry.org/executor/fakes"
 	"code.cloudfoundry.org/rep"
 	"code.cloudfoundry.org/rep/evacuation/evacuation_context/fake_evacuation_context"
 	rephandlers "code.cloudfoundry.org/rep/handlers"
-	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"
@@ -26,7 +26,7 @@ var stack = flag.String("stack", "", "stack")
 var zone = flag.String("zone", "Z0", "availability zone")
 
 func main() {
-	cf_lager.AddFlags(flag.CommandLine)
+	cflager.AddFlags(flag.CommandLine)
 	flag.Parse()
 
 	if *repGuid == "" {
@@ -43,7 +43,7 @@ func main() {
 		Containers: *containers,
 	}, []string{})
 
-	logger, _ := cf_lager.New("repnode-http")
+	logger, _ := cflager.New("repnode-http")
 
 	fakeExecutorClient := new(executorfakes.FakeClient)
 	fakeEvacuatable := new(fake_evacuation_context.FakeEvacuatable)

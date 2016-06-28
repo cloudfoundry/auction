@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/rep"
+	"code.cloudfoundry.org/rep"
 )
 
 type auctionRunnerDelegate struct {

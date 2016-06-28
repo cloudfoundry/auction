@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/rep"
+	"code.cloudfoundry.org/rep"
 
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/pivotal-golang/clock"

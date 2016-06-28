@@ -21,7 +21,7 @@ import (
 	"code.cloudfoundry.org/auction/simulation/simulationrep"
 	"code.cloudfoundry.org/auction/simulation/util"
 	"code.cloudfoundry.org/auction/simulation/visualization"
-	"github.com/cloudfoundry-incubator/rep"
+	"code.cloudfoundry.org/rep"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"

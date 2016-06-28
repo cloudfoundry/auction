@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/auctioneer"
-	"github.com/cloudfoundry-incubator/rep"
+	"code.cloudfoundry.org/rep"
 	"github.com/tedsuo/ifrit"
 )
 

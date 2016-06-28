@@ -9,8 +9,8 @@ import (
 
 	"code.cloudfoundry.org/auction/auctionrunner"
 	"code.cloudfoundry.org/auction/auctiontypes"
-	"github.com/cloudfoundry-incubator/rep"
-	"github.com/cloudfoundry-incubator/rep/repfakes"
+	"code.cloudfoundry.org/rep"
+	"code.cloudfoundry.org/rep/repfakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

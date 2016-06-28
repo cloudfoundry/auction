@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
+	"code.cloudfoundry.org/rep"
 	"github.com/cloudfoundry-incubator/cf_http"
-	"github.com/cloudfoundry-incubator/rep"
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/pivotal-golang/lager"
 )

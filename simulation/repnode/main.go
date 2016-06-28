@@ -7,10 +7,10 @@ import (
 
 	"code.cloudfoundry.org/auction/simulation/simulationrep"
 	executorfakes "code.cloudfoundry.org/executor/fakes"
+	"code.cloudfoundry.org/rep"
+	"code.cloudfoundry.org/rep/evacuation/evacuation_context/fake_evacuation_context"
+	rephandlers "code.cloudfoundry.org/rep/handlers"
 	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
-	"github.com/cloudfoundry-incubator/rep"
-	"github.com/cloudfoundry-incubator/rep/evacuation/evacuation_context/fake_evacuation_context"
-	rephandlers "github.com/cloudfoundry-incubator/rep/handlers"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/http_server"
 	"github.com/tedsuo/ifrit/sigmon"

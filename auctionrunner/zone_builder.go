@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
+	"code.cloudfoundry.org/cfhttp"
 	"code.cloudfoundry.org/rep"
-	"github.com/cloudfoundry-incubator/cf_http"
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/pivotal-golang/lager"
 )
@@ -25,7 +25,7 @@ func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 		}
 		for _, client := range clients {
 			oldTimeout = client.StateClientTimeout()
-			stateClient := cf_http.NewCustomTimeoutClient(client.StateClientTimeout() * 2)
+			stateClient := cfhttp.NewCustomTimeoutClient(client.StateClientTimeout() * 2)
 			client.SetStateClient(stateClient)
 		}
 		logger.Info("failed-to-communicate-to-cells-retry", lager.Data{"state-client-timeout-seconds": oldTimeout / time.Second})

@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/pivotal-golang/clock"
+	"code.cloudfoundry.org/clock"
 
 	"github.com/cloudfoundry/gunk/workpool"
 	"github.com/tedsuo/ifrit"

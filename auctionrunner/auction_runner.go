@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/pivotal-golang/clock"
+	"code.cloudfoundry.org/clock"
 	"github.com/pivotal-golang/lager"
 
 	"code.cloudfoundry.org/auction/auctiontypes"

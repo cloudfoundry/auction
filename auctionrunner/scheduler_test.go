@@ -3,8 +3,8 @@ package auctionrunner_test
 import (
 	"time"
 
+	"code.cloudfoundry.org/clock/fakeclock"
 	"github.com/cloudfoundry/gunk/workpool"
-	"github.com/pivotal-golang/clock/fakeclock"
 	"github.com/pivotal-golang/lager"
 
 	"code.cloudfoundry.org/auction/auctionrunner"

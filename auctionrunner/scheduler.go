@@ -8,8 +8,8 @@ import (
 	"code.cloudfoundry.org/rep"
 
 	"code.cloudfoundry.org/clock"
+	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry/gunk/workpool"
-	"github.com/pivotal-golang/lager"
 )
 
 type Zone []*Cell

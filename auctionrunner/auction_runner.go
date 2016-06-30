@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/clock"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
 	"code.cloudfoundry.org/auctioneer"

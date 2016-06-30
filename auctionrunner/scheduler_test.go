@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/clock/fakeclock"
+	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry/gunk/workpool"
-	"github.com/pivotal-golang/lager"
 
 	"code.cloudfoundry.org/auction/auctionrunner"
 	"code.cloudfoundry.org/auction/auctiontypes"

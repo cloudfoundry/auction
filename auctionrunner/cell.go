@@ -1,8 +1,8 @@
 package auctionrunner
 
 import (
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/rep"
-	"github.com/pivotal-golang/lager"
 )
 
 const LocalityOffset = 1000

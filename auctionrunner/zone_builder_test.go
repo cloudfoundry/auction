@@ -7,11 +7,11 @@ import (
 
 	"code.cloudfoundry.org/auction/auctionrunner"
 	"code.cloudfoundry.org/auction/auctiontypes/fakes"
+	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/rep"
 	"code.cloudfoundry.org/rep/repfakes"
 	"github.com/cloudfoundry/gunk/workpool"
-	"github.com/pivotal-golang/lager"
-	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

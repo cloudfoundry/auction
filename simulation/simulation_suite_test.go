@@ -21,12 +21,12 @@ import (
 	"code.cloudfoundry.org/auction/simulation/simulationrep"
 	"code.cloudfoundry.org/auction/simulation/util"
 	"code.cloudfoundry.org/auction/simulation/visualization"
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/rep"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
-	"github.com/pivotal-golang/lager"
 
 	"testing"
 	"time"

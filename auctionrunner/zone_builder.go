@@ -6,9 +6,9 @@ import (
 
 	"code.cloudfoundry.org/auction/auctiontypes"
 	"code.cloudfoundry.org/cfhttp"
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/rep"
 	"github.com/cloudfoundry/gunk/workpool"
-	"github.com/pivotal-golang/lager"
 )
 
 func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client, metricEmitter auctiontypes.AuctionMetricEmitterDelegate) map[string]Zone {

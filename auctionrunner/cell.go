@@ -90,7 +90,7 @@ func (c *Cell) Commit() rep.Work {
 		return rep.Work{}
 	}
 
-	failedWork, err := c.client.Perform(c.workToCommit)
+	failedWork, err := c.client.Perform(c.logger, c.workToCommit)
 	if err != nil {
 		c.logger.Error("failed-to-commit", err, lager.Data{"cell-guid": c.Guid})
 		//an error may indicate partial failure

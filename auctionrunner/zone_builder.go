@@ -43,7 +43,7 @@ func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 		guid, client := guid, client
 		workPool.Submit(func() {
 			defer wg.Done()
-			state, err := client.State()
+			state, err := client.State(logger)
 			if err != nil {
 				metricEmitter.FailedCellStateRequest()
 				logger.Error("failed-to-get-state", err, lager.Data{"cell-guid": guid})

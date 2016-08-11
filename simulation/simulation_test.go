@@ -100,7 +100,7 @@ var _ = Describe("Auction", func() {
 			guid := cellGuid(index)
 			instances := instances
 			workPool.Submit(func() {
-				cells[guid].Perform(workForInstances(instances))
+				cells[guid].Perform(logger, workForInstances(instances))
 				wg.Done()
 			})
 		}

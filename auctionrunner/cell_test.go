@@ -845,10 +845,8 @@ var _ = Describe("Cell", func() {
 			It("asks the client to perform", func() {
 				cell.Commit()
 				Expect(client.PerformCallCount()).To(Equal(1))
-				Expect(client.PerformArgsForCall(0)).To(Equal(rep.Work{
-					LRPs: []rep.LRP{lrp},
-				}))
-
+				_, work := client.PerformArgsForCall(0)
+				Expect(work).To(Equal(rep.Work{LRPs: []rep.LRP{lrp}}))
 			})
 
 			Context("when the client returns some failed work", func() {

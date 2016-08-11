@@ -139,9 +139,8 @@ var _ = Describe("Scheduler", func() {
 						Expect(clients["B-cell"].PerformCallCount()).To(Equal(0))
 						Expect(clients["C-cell"].PerformCallCount()).To(Equal(1))
 
-						startsToC := clients["C-cell"].PerformArgsForCall(0).LRPs
-
-						Expect(startsToC).To(ConsistOf(startAuction.LRP))
+						_, work := clients["C-cell"].PerformArgsForCall(0)
+						Expect(work.LRPs).To(ConsistOf(startAuction.LRP))
 					})
 
 					It("marks the start auction as succeeded", func() {
@@ -209,10 +208,11 @@ var _ = Describe("Scheduler", func() {
 					Expect(len(results.FailedLRPs)).To(Equal(0))
 					Expect(len(results.SuccessfulLRPs)).To(Equal(1))
 					Expect(results.SuccessfulLRPs[0].LRP).To(Equal(startAuction.LRP))
-					Expect(clients["B-cell"].PerformCallCount()).To(Equal(1))
-					Expect(len(clients["B-cell"].PerformArgsForCall(0).LRPs)).To(Equal(1))
-					Expect(clients["B-cell"].PerformArgsForCall(0).LRPs[0]).To(Equal(startAuction.LRP))
 
+					Expect(clients["B-cell"].PerformCallCount()).To(Equal(1))
+					_, work := clients["B-cell"].PerformArgsForCall(0)
+					Expect(len(work.LRPs)).To(Equal(1))
+					Expect(work.LRPs[0]).To(Equal(startAuction.LRP))
 				})
 			})
 		})
@@ -234,9 +234,8 @@ var _ = Describe("Scheduler", func() {
 					Expect(clients["A-cell"].PerformCallCount()).To(Equal(1))
 					Expect(clients["B-cell"].PerformCallCount()).To(Equal(0))
 
-					startsToA := clients["A-cell"].PerformArgsForCall(0).LRPs
-
-					Expect(startsToA).To(ConsistOf(startAuction.LRP))
+					_, startsToA := clients["A-cell"].PerformArgsForCall(0)
+					Expect(startsToA.LRPs).To(ConsistOf(startAuction.LRP))
 				})
 
 				It("marks the start auction as succeeded", func() {
@@ -264,9 +263,8 @@ var _ = Describe("Scheduler", func() {
 					Expect(clients["A-cell"].PerformCallCount()).To(Equal(0))
 					Expect(clients["B-cell"].PerformCallCount()).To(Equal(1))
 
-					startsToB := clients["B-cell"].PerformArgsForCall(0).LRPs
-
-					Expect(startsToB).To(ConsistOf(startAuction.LRP))
+					_, startsToB := clients["B-cell"].PerformArgsForCall(0)
+					Expect(startsToB.LRPs).To(ConsistOf(startAuction.LRP))
 				})
 
 				It("marks the start auction as succeeded", func() {
@@ -369,9 +367,8 @@ var _ = Describe("Scheduler", func() {
 						Expect(clients["B-cell"].PerformCallCount()).To(Equal(0))
 						Expect(clients["C-cell"].PerformCallCount()).To(Equal(1))
 
-						startsToC := clients["C-cell"].PerformArgsForCall(0).Tasks
-
-						Expect(startsToC).To(ConsistOf(taskAuction.Task))
+						_, startsToC := clients["C-cell"].PerformArgsForCall(0)
+						Expect(startsToC.Tasks).To(ConsistOf(taskAuction.Task))
 					})
 
 					It("marks the start auction as succeeded", func() {
@@ -414,7 +411,7 @@ var _ = Describe("Scheduler", func() {
 					Expect(results.SuccessfulTasks[0].Task).To(Equal(taskAuction.Task))
 					Expect(clients["A-cell"].PerformCallCount()).To(Equal(1))
 
-					work := clients["A-cell"].PerformArgsForCall(0)
+					_, work := clients["A-cell"].PerformArgsForCall(0)
 					Expect(len(work.Tasks)).To(Equal(1))
 					Expect(work.Tasks[0]).To(Equal(taskAuction.Task))
 				})
@@ -431,12 +428,8 @@ var _ = Describe("Scheduler", func() {
 				Expect(clients["A-cell"].PerformCallCount()).To(Equal(0))
 				Expect(clients["B-cell"].PerformCallCount()).To(Equal(1))
 
-				tasksToB := clients["B-cell"].PerformArgsForCall(0).Tasks
-
-				Expect(tasksToB).To(ConsistOf(
-					taskAuction.Task,
-				))
-
+				_, tasksToB := clients["B-cell"].PerformArgsForCall(0)
+				Expect(tasksToB.Tasks).To(ConsistOf(taskAuction.Task))
 			})
 
 			It("marks the task auction as succeeded", func() {
@@ -445,7 +438,6 @@ var _ = Describe("Scheduler", func() {
 				Expect(successfulTask.Winner).To(Equal("B-cell"))
 				Expect(successfulTask.Attempts).To(Equal(1))
 				Expect(successfulTask.WaitDuration).To(Equal(time.Minute))
-
 				Expect(results.FailedTasks).To(BeEmpty())
 			})
 		})
@@ -570,11 +562,14 @@ var _ = Describe("Scheduler", func() {
 			Expect(clients["A-cell"].PerformCallCount()).To(Equal(1))
 			Expect(clients["B-cell"].PerformCallCount()).To(Equal(1))
 
-			Expect(clients["A-cell"].PerformArgsForCall(0).LRPs).To(ConsistOf(startPG3.LRP))
-			Expect(clients["B-cell"].PerformArgsForCall(0).LRPs).To(ConsistOf(startPG2.LRP))
+			_, aWork := clients["A-cell"].PerformArgsForCall(0)
+			_, bWork := clients["B-cell"].PerformArgsForCall(0)
 
-			Expect(clients["A-cell"].PerformArgsForCall(0).Tasks).To(ConsistOf(taskAuction1.Task))
-			Expect(clients["B-cell"].PerformArgsForCall(0).Tasks).To(ConsistOf(taskAuction2.Task))
+			Expect(aWork.LRPs).To(ConsistOf(startPG3.LRP))
+			Expect(bWork.LRPs).To(ConsistOf(startPG2.LRP))
+
+			Expect(aWork.Tasks).To(ConsistOf(taskAuction1.Task))
+			Expect(bWork.Tasks).To(ConsistOf(taskAuction2.Task))
 
 			setLRPWinner("A-cell", &startPG3)
 			setLRPWinner("B-cell", &startPG2)

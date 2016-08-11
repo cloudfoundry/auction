@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/rep"
 	"github.com/GaryBoone/GoStats/stats"
 	"github.com/cloudfoundry/gunk/workpool"
@@ -120,6 +121,7 @@ func (r *Report) WaitTimeStats() Stat {
 }
 
 func fetchStates(cells map[string]rep.Client) map[string]rep.CellState {
+	logger := lager.NewLogger("fetch-states")
 	lock := &sync.Mutex{}
 	states := map[string]rep.CellState{}
 	works := []func(){}
@@ -128,7 +130,7 @@ func fetchStates(cells map[string]rep.Client) map[string]rep.CellState {
 		repGuid := repGuid
 		cell := cell
 		works = append(works, func() {
-			state, _ := cell.State()
+			state, _ := cell.State(logger)
 			lock.Lock()
 			states[repGuid] = state
 			lock.Unlock()

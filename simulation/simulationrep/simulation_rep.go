@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/bbs/models"
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/rep"
 )
 
@@ -35,7 +36,7 @@ func New(stack string, zone string, totalResources rep.Resources, volumeDrivers 
 	}
 }
 
-func (r *SimulationRep) State() (rep.CellState, error) {
+func (r *SimulationRep) State(_ lager.Logger) (rep.CellState, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -67,7 +68,7 @@ func (r *SimulationRep) State() (rep.CellState, error) {
 	}, nil
 }
 
-func (r *SimulationRep) Perform(work rep.Work) (rep.Work, error) {
+func (r *SimulationRep) Perform(_ lager.Logger, work rep.Work) (rep.Work, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 

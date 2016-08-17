@@ -77,7 +77,7 @@ var _ = Describe("Scheduler", func() {
 		})
 	})
 
-	Describe("handling start auctions", func() {
+	Describe("handling LRP auctions", func() {
 		var startAuction auctiontypes.LRPAuction
 
 		BeforeEach(func() {
@@ -296,8 +296,14 @@ var _ = Describe("Scheduler", func() {
 		})
 
 		Context("when there is no room", func() {
+			var requestedDisk int32
+
 			BeforeEach(func() {
-				startAuction = BuildLRPAuctionWithPlacementError("pg-4", "domain", 0, linuxRootFSURL, 1000, 1000, clock.Now(), rep.ErrorInsufficientResources.Error(), []string{})
+				requestedDisk = 50
+			})
+
+			JustBeforeEach(func() {
+				startAuction = BuildLRPAuction("pg-4", "domain", 0, linuxRootFSURL, 1000, requestedDisk, clock.Now(), []string{})
 				clock.Increment(time.Minute)
 				s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 				results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
@@ -309,9 +315,47 @@ var _ = Describe("Scheduler", func() {
 			})
 
 			It("should mark the start auction as failed", func() {
-				startAuction.Attempts = 1
 				Expect(results.SuccessfulLRPs).To(BeEmpty())
-				Expect(results.FailedLRPs).To(ConsistOf(startAuction))
+				Expect(results.FailedLRPs).To(HaveLen(1))
+				failedLRP := results.FailedLRPs[0]
+				Expect(failedLRP.Attempts).To(Equal(1))
+				Expect(failedLRP.PlacementError).To(Equal("insufficient resources: memory"))
+			})
+
+			Context("when both cells have not enough memory and disk", func() {
+				BeforeEach(func() {
+					requestedDisk = 1000
+				})
+
+				It("should mark the start auction as failed", func() {
+					Expect(results.SuccessfulLRPs).To(BeEmpty())
+					Expect(results.FailedLRPs).To(HaveLen(1))
+					failedLRP := results.FailedLRPs[0]
+					Expect(failedLRP.Attempts).To(Equal(1))
+					Expect(failedLRP.PlacementError).To(Equal("insufficient resources: disk, memory"))
+				})
+			})
+
+			Context("when some cells have not enough memory and some have not enough disk", func() {
+				BeforeEach(func() {
+					clients["C-cell"] = &repfakes.FakeSimClient{}
+					zones["C-zone"] = auctionrunner.Zone{
+						auctionrunner.NewCell(
+							logger,
+							"C-cell",
+							clients["C-cell"],
+							BuildCellState("C-zone", 1200, 5, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{}, []string{}),
+						),
+					}
+				})
+
+				It("should mark the start auction as failed", func() {
+					Expect(results.SuccessfulLRPs).To(BeEmpty())
+					Expect(results.FailedLRPs).To(HaveLen(1))
+					failedLRP := results.FailedLRPs[0]
+					Expect(failedLRP.Attempts).To(Equal(1))
+					Expect(failedLRP.PlacementError).To(Equal("insufficient resources"))
+				})
 			})
 		})
 	})
@@ -459,8 +503,14 @@ var _ = Describe("Scheduler", func() {
 		})
 
 		Context("when there is no room", func() {
+			var requestedDisk int32
+
 			BeforeEach(func() {
-				taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 1000, 1000, []string{}), clock.Now())
+				requestedDisk = 50
+			})
+
+			JustBeforeEach(func() {
+				taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 1000, requestedDisk, []string{}), clock.Now())
 				clock.Increment(time.Minute)
 				s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
@@ -477,7 +527,43 @@ var _ = Describe("Scheduler", func() {
 				Expect(results.FailedTasks).To(HaveLen(1))
 				failedTask := results.FailedTasks[0]
 				Expect(failedTask.Attempts).To(Equal(1))
-				Expect(failedTask.PlacementError).To(Equal(rep.ErrorInsufficientResources.Error()))
+				Expect(failedTask.PlacementError).To(Equal("insufficient resources: memory"))
+			})
+
+			Context("when both cells have not enough memory and disk", func() {
+				BeforeEach(func() {
+					requestedDisk = 1000
+				})
+
+				It("should mark the start auction as failed", func() {
+					Expect(results.SuccessfulTasks).To(BeEmpty())
+					Expect(results.FailedTasks).To(HaveLen(1))
+					failedTask := results.FailedTasks[0]
+					Expect(failedTask.Attempts).To(Equal(1))
+					Expect(failedTask.PlacementError).To(Equal("insufficient resources: disk, memory"))
+				})
+			})
+
+			Context("when some cells have not enough memory and some have not enough disk", func() {
+				BeforeEach(func() {
+					clients["C-cell"] = &repfakes.FakeSimClient{}
+					zones["C-zone"] = auctionrunner.Zone{
+						auctionrunner.NewCell(
+							logger,
+							"C-cell",
+							clients["C-cell"],
+							BuildCellState("C-zone", 1200, 5, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{}, []string{}),
+						),
+					}
+				})
+
+				It("should mark the start auction as failed", func() {
+					Expect(results.SuccessfulTasks).To(BeEmpty())
+					Expect(results.FailedTasks).To(HaveLen(1))
+					failedTask := results.FailedTasks[0]
+					Expect(failedTask.Attempts).To(Equal(1))
+					Expect(failedTask.PlacementError).To(Equal("insufficient resources"))
+				})
 			})
 		})
 

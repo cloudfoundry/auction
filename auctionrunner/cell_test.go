@@ -171,7 +171,7 @@ var _ = Describe("Cell", func() {
 					massiveMemoryInstance := BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 10000, 10)
 					score, err := cell.ScoreForLRP(massiveMemoryInstance, 0.0)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
+					Expect(err).To(MatchError("insufficient resources: memory"))
 				})
 			})
 
@@ -180,7 +180,7 @@ var _ = Describe("Cell", func() {
 					massiveDiskInstance := BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 10, 10000)
 					score, err := cell.ScoreForLRP(massiveDiskInstance, 0.0)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
+					Expect(err).To(MatchError("insufficient resources: disk"))
 				})
 			})
 
@@ -191,7 +191,7 @@ var _ = Describe("Cell", func() {
 					zeroCell := auctionrunner.NewCell(logger, "zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForLRP(instance, 0.0)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
+					Expect(err).To(MatchError("insufficient resources: containers"))
 				})
 			})
 		})
@@ -417,7 +417,7 @@ var _ = Describe("Cell", func() {
 					massiveMemoryTask := BuildTask("pg-new", "domain", linuxRootFSURL, 10000, 10, []string{})
 					score, err := cell.ScoreForTask(massiveMemoryTask, 0.0)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
+					Expect(err).To(MatchError("insufficient resources: memory"))
 				})
 			})
 
@@ -426,7 +426,7 @@ var _ = Describe("Cell", func() {
 					massiveDiskTask := BuildTask("pg-new", "domain", linuxRootFSURL, 10, 10000, []string{})
 					score, err := cell.ScoreForTask(massiveDiskTask, 0.0)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
+					Expect(err).To(MatchError("insufficient resources: disk"))
 				})
 			})
 
@@ -437,7 +437,7 @@ var _ = Describe("Cell", func() {
 					zeroCell := auctionrunner.NewCell(logger, "zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForTask(task, 0.0)
 					Expect(score).To(BeZero())
-					Expect(err).To(MatchError(rep.ErrorInsufficientResources))
+					Expect(err).To(MatchError("insufficient resources: containers"))
 				})
 			})
 		})
@@ -684,7 +684,7 @@ var _ = Describe("Cell", func() {
 			It("should error", func() {
 				instance := BuildLRP("pg-test", "domain", 0, linuxRootFSURL, 10000, 10)
 				err := cell.ReserveLRP(instance)
-				Expect(err).To(MatchError(rep.ErrorInsufficientResources))
+				Expect(err).To(MatchError("insufficient resources: memory"))
 			})
 		})
 	})
@@ -820,7 +820,7 @@ var _ = Describe("Cell", func() {
 			It("should error", func() {
 				task := BuildTask("tg-test", "domain", linuxRootFSURL, 10000, 10, []string{})
 				err := cell.ReserveTask(task)
-				Expect(err).To(MatchError(rep.ErrorInsufficientResources))
+				Expect(err).To(MatchError("insufficient resources: memory"))
 			})
 		})
 	})

@@ -216,15 +216,11 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 	}
 
 	sortedZones := sortZonesByInstances(filteredZones)
-	problems := map[string]struct{}{"disk": struct{}{}, "memory": struct{}{}, "containers": struct{}{}}
 
-	s.logger.Info("schedule-lrp-auction", lager.Data{"problems": problems})
 	for zoneIndex, lrpByZone := range sortedZones {
 		for _, cell := range lrpByZone.zone {
 			score, err := cell.ScoreForLRP(&lrpAuction.LRP, s.startingContainerWeight)
 			if err != nil {
-				removeNonApplicableProblems(problems, err)
-				s.logger.Info("schedule-lrp-auction-after-error", lager.Data{"problems": problems, "error": err})
 				continue
 			}
 
@@ -247,7 +243,7 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 	}
 
 	if winnerCell == nil {
-		return nil, &rep.InsufficientResourcesError{Problems: problems}
+		return nil, rep.ErrorInsufficientResources
 	}
 
 	err := winnerCell.ReserveLRP(&lrpAuction.LRP)
@@ -278,13 +274,10 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction, s
 		return nil, auctiontypes.ErrorCellMismatch
 	}
 
-	problems := map[string]struct{}{"disk": struct{}{}, "memory": struct{}{}, "containers": struct{}{}}
-
 	for _, zone := range filteredZones {
 		for _, cell := range zone {
 			score, err := cell.ScoreForTask(&taskAuction.Task, startingContainerWeight)
 			if err != nil {
-				removeNonApplicableProblems(problems, err)
 				continue
 			}
 
@@ -296,7 +289,7 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction, s
 	}
 
 	if winnerCell == nil {
-		return nil, &rep.InsufficientResourcesError{Problems: problems}
+		return nil, rep.ErrorInsufficientResources
 	}
 
 	err := winnerCell.ReserveTask(&taskAuction.Task)
@@ -308,19 +301,4 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction, s
 	winningAuction := taskAuction.Copy()
 	winningAuction.Winner = winnerCell.Guid
 	return &winningAuction, nil
-}
-
-// removeNonApplicableProblems modifies the 'problems' map to remove any problems that didn't show up on err.
-//
-// The list of problems to report should only consist of the problems that exist on every cell
-// For example, if there is not enough memory on one cell and not enough disk on another, we should
-// not call out memory or disk as being a specific problem.
-func removeNonApplicableProblems(problems map[string]struct{}, err error) {
-	if ierr, ok := err.(rep.InsufficientResourcesError); ok {
-		for problem, _ := range problems {
-			if _, ok := ierr.Problems[problem]; !ok {
-				delete(problems, problem)
-			}
-		}
-	}
 }

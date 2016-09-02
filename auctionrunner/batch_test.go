@@ -87,11 +87,11 @@ var _ = Describe("Batch", func() {
 
 			Expect(taskAuctions).To(Equal([]auctiontypes.TaskAuction{
 				BuildTaskAuction(
-					BuildTask("tg-1", "domain", "linux", 10, 10, []string{}),
+					BuildTask("tg-1", "domain", "linux", 10, 10, []string{}, []string{}),
 					clock.Now(),
 				),
 				BuildTaskAuction(
-					BuildTask("tg-2", "domain", "linux", 10, 10, []string{}),
+					BuildTask("tg-2", "domain", "linux", 10, 10, []string{}, []string{}),
 					clock.Now(),
 				),
 			}))

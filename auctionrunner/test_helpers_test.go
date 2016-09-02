@@ -27,7 +27,7 @@ func BuildLRPStartRequest(
 }
 
 func BuildTaskStartRequest(taskGuid, domain, rootFS string, memoryMB, diskMB int32) auctioneer.TaskStartRequest {
-	return auctioneer.NewTaskStartRequest(*BuildTask(taskGuid, domain, rootFS, memoryMB, diskMB, []string{}))
+	return auctioneer.NewTaskStartRequest(*BuildTask(taskGuid, domain, rootFS, memoryMB, diskMB, []string{}, []string{}))
 }
 
 func BuildLRP(
@@ -46,12 +46,12 @@ func BuildLRP(
 	return &lrp
 }
 
-func BuildTask(taskGuid, domain, rootFS string, memoryMB, diskMB int32, volumeDrivers []string) *rep.Task {
+func BuildTask(taskGuid, domain, rootFS string, memoryMB, diskMB int32, volumeDrivers, placementTags []string) *rep.Task {
 	task := rep.NewTask(
 		taskGuid,
 		domain,
 		rep.NewResource(memoryMB, diskMB),
-		rep.NewPlacementConstraint(rootFS, []string{}, volumeDrivers),
+		rep.NewPlacementConstraint(rootFS, placementTags, volumeDrivers),
 	)
 	return &task
 }

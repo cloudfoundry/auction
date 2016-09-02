@@ -46,7 +46,7 @@ func filterZones(zones []lrpByZone, lrpAuction *auctiontypes.LRPAuction) []lrpBy
 	filteredZones := []lrpByZone{}
 
 	for _, lrpZone := range zones {
-		cells := lrpZone.zone.filterCells(lrpAuction.Resource)
+		cells := lrpZone.zone.filterCells(lrpAuction.PlacementConstraint)
 		if len(cells) > 0 {
 			filteredZone := lrpByZone{
 				zone:      Zone(cells),

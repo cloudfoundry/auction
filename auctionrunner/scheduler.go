@@ -14,11 +14,13 @@ import (
 
 type Zone []*Cell
 
-func (z *Zone) filterCells(resource rep.Resource) []*Cell {
+func (z *Zone) filterCells(pc rep.PlacementConstraint) []*Cell {
 	var cells = make([]*Cell, 0, len(*z))
 
 	for _, cell := range *z {
-		if cell.MatchRootFS(resource.RootFs) && cell.MatchVolumeDrivers(resource.VolumeDrivers) {
+		if cell.MatchRootFS(pc.RootFs) &&
+			cell.MatchVolumeDrivers(pc.VolumeDrivers) &&
+			cell.MatchPlacementTags(pc.PlacementTags) {
 			cells = append(cells, cell)
 		}
 	}
@@ -264,7 +266,7 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction, s
 	filteredZones := []Zone{}
 
 	for _, zone := range s.zones {
-		cells := zone.filterCells(taskAuction.Resource)
+		cells := zone.filterCells(taskAuction.PlacementConstraint)
 		if len(cells) > 0 {
 			filteredZones = append(filteredZones, Zone(cells))
 		}

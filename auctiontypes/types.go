@@ -12,6 +12,9 @@ import (
 // Auction Runners
 
 var ErrorCellMismatch = errors.New("found no compatible cell")
+var ErrorVolumeDriverMismatch = errors.New("found no compatible volume drivers")
+var ErrorPlacementTagMismatch = errors.New("found no compatible placement tags")
+
 var ErrorNothingToStop = errors.New("nothing to stop")
 var ErrorCellCommunication = errors.New("unable to communicate to compatible cells")
 

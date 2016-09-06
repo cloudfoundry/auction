@@ -14,18 +14,30 @@ import (
 
 type Zone []*Cell
 
-func (z *Zone) filterCells(pc rep.PlacementConstraint) []*Cell {
+func (z *Zone) filterCells(pc rep.PlacementConstraint) ([]*Cell, error) {
 	var cells = make([]*Cell, 0, len(*z))
+	err := auctiontypes.ErrorCellMismatch
 
 	for _, cell := range *z {
-		if cell.MatchRootFS(pc.RootFs) &&
-			cell.MatchVolumeDrivers(pc.VolumeDrivers) &&
-			cell.MatchPlacementTags(pc.PlacementTags) {
-			cells = append(cells, cell)
+		if cell.MatchRootFS(pc.RootFs) {
+			if err == auctiontypes.ErrorCellMismatch {
+				err = auctiontypes.ErrorVolumeDriverMismatch
+			}
+
+			if cell.MatchVolumeDrivers(pc.VolumeDrivers) {
+				if err == auctiontypes.ErrorVolumeDriverMismatch {
+					err = auctiontypes.ErrorPlacementTagMismatch
+				}
+
+				if cell.MatchPlacementTags(pc.PlacementTags) {
+					err = nil
+					cells = append(cells, cell)
+				}
+			}
 		}
 	}
 
-	return cells
+	return cells, err
 }
 
 type Scheduler struct {
@@ -211,10 +223,9 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 
 	zones := accumulateZonesByInstances(s.zones, lrpAuction.ProcessGuid)
 
-	filteredZones := filterZones(zones, lrpAuction)
-
-	if len(filteredZones) == 0 {
-		return nil, auctiontypes.ErrorCellMismatch
+	filteredZones, err := filterZones(zones, lrpAuction)
+	if err != nil {
+		return nil, err
 	}
 
 	sortedZones := sortZonesByInstances(filteredZones)
@@ -248,7 +259,7 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 		return nil, rep.ErrorInsufficientResources
 	}
 
-	err := winnerCell.ReserveLRP(&lrpAuction.LRP)
+	err = winnerCell.ReserveLRP(&lrpAuction.LRP)
 	if err != nil {
 		s.logger.Error("lrp-failed-to-reserve-cell", err, lager.Data{"cell-guid": winnerCell.Guid, "lrp-guid": lrpAuction.Identifier()})
 		return nil, err
@@ -264,16 +275,24 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction, s
 	winnerScore := 1e20
 
 	filteredZones := []Zone{}
+	var zoneError error
 
 	for _, zone := range s.zones {
-		cells := zone.filterCells(taskAuction.PlacementConstraint)
-		if len(cells) > 0 {
-			filteredZones = append(filteredZones, Zone(cells))
+		cells, err := zone.filterCells(taskAuction.PlacementConstraint)
+		if err != nil {
+			if zoneError != auctiontypes.ErrorPlacementTagMismatch ||
+				(zoneError == auctiontypes.ErrorVolumeDriverMismatch && err == auctiontypes.ErrorPlacementTagMismatch) ||
+				zoneError == auctiontypes.ErrorCellMismatch || zoneError == nil {
+				zoneError = err
+			}
+			continue
 		}
+
+		filteredZones = append(filteredZones, Zone(cells))
 	}
 
 	if len(filteredZones) == 0 {
-		return nil, auctiontypes.ErrorCellMismatch
+		return nil, zoneError
 	}
 
 	for _, zone := range filteredZones {

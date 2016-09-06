@@ -50,8 +50,11 @@ func filterZones(zones []lrpByZone, lrpAuction *auctiontypes.LRPAuction) ([]lrpB
 	for _, lrpZone := range zones {
 		cells, err := lrpZone.zone.filterCells(lrpAuction.PlacementConstraint)
 		if err != nil {
-			if zoneError != auctiontypes.ErrorPlacementTagMismatch ||
-				(zoneError == auctiontypes.ErrorVolumeDriverMismatch && err == auctiontypes.ErrorPlacementTagMismatch) ||
+			_, isZoneErrorPlacementTagMismatchError := zoneError.(auctiontypes.PlacementTagMismatchError)
+			_, isErrPlacementTagMismatchError := err.(auctiontypes.PlacementTagMismatchError)
+
+			if isZoneErrorPlacementTagMismatchError ||
+				(zoneError == auctiontypes.ErrorVolumeDriverMismatch && isErrPlacementTagMismatchError) ||
 				zoneError == auctiontypes.ErrorCellMismatch || zoneError == nil {
 				zoneError = err
 			}

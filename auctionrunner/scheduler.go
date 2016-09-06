@@ -26,7 +26,7 @@ func (z *Zone) filterCells(pc rep.PlacementConstraint) ([]*Cell, error) {
 
 			if cell.MatchVolumeDrivers(pc.VolumeDrivers) {
 				if err == auctiontypes.ErrorVolumeDriverMismatch {
-					err = auctiontypes.ErrorPlacementTagMismatch
+					err = auctiontypes.NewPlacementTagMismatchError(pc.PlacementTags)
 				}
 
 				if cell.MatchPlacementTags(pc.PlacementTags) {
@@ -280,8 +280,11 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction, s
 	for _, zone := range s.zones {
 		cells, err := zone.filterCells(taskAuction.PlacementConstraint)
 		if err != nil {
-			if zoneError != auctiontypes.ErrorPlacementTagMismatch ||
-				(zoneError == auctiontypes.ErrorVolumeDriverMismatch && err == auctiontypes.ErrorPlacementTagMismatch) ||
+			_, isZoneErrorPlacementTagMismatchError := zoneError.(auctiontypes.PlacementTagMismatchError)
+			_, isErrPlacementTagMismatchError := err.(auctiontypes.PlacementTagMismatchError)
+
+			if isZoneErrorPlacementTagMismatchError ||
+				(zoneError == auctiontypes.ErrorVolumeDriverMismatch && isErrPlacementTagMismatchError) ||
 				zoneError == auctiontypes.ErrorCellMismatch || zoneError == nil {
 				zoneError = err
 			}

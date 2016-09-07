@@ -20,7 +20,7 @@ var _ = Describe("Cell", func() {
 
 	BeforeEach(func() {
 		client = &repfakes.FakeSimClient{}
-		emptyState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{})
+		emptyState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{})
 		emptyCell = auctionrunner.NewCell(logger, "empty-cell", client, emptyState)
 
 		state := BuildCellState("the-zone", 100, 200, 50, false, 10, linuxOnlyRootFSProviders, []rep.LRP{
@@ -30,6 +30,7 @@ var _ = Describe("Cell", func() {
 			*BuildLRP("pg-3", "domain", 0, linuxRootFSURL, 10, 20, []string{}),
 			*BuildLRP("pg-4", "domain", 0, linuxRootFSURL, 10, 20, []string{}),
 		},
+			[]string{},
 			[]string{},
 			[]string{},
 		)
@@ -80,10 +81,10 @@ var _ = Describe("Cell", func() {
 		It("factors in container usage", func() {
 			instance := BuildLRP("pg-big", "domain", 0, linuxRootFSURL, 20, 20, []string{})
 
-			bigState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{})
+			bigState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{})
 			bigCell := auctionrunner.NewCell(logger, "big-cell", client, bigState)
 
-			smallState := BuildCellState("the-zone", 100, 200, 20, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{})
+			smallState := BuildCellState("the-zone", 100, 200, 20, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{})
 			smallCell := auctionrunner.NewCell(logger, "small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForLRP(instance, 0.0)
@@ -112,6 +113,7 @@ var _ = Describe("Cell", func() {
 					[]rep.LRP{{ActualLRPKey: models.ActualLRPKey{ProcessGuid: "not-HA"}}},
 					[]string{},
 					[]string{},
+					[]string{},
 				)
 				busyCell = auctionrunner.NewCell(logger, "busy-cell", client, busyState)
 
@@ -124,6 +126,7 @@ var _ = Describe("Cell", func() {
 					0,
 					linuxOnlyRootFSProviders,
 					[]rep.LRP{{ActualLRPKey: models.ActualLRPKey{ProcessGuid: "HA"}}},
+					[]string{},
 					[]string{},
 					[]string{},
 				)
@@ -149,6 +152,7 @@ var _ = Describe("Cell", func() {
 					10,
 					linuxOnlyRootFSProviders,
 					nil,
+					[]string{},
 					[]string{},
 					[]string{},
 				)
@@ -221,7 +225,7 @@ var _ = Describe("Cell", func() {
 			Context("because of container constraints", func() {
 				It("should error", func() {
 					instance := BuildLRP("pg-new", "domain", 0, linuxRootFSURL, 10, 10, []string{})
-					zeroState := BuildCellState("the-zone", 100, 100, 0, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{})
+					zeroState := BuildCellState("the-zone", 100, 100, 0, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{})
 					zeroCell := auctionrunner.NewCell(logger, "zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForLRP(instance, 0.0)
 					Expect(score).To(BeZero())
@@ -295,10 +299,10 @@ var _ = Describe("Cell", func() {
 		It("factors in container usage", func() {
 			task := BuildTask("tg-big", "domain", linuxRootFSURL, 20, 20, []string{}, []string{})
 
-			bigState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{})
+			bigState := BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{})
 			bigCell := auctionrunner.NewCell(logger, "big-cell", client, bigState)
 
-			smallState := BuildCellState("the-zone", 100, 200, 20, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{})
+			smallState := BuildCellState("the-zone", 100, 200, 20, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{})
 			smallCell := auctionrunner.NewCell(logger, "small-cell", client, smallState)
 
 			bigScore, err := bigCell.ScoreForTask(task, 0.0)
@@ -316,10 +320,10 @@ var _ = Describe("Cell", func() {
 			BeforeEach(func() {
 				task = BuildTask("tg-big", "domain", linuxRootFSURL, 20, 20, []string{}, []string{})
 
-				busyState = BuildCellState("the-zone", 100, 200, 50, false, 10, linuxOnlyRootFSProviders, nil, []string{}, []string{})
+				busyState = BuildCellState("the-zone", 100, 200, 50, false, 10, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{})
 				busyCell = auctionrunner.NewCell(logger, "busy-cell", client, busyState)
 
-				boredState = BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{})
+				boredState = BuildCellState("the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{})
 				boredCell = auctionrunner.NewCell(logger, "bored-cell", client, boredState)
 			})
 
@@ -364,7 +368,7 @@ var _ = Describe("Cell", func() {
 			Context("because of container constraints", func() {
 				It("should error", func() {
 					task := BuildTask("pg-new", "domain", linuxRootFSURL, 10, 10, []string{}, []string{})
-					zeroState := BuildCellState("the-zone", 100, 100, 0, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{})
+					zeroState := BuildCellState("the-zone", 100, 100, 0, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{})
 					zeroCell := auctionrunner.NewCell(logger, "zero-cell", client, zeroState)
 					score, err := zeroCell.ScoreForTask(task, 0.0)
 					Expect(score).To(BeZero())

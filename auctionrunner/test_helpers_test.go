@@ -140,6 +140,7 @@ func BuildCellState(
 	lrps []rep.LRP,
 	volumeDrivers []string,
 	placementTags []string,
+	optionalPlacementTags []string,
 ) rep.CellState {
 	totalResources := rep.NewResources(memoryMB, diskMB, containers)
 
@@ -163,5 +164,6 @@ func BuildCellState(
 		evacuating,
 		volumeDrivers,
 		placementTags,
+		optionalPlacementTags,
 	)
 }

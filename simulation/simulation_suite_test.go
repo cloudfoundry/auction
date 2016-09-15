@@ -13,7 +13,7 @@ import (
 
 	"code.cloudfoundry.org/clock"
 
-	"github.com/cloudfoundry/gunk/workpool"
+	"code.cloudfoundry.org/workpool"
 	"github.com/tedsuo/ifrit"
 
 	"code.cloudfoundry.org/auction/auctionrunner"

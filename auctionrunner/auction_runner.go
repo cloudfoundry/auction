@@ -9,7 +9,7 @@ import (
 
 	"code.cloudfoundry.org/auction/auctiontypes"
 	"code.cloudfoundry.org/auctioneer"
-	"github.com/cloudfoundry/gunk/workpool"
+	"code.cloudfoundry.org/workpool"
 )
 
 type auctionRunner struct {

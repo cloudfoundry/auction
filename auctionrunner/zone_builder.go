@@ -8,7 +8,7 @@ import (
 	"code.cloudfoundry.org/cfhttp"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/rep"
-	"github.com/cloudfoundry/gunk/workpool"
+	"code.cloudfoundry.org/workpool"
 )
 
 func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client, metricEmitter auctiontypes.AuctionMetricEmitterDelegate) map[string]Zone {

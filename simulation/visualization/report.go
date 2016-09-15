@@ -8,8 +8,8 @@ import (
 	"code.cloudfoundry.org/auction/auctiontypes"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/rep"
+	"code.cloudfoundry.org/workpool"
 	"github.com/GaryBoone/GoStats/stats"
-	"github.com/cloudfoundry/gunk/workpool"
 )
 
 type Report struct {

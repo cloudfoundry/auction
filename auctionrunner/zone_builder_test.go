@@ -11,7 +11,7 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/rep"
 	"code.cloudfoundry.org/rep/repfakes"
-	"github.com/cloudfoundry/gunk/workpool"
+	"code.cloudfoundry.org/workpool"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

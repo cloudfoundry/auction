@@ -5,7 +5,7 @@ import (
 
 	"code.cloudfoundry.org/clock/fakeclock"
 	"code.cloudfoundry.org/lager"
-	"github.com/cloudfoundry/gunk/workpool"
+	"code.cloudfoundry.org/workpool"
 
 	"code.cloudfoundry.org/auction/auctionrunner"
 	"code.cloudfoundry.org/auction/auctiontypes"

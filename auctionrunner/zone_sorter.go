@@ -33,6 +33,7 @@ func accumulateZonesByInstances(zones map[string]Zone, processGuid string) []lrp
 		}
 		lrpZones = append(lrpZones, lrpByZone{zone, instances})
 	}
+
 	return lrpZones
 }
 
@@ -42,19 +43,34 @@ func sortZonesByInstances(zones []lrpByZone) []lrpByZone {
 	return sorter.zones
 }
 
-func filterZones(zones []lrpByZone, lrpAuction *auctiontypes.LRPAuction) []lrpByZone {
+func filterZones(zones []lrpByZone, lrpAuction *auctiontypes.LRPAuction) ([]lrpByZone, error) {
 	filteredZones := []lrpByZone{}
+	var zoneError error
 
 	for _, lrpZone := range zones {
-		cells := lrpZone.zone.filterCells(lrpAuction.PlacementConstraint)
-		if len(cells) > 0 {
-			filteredZone := lrpByZone{
-				zone:      Zone(cells),
-				instances: lrpZone.instances,
+		cells, err := lrpZone.zone.filterCells(lrpAuction.PlacementConstraint)
+		if err != nil {
+			_, isZoneErrorPlacementTagMismatchError := zoneError.(auctiontypes.PlacementTagMismatchError)
+			_, isErrPlacementTagMismatchError := err.(auctiontypes.PlacementTagMismatchError)
+
+			if isZoneErrorPlacementTagMismatchError ||
+				(zoneError == auctiontypes.ErrorVolumeDriverMismatch && isErrPlacementTagMismatchError) ||
+				zoneError == auctiontypes.ErrorCellMismatch || zoneError == nil {
+				zoneError = err
 			}
-			filteredZones = append(filteredZones, filteredZone)
+			continue
 		}
+
+		filteredZone := lrpByZone{
+			zone:      Zone(cells),
+			instances: lrpZone.instances,
+		}
+		filteredZones = append(filteredZones, filteredZone)
 	}
 
-	return filteredZones
+	if len(filteredZones) == 0 {
+		return nil, zoneError
+	}
+
+	return filteredZones, nil
 }

@@ -192,6 +192,7 @@ var _ = Describe("Scheduler", func() {
 				It("does not place the desired lrp on the cell", func() {
 					Expect(len(results.FailedLRPs)).To(Equal(1))
 					Expect(results.FailedLRPs[0].LRP).To(Equal(startAuction.LRP))
+					Expect(results.FailedLRPs[0].AuctionRecord.PlacementError).To(Equal(auctiontypes.ErrorVolumeDriverMismatch.Error()))
 				})
 			})
 
@@ -297,6 +298,7 @@ var _ = Describe("Scheduler", func() {
 					Expect(len(results.SuccessfulLRPs)).To(Equal(0))
 					Expect(len(results.FailedLRPs)).To(Equal(1))
 					Expect(results.FailedLRPs[0].LRP).To(Equal(startAuction.LRP))
+					Expect(results.FailedLRPs[0].AuctionRecord.PlacementError).To(ContainSubstring("found no compatible cell with placement tags"))
 				})
 			})
 
@@ -539,6 +541,7 @@ var _ = Describe("Scheduler", func() {
 				It("does not consider the cell for the auction", func() {
 					Expect(len(results.FailedTasks)).To(Equal(1))
 					Expect(results.FailedTasks[0].Task).To(Equal(taskAuction.Task))
+					Expect(results.FailedTasks[0].AuctionRecord.PlacementError).To(Equal(auctiontypes.ErrorVolumeDriverMismatch.Error()))
 				})
 			})
 
@@ -638,11 +641,12 @@ var _ = Describe("Scheduler", func() {
 					taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, []string{}, []string{"oink"}), clock.Now())
 				})
 
-				It("does not place the lrp on a cell", func() {
+				It("does not place the task on a cell", func() {
 					results := scheduler.Schedule(auctionRequest)
 					Expect(len(results.SuccessfulTasks)).To(Equal(0))
 					Expect(len(results.FailedTasks)).To(Equal(1))
 					Expect(results.FailedTasks[0].Task).To(Equal(taskAuction.Task))
+					Expect(results.FailedTasks[0].AuctionRecord.PlacementError).To(ContainSubstring("found no compatible cell with placement tags"))
 				})
 			})
 		})

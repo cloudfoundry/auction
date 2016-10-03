@@ -2,6 +2,7 @@ package auctiontypes
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"code.cloudfoundry.org/auctioneer"
@@ -12,6 +13,20 @@ import (
 // Auction Runners
 
 var ErrorCellMismatch = errors.New("found no compatible cell")
+var ErrorVolumeDriverMismatch = errors.New("found no compatible cell with volume drivers")
+
+type PlacementTagMismatchError struct {
+	tags []string
+}
+
+func NewPlacementTagMismatchError(tags []string) error {
+	return PlacementTagMismatchError{tags: tags}
+}
+
+func (e PlacementTagMismatchError) Error() string {
+	return fmt.Sprintf("found no compatible cell with placement tags: %v", e.tags)
+}
+
 var ErrorNothingToStop = errors.New("nothing to stop")
 var ErrorCellCommunication = errors.New("unable to communicate to compatible cells")
 

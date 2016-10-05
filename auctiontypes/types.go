@@ -2,7 +2,7 @@ package auctiontypes
 
 import (
 	"errors"
-	"fmt"
+	"strings"
 	"time"
 
 	"code.cloudfoundry.org/auctioneer"
@@ -12,8 +12,8 @@ import (
 
 // Auction Runners
 
-var ErrorCellMismatch = errors.New("found no compatible cell")
-var ErrorVolumeDriverMismatch = errors.New("found no compatible cell with volume drivers")
+var ErrorCellMismatch = errors.New("found no compatible cell for required rootfs")
+var ErrorVolumeDriverMismatch = errors.New("found no compatible cell with required volume drivers")
 
 type PlacementTagMismatchError struct {
 	tags []string
@@ -24,7 +24,20 @@ func NewPlacementTagMismatchError(tags []string) error {
 }
 
 func (e PlacementTagMismatchError) Error() string {
-	return fmt.Sprintf("found no compatible cell with placement tags: %v", e.tags)
+	switch len(e.tags) {
+	case 0:
+		return "found no compatible cell with no placement tags"
+	case 1:
+		return "found no compatible cell with placement tag \"" + e.tags[0] + "\""
+	default:
+		count := len(e.tags) - 1
+		lastTag := e.tags[count]
+		tags := make([]string, count)
+		for i, tag := range e.tags[:count] {
+			tags[i] = "\"" + tag + "\""
+		}
+		return "found no compatible cell with placement tags " + strings.Join(tags, ", ") + " and \"" + lastTag + "\""
+	}
 }
 
 var ErrorNothingToStop = errors.New("nothing to stop")

@@ -173,6 +173,10 @@ func launchExternalHTTPReps() map[string]rep.SimClient {
 	client := &http.Client{
 		Timeout: timeout,
 	}
+
+	factory, err := rep.NewClientFactory(client, client, nil)
+	Expect(err).NotTo(HaveOccurred())
+
 	for i := 0; i < numCells; i++ {
 		repGuid := cellGuid(i)
 		httpAddr := fmt.Sprintf("127.0.0.1:%d", 30000+i)
@@ -193,7 +197,9 @@ func launchExternalHTTPReps() map[string]rep.SimClient {
 		sessionsToTerminate = append(sessionsToTerminate, sess)
 		Eventually(sess).Should(gbytes.Say("listening"))
 
-		cells[cellGuid(i)] = rep.NewClient(client, client, "http://"+httpAddr).(rep.SimClient)
+		client, err := factory.CreateClient("http://"+httpAddr, "")
+		Expect(err).NotTo(HaveOccurred())
+		cells[cellGuid(i)] = client.(rep.SimClient)
 	}
 
 	return cells

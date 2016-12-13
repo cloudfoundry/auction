@@ -14,43 +14,43 @@ func BuildLRPStartRequest(
 	processGuid, domain string,
 	indices []int,
 	rootFS string,
-	memoryMB, diskMB int32,
+	memoryMB, diskMB, maxPids int32,
 	volumeDriver, placementTags []string,
 ) auctioneer.LRPStartRequest {
 	return auctioneer.NewLRPStartRequest(
 		processGuid,
 		domain,
 		indices,
-		rep.NewResource(memoryMB, diskMB),
+		rep.NewResource(memoryMB, diskMB, maxPids),
 		rep.NewPlacementConstraint(rootFS, placementTags, volumeDriver),
 	)
 }
 
-func BuildTaskStartRequest(taskGuid, domain, rootFS string, memoryMB, diskMB int32) auctioneer.TaskStartRequest {
-	return auctioneer.NewTaskStartRequest(*BuildTask(taskGuid, domain, rootFS, memoryMB, diskMB, []string{}, []string{}))
+func BuildTaskStartRequest(taskGuid, domain, rootFS string, memoryMB, diskMB, maxPids int32) auctioneer.TaskStartRequest {
+	return auctioneer.NewTaskStartRequest(*BuildTask(taskGuid, domain, rootFS, memoryMB, diskMB, maxPids, []string{}, []string{}))
 }
 
 func BuildLRP(
 	guid, domain string,
 	index int,
 	rootFS string,
-	memoryMB, diskMB int32,
+	memoryMB, diskMB, maxPids int32,
 	placementTags []string,
 ) *rep.LRP {
 	lrpKey := models.NewActualLRPKey(guid, int32(index), domain)
 	lrp := rep.NewLRP(
 		lrpKey,
-		rep.NewResource(memoryMB, diskMB),
+		rep.NewResource(memoryMB, diskMB, maxPids),
 		rep.NewPlacementConstraint(rootFS, placementTags, []string{}),
 	)
 	return &lrp
 }
 
-func BuildTask(taskGuid, domain, rootFS string, memoryMB, diskMB int32, volumeDrivers, placementTags []string) *rep.Task {
+func BuildTask(taskGuid, domain, rootFS string, memoryMB, diskMB, maxPids int32, volumeDrivers, placementTags []string) *rep.Task {
 	task := rep.NewTask(
 		taskGuid,
 		domain,
-		rep.NewResource(memoryMB, diskMB),
+		rep.NewResource(memoryMB, diskMB, maxPids),
 		rep.NewPlacementConstraint(rootFS, placementTags, volumeDrivers),
 	)
 	return &task
@@ -60,7 +60,7 @@ func BuildLRPAuction(
 	processGuid, domain string,
 	index int,
 	rootFS string,
-	memoryMB, diskMB int32,
+	memoryMB, diskMB, maxPids int32,
 	queueTime time.Time,
 	volumeDrivers, placementTags []string,
 ) auctiontypes.LRPAuction {
@@ -69,7 +69,7 @@ func BuildLRPAuction(
 	return auctiontypes.NewLRPAuction(
 		rep.NewLRP(
 			lrpKey,
-			rep.NewResource(memoryMB, diskMB),
+			rep.NewResource(memoryMB, diskMB, maxPids),
 			rep.NewPlacementConstraint(rootFS, placementTags, volumeDrivers),
 		),
 		queueTime,
@@ -80,7 +80,7 @@ func BuildLRPAuctionWithPlacementError(
 	processGuid, domain string,
 	index int,
 	rootFS string,
-	memoryMB, diskMB int32,
+	memoryMB, diskMB, maxPids int32,
 	queueTime time.Time,
 	placementError string,
 	volumeDrivers, placementTags []string,
@@ -90,7 +90,7 @@ func BuildLRPAuctionWithPlacementError(
 	a := auctiontypes.NewLRPAuction(
 		rep.NewLRP(
 			lrpKey,
-			rep.NewResource(memoryMB, diskMB),
+			rep.NewResource(memoryMB, diskMB, maxPids),
 			rep.NewPlacementConstraint(rootFS, placementTags, volumeDrivers),
 		),
 		queueTime,

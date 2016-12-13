@@ -47,9 +47,9 @@ var _ = Describe("Scheduler", func() {
 
 	Context("when there are no cells", func() {
 		It("immediately returns everything as having failed, incrementing the attempt number", func() {
-			startAuction := BuildLRPAuction("pg-7", "domain", 0, linuxRootFSURL, 10, 10, clock.Now(), nil, []string{})
+			startAuction := BuildLRPAuction("pg-7", "domain", 0, linuxRootFSURL, 10, 10, 10, clock.Now(), nil, []string{})
 
-			taskAuction := BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 0, 0, []string{}, []string{}), clock.Now())
+			taskAuction := BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 0, 0, 0, []string{}, []string{}), clock.Now())
 
 			auctionRequest := auctiontypes.AuctionRequest{
 				LRPs:  []auctiontypes.LRPAuction{startAuction},
@@ -88,8 +88,8 @@ var _ = Describe("Scheduler", func() {
 					"A-cell",
 					clients["A-cell"],
 					BuildCellState("A-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-						*BuildLRP("pg-1", "domain", 0, "", 10, 10, []string{}),
-						*BuildLRP("pg-2", "domain", 0, "", 10, 10, []string{}),
+						*BuildLRP("pg-1", "domain", 0, "", 10, 10, 10, []string{}),
+						*BuildLRP("pg-2", "domain", 0, "", 10, 10, 10, []string{}),
 					}, []string{}, []string{}, []string{}),
 				),
 			}
@@ -101,7 +101,7 @@ var _ = Describe("Scheduler", func() {
 					"B-cell",
 					clients["B-cell"],
 					BuildCellState("B-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-						*BuildLRP("pg-3", "domain", 0, "", 10, 10, []string{}),
+						*BuildLRP("pg-3", "domain", 0, "", 10, 10, 10, []string{}),
 					}, []string{}, []string{}, []string{}),
 				),
 			}
@@ -116,7 +116,7 @@ var _ = Describe("Scheduler", func() {
 						"C-cell",
 						clients["C-cell"],
 						BuildCellState("C-zone", 100, 100, 100, false, 0, windowsOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("pg-win-1", "domain", 0, "", 10, 10, []string{}),
+							*BuildLRP("pg-win-1", "domain", 0, "", 10, 10, 10, []string{}),
 						}, []string{}, []string{}, []string{}),
 					),
 				}
@@ -124,7 +124,7 @@ var _ = Describe("Scheduler", func() {
 
 			Context("with a new LRP only supported in one of many zones", func() {
 				BeforeEach(func() {
-					startAuction = BuildLRPAuction("pg-win-2", "domain", 1, windowsRootFSURL, 10, 10, clock.Now(), nil, []string{})
+					startAuction = BuildLRPAuction("pg-win-2", "domain", 1, windowsRootFSURL, 10, 10, 10, clock.Now(), nil, []string{})
 				})
 
 				Context("when it picks a winner", func() {
@@ -162,7 +162,7 @@ var _ = Describe("Scheduler", func() {
 						"A-cell",
 						clients["A-cell"],
 						BuildCellState("A-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("pg-win-1", "domain", 0, "", 10, 10, []string{}),
+							*BuildLRP("pg-win-1", "domain", 0, "", 10, 10, 10, []string{}),
 						}, []string{"driver-1", "driver-2"}, []string{}, []string{}),
 					),
 				}
@@ -174,7 +174,7 @@ var _ = Describe("Scheduler", func() {
 						"B-cell",
 						clients["B-cell"],
 						BuildCellState("B-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("pg-win-1", "domain", 0, "", 10, 10, []string{}),
+							*BuildLRP("pg-win-1", "domain", 0, "", 10, 10, 10, []string{}),
 						}, []string{"driver-3"}, []string{}, []string{}),
 					),
 				}
@@ -182,7 +182,7 @@ var _ = Describe("Scheduler", func() {
 
 			Context("all cells does not have the required volume drivers", func() {
 				BeforeEach(func() {
-					startAuction = BuildLRPAuction("pg-4", "domain", 1, linuxRootFSURL, 10, 10, clock.Now(), []string{"driver-1", "driver-3"}, []string{})
+					startAuction = BuildLRPAuction("pg-4", "domain", 1, linuxRootFSURL, 10, 10, 10, clock.Now(), []string{"driver-1", "driver-3"}, []string{})
 					clock.Increment(time.Minute)
 
 					s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
@@ -198,7 +198,7 @@ var _ = Describe("Scheduler", func() {
 
 			Context("a cell has the required volume drivers", func() {
 				BeforeEach(func() {
-					startAuction = BuildLRPAuction("pg-4", "domain", 1, linuxRootFSURL, 10, 10, clock.Now(), []string{"driver-3"}, []string{})
+					startAuction = BuildLRPAuction("pg-4", "domain", 1, linuxRootFSURL, 10, 10, 10, clock.Now(), []string{"driver-3"}, []string{})
 					clock.Increment(time.Minute)
 
 					s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
@@ -233,7 +233,7 @@ var _ = Describe("Scheduler", func() {
 						"cell-z1-1",
 						clients["cell-z1-1"],
 						BuildCellState("z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("pg-5", "domain", 0, "", 10, 10, []string{"quack", "moo"}),
+							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack", "moo"}),
 						}, []string{}, []string{"quack", "moo"}, []string{"chirp"}),
 					),
 					auctionrunner.NewCell(
@@ -241,7 +241,7 @@ var _ = Describe("Scheduler", func() {
 						"cell-z1-2",
 						clients["cell-z1-2"],
 						BuildCellState("z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("pg-5", "domain", 0, "", 10, 10, []string{}),
+							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{}),
 						}, []string{}, []string{}, []string{}),
 					),
 				}
@@ -253,7 +253,7 @@ var _ = Describe("Scheduler", func() {
 						"cell-z2-1",
 						clients["cell-z2-1"],
 						BuildCellState("z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("pg-5", "domain", 0, "", 10, 10, []string{"quack"}),
+							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack"}),
 						}, []string{}, []string{"quack"}, []string{"chirp", "baa"}),
 					),
 					auctionrunner.NewCell(
@@ -261,12 +261,12 @@ var _ = Describe("Scheduler", func() {
 						"cell-z2-2",
 						clients["cell-z2-2"],
 						BuildCellState("z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("pg-5", "domain", 0, "", 10, 10, []string{"quack", "moo", "oink"}),
+							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack", "moo", "oink"}),
 						}, []string{}, []string{"quack", "moo", "oink"}, []string{}),
 					),
 				}
 
-				startAuction = BuildLRPAuction("pg-5", "domain", 1, linuxRootFSURL, 10, 10, clock.Now(), []string{}, []string{"moo", "quack"})
+				startAuction = BuildLRPAuction("pg-5", "domain", 1, linuxRootFSURL, 10, 10, 10, clock.Now(), []string{}, []string{"moo", "quack"})
 			})
 
 			JustBeforeEach(func() {
@@ -290,7 +290,7 @@ var _ = Describe("Scheduler", func() {
 
 			Context("when no cells have the required placement tag", func() {
 				BeforeEach(func() {
-					startAuction = BuildLRPAuction("pg-5", "domain", 1, linuxRootFSURL, 10, 10, clock.Now(), []string{}, []string{"oink", "kakaaaaa"})
+					startAuction = BuildLRPAuction("pg-5", "domain", 1, linuxRootFSURL, 10, 10, 10, clock.Now(), []string{}, []string{"oink", "kakaaaaa"})
 				})
 
 				It("does not place the lrp on a cell", func() {
@@ -304,7 +304,7 @@ var _ = Describe("Scheduler", func() {
 
 			Context("when cells have the required placement tag and matching optional tag", func() {
 				BeforeEach(func() {
-					startAuction = BuildLRPAuction("pg-5", "domain", 1, linuxRootFSURL, 10, 10, clock.Now(), []string{}, []string{"quack", "chirp"})
+					startAuction = BuildLRPAuction("pg-5", "domain", 1, linuxRootFSURL, 10, 10, 10, clock.Now(), []string{}, []string{"quack", "chirp"})
 				})
 
 				It("places the lrp on a cell with matching placement tags", func() {
@@ -322,7 +322,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("with an existing LRP (zone balancing)", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuction("pg-3", "domain", 1, linuxRootFSURL, 10, 10, clock.Now(), nil, []string{})
+				startAuction = BuildLRPAuction("pg-3", "domain", 1, linuxRootFSURL, 10, 10, 10, clock.Now(), nil, []string{})
 			})
 
 			Context("when it picks a winner", func() {
@@ -352,7 +352,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("with a new LRP (cell balancing)", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuction("pg-4", "domain", 1, linuxRootFSURL, 10, 10, clock.Now(), nil, []string{})
+				startAuction = BuildLRPAuction("pg-4", "domain", 1, linuxRootFSURL, 10, 10, 10, clock.Now(), nil, []string{})
 			})
 
 			Context("when it picks a winner", func() {
@@ -381,7 +381,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when the cell rejects the start auction", func() {
 			BeforeEach(func() {
-				startAuction = BuildLRPAuction("pg-3", "domain", 1, linuxRootFSURL, 10, 10, clock.Now(), nil, []string{})
+				startAuction = BuildLRPAuction("pg-3", "domain", 1, linuxRootFSURL, 10, 10, 10, clock.Now(), nil, []string{})
 
 				clients["A-cell"].PerformReturns(rep.Work{LRPs: []rep.LRP{startAuction.LRP}}, nil)
 				clients["B-cell"].PerformReturns(rep.Work{LRPs: []rep.LRP{startAuction.LRP}}, nil)
@@ -406,7 +406,7 @@ var _ = Describe("Scheduler", func() {
 			})
 
 			JustBeforeEach(func() {
-				startAuction = BuildLRPAuction("pg-4", "domain", 0, linuxRootFSURL, 1000, requestedDisk, clock.Now(), []string{}, []string{})
+				startAuction = BuildLRPAuction("pg-4", "domain", 0, linuxRootFSURL, 1000, requestedDisk, 10, clock.Now(), []string{}, []string{})
 				clock.Increment(time.Minute)
 				s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 				results = s.Schedule(auctiontypes.AuctionRequest{LRPs: []auctiontypes.LRPAuction{startAuction}})
@@ -469,16 +469,16 @@ var _ = Describe("Scheduler", func() {
 		BeforeEach(func() {
 			clients["A-cell"] = &repfakes.FakeSimClient{}
 			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10, []string{}),
-				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10, []string{}),
+				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10, 10, []string{}),
+				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10, 10, []string{}),
 			}, []string{"driver-1", "driver-2"}, []string{}, []string{}))}
 
 			clients["B-cell"] = &repfakes.FakeSimClient{}
 			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10, []string{}),
+				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10, 10, []string{}),
 			}, []string{"driver-3"}, []string{}, []string{}))}
 
-			taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, []string{}, []string{}), clock.Now())
+			taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, 10, []string{}, []string{}), clock.Now())
 			clock.Increment(time.Minute)
 		})
 
@@ -491,7 +491,7 @@ var _ = Describe("Scheduler", func() {
 						"C-cell",
 						clients["C-cell"],
 						BuildCellState("C-zone", 100, 100, 100, false, 0, windowsOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("tg-win-1", "domain", 0, "", 10, 10, []string{}),
+							*BuildLRP("tg-win-1", "domain", 0, "", 10, 10, 10, []string{}),
 						}, []string{}, []string{}, []string{}),
 					),
 				}
@@ -499,7 +499,7 @@ var _ = Describe("Scheduler", func() {
 
 			Context("with a new Task only supported in one of many zones", func() {
 				BeforeEach(func() {
-					taskAuction = BuildTaskAuction(BuildTask("tg-win-2", "domain", windowsRootFSURL, 10, 10, []string{}, []string{}), clock.Now())
+					taskAuction = BuildTaskAuction(BuildTask("tg-win-2", "domain", windowsRootFSURL, 10, 10, 10, []string{}, []string{}), clock.Now())
 				})
 
 				Context("when it picks a winner", func() {
@@ -531,7 +531,7 @@ var _ = Describe("Scheduler", func() {
 		Context("when filtering on volume drivers", func() {
 			Context("the cell does not have all of the volume drivers", func() {
 				BeforeEach(func() {
-					taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, []string{"no-compatible-driver"}, []string{}), clock.Now())
+					taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, 10, []string{"no-compatible-driver"}, []string{}), clock.Now())
 					clock.Increment(time.Minute)
 
 					s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
@@ -547,7 +547,7 @@ var _ = Describe("Scheduler", func() {
 
 			Context("a cell has the required volume drivers", func() {
 				BeforeEach(func() {
-					taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, []string{"driver-1", "driver-2"}, []string{}), clock.Now())
+					taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, 10, []string{"driver-1", "driver-2"}, []string{}), clock.Now())
 					clock.Increment(time.Minute)
 
 					s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
@@ -581,7 +581,7 @@ var _ = Describe("Scheduler", func() {
 						"cell-z1-1",
 						clients["cell-z1-1"],
 						BuildCellState("z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("pg-5", "domain", 0, "", 10, 10, []string{"quack", "moo"}),
+							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack", "moo"}),
 						}, []string{}, []string{"quack", "moo"}, []string{}),
 					),
 					auctionrunner.NewCell(
@@ -589,7 +589,7 @@ var _ = Describe("Scheduler", func() {
 						"cell-z1-2",
 						clients["cell-z1-2"],
 						BuildCellState("z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("pg-5", "domain", 0, "", 10, 10, []string{}),
+							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{}),
 						}, []string{}, []string{}, []string{}),
 					),
 				}
@@ -601,7 +601,7 @@ var _ = Describe("Scheduler", func() {
 						"cell-z2-1",
 						clients["cell-z2-1"],
 						BuildCellState("z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("pg-5", "domain", 0, "", 10, 10, []string{"quack"}),
+							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack"}),
 						}, []string{}, []string{"quack"}, []string{}),
 					),
 					auctionrunner.NewCell(
@@ -609,12 +609,12 @@ var _ = Describe("Scheduler", func() {
 						"cell-z2-2",
 						clients["cell-z2-2"],
 						BuildCellState("z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-							*BuildLRP("pg-5", "domain", 0, "", 10, 10, []string{"quack", "moo", "oink"}),
+							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack", "moo", "oink"}),
 						}, []string{}, []string{"quack", "moo", "oink"}, []string{}),
 					),
 				}
 
-				taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, []string{}, []string{"quack"}), clock.Now())
+				taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, 10, []string{}, []string{"quack"}), clock.Now())
 			})
 
 			JustBeforeEach(func() {
@@ -638,7 +638,7 @@ var _ = Describe("Scheduler", func() {
 
 			Context("when no cells have the required placement tag", func() {
 				BeforeEach(func() {
-					taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, []string{}, []string{"oink"}), clock.Now())
+					taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, 10, []string{}, []string{"oink"}), clock.Now())
 				})
 
 				It("does not place the task on a cell", func() {
@@ -699,7 +699,7 @@ var _ = Describe("Scheduler", func() {
 			})
 
 			JustBeforeEach(func() {
-				taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 1000, requestedDisk, []string{}, []string{}), clock.Now())
+				taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 1000, requestedDisk, 10, []string{}, []string{}), clock.Now())
 				clock.Increment(time.Minute)
 				s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
@@ -758,7 +758,7 @@ var _ = Describe("Scheduler", func() {
 
 		Context("when there is cell mismatch", func() {
 			BeforeEach(func() {
-				taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", "unsupported:rootfs", 100, 100, []string{}, []string{}), clock.Now())
+				taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", "unsupported:rootfs", 100, 100, 10, []string{}, []string{}), clock.Now())
 				clock.Increment(time.Minute)
 				s := auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0)
 				results = s.Schedule(auctiontypes.AuctionRequest{Tasks: []auctiontypes.TaskAuction{taskAuction}})
@@ -784,32 +784,32 @@ var _ = Describe("Scheduler", func() {
 		BeforeEach(func() {
 			clients["A-cell"] = &repfakes.FakeSimClient{}
 			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "A-cell", clients["A-cell"], BuildCellState("A-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-				*BuildLRP("pg-1", "domain", 0, "", 10, 10, []string{}),
-				*BuildLRP("pg-2", "domain", 0, "", 10, 10, []string{}),
+				*BuildLRP("pg-1", "domain", 0, "", 10, 10, 10, []string{}),
+				*BuildLRP("pg-2", "domain", 0, "", 10, 10, 10, []string{}),
 			}, []string{}, []string{}, []string{}))}
 
 			clients["B-cell"] = &repfakes.FakeSimClient{}
 			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "B-cell", clients["B-cell"], BuildCellState("B-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
-				*BuildLRP("pg-3", "domain", 0, "", 10, 10, []string{}),
-				*BuildLRP("pg-4", "domain", 0, "", 20, 20, []string{}),
+				*BuildLRP("pg-3", "domain", 0, "", 10, 10, 10, []string{}),
+				*BuildLRP("pg-4", "domain", 0, "", 20, 20, 10, []string{}),
 			}, []string{}, []string{}, []string{}))}
 		})
 
 		It("should optimize the distribution", func() {
 			startPG3 := BuildLRPAuction(
-				"pg-3", "domain", 1, linuxRootFSURL, 40, 40,
+				"pg-3", "domain", 1, linuxRootFSURL, 40, 40, 10,
 				clock.Now(),
 				nil,
 				[]string{},
 			)
 			startPG2 := BuildLRPAuction(
-				"pg-2", "domain", 1, linuxRootFSURL, 5, 5,
+				"pg-2", "domain", 1, linuxRootFSURL, 5, 5, 10,
 				clock.Now(),
 				nil,
 				[]string{},
 			)
 			startPGNope := BuildLRPAuctionWithPlacementError(
-				"pg-nope", "domain", 1, ".net", 10, 10,
+				"pg-nope", "domain", 1, ".net", 10, 10, 10,
 				clock.Now(),
 				auctiontypes.ErrorCellMismatch.Error(),
 				[]string{},
@@ -817,15 +817,15 @@ var _ = Describe("Scheduler", func() {
 			)
 
 			taskAuction1 := BuildTaskAuction(
-				BuildTask("tg-1", "domain", linuxRootFSURL, 40, 40, []string{}, []string{}),
+				BuildTask("tg-1", "domain", linuxRootFSURL, 40, 40, 10, []string{}, []string{}),
 				clock.Now(),
 			)
 			taskAuction2 := BuildTaskAuction(
-				BuildTask("tg-2", "domain", linuxRootFSURL, 5, 5, []string{}, []string{}),
+				BuildTask("tg-2", "domain", linuxRootFSURL, 5, 5, 10, []string{}, []string{}),
 				clock.Now(),
 			)
 			taskAuctionNope := BuildTaskAuction(
-				BuildTask("tg-nope", "domain", ".net", 1, 1, []string{}, []string{}),
+				BuildTask("tg-nope", "domain", ".net", 1, 1, 10, []string{}, []string{}),
 				clock.Now(),
 			)
 
@@ -892,14 +892,14 @@ var _ = Describe("Scheduler", func() {
 		BeforeEach(func() {
 			clients["cell"] = &repfakes.FakeSimClient{}
 
-			pg70 = BuildLRPAuction("pg-7", "domain", 0, linuxRootFSURL, 10, 10, clock.Now(), nil, []string{})
-			pg71 = BuildLRPAuction("pg-7", "domain", 1, linuxRootFSURL, 10, 10, clock.Now(), nil, []string{})
-			pg81 = BuildLRPAuction("pg-8", "domain", 1, linuxRootFSURL, 40, 40, clock.Now(), nil, []string{})
-			pg82 = BuildLRPAuction("pg-8", "domain", 2, linuxRootFSURL, 40, 40, clock.Now(), nil, []string{})
+			pg70 = BuildLRPAuction("pg-7", "domain", 0, linuxRootFSURL, 10, 10, 10, clock.Now(), nil, []string{})
+			pg71 = BuildLRPAuction("pg-7", "domain", 1, linuxRootFSURL, 10, 10, 10, clock.Now(), nil, []string{})
+			pg81 = BuildLRPAuction("pg-8", "domain", 1, linuxRootFSURL, 40, 40, 10, clock.Now(), nil, []string{})
+			pg82 = BuildLRPAuction("pg-8", "domain", 2, linuxRootFSURL, 40, 40, 10, clock.Now(), nil, []string{})
 			lrps = []auctiontypes.LRPAuction{pg70, pg71, pg81, pg82}
 
-			tg1 = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, []string{}, []string{}), clock.Now())
-			tg2 = BuildTaskAuction(BuildTask("tg-2", "domain", linuxRootFSURL, 20, 20, []string{}, []string{}), clock.Now())
+			tg1 = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, 10, []string{}, []string{}), clock.Now())
+			tg2 = BuildTaskAuction(BuildTask("tg-2", "domain", linuxRootFSURL, 20, 20, 10, []string{}, []string{}), clock.Now())
 			tasks = []auctiontypes.TaskAuction{tg1, tg2}
 
 			memory = 100
@@ -992,7 +992,7 @@ var _ = Describe("Scheduler", func() {
 			var tg3 auctiontypes.TaskAuction
 
 			BeforeEach(func() {
-				tg3 = BuildTaskAuction(BuildTask("tg-3", "domain", linuxRootFSURL, 30, 30, []string{}, []string{}), clock.Now())
+				tg3 = BuildTaskAuction(BuildTask("tg-3", "domain", linuxRootFSURL, 30, 30, 10, []string{}, []string{}), clock.Now())
 				lrps = []auctiontypes.LRPAuction{}
 				tasks = append(tasks, tg3)
 				memory = tg3.MemoryMB + 1

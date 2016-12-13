@@ -33,7 +33,7 @@ var _ = Describe("Batch", func() {
 	Describe("adding work", func() {
 		Context("when adding start auctions", func() {
 			BeforeEach(func() {
-				lrpStart = BuildLRPStartRequest("pg-1", "domain", []int{1}, "linux", 10, 10, []string{}, []string{})
+				lrpStart = BuildLRPStartRequest("pg-1", "domain", []int{1}, "linux", 10, 10, 10, []string{}, []string{})
 				batch.AddLRPStarts([]auctioneer.LRPStartRequest{lrpStart})
 			})
 
@@ -49,7 +49,7 @@ var _ = Describe("Batch", func() {
 
 		Context("when adding tasks", func() {
 			BeforeEach(func() {
-				task = BuildTaskStartRequest("tg-1", "domain", "linux", 10, 10)
+				task = BuildTaskStartRequest("tg-1", "domain", "linux", 10, 10, 10)
 				batch.AddTasks([]auctioneer.TaskStartRequest{task})
 			})
 
@@ -67,31 +67,31 @@ var _ = Describe("Batch", func() {
 	Describe("DedupeAndDrain", func() {
 		BeforeEach(func() {
 			batch.AddLRPStarts([]auctioneer.LRPStartRequest{
-				BuildLRPStartRequest("pg-1", "domain", []int{1}, "linux", 10, 10, []string{"driver-1"}, []string{"tag-1"}),
-				BuildLRPStartRequest("pg-1", "domain", []int{1}, "linux", 10, 10, []string{"driver-1"}, []string{"tag-1"}),
-				BuildLRPStartRequest("pg-2", "domain", []int{2}, "linux", 10, 10, []string{"driver-2"}, []string{"tag-2"}),
+				BuildLRPStartRequest("pg-1", "domain", []int{1}, "linux", 10, 10, 10, []string{"driver-1"}, []string{"tag-1"}),
+				BuildLRPStartRequest("pg-1", "domain", []int{1}, "linux", 10, 10, 10, []string{"driver-1"}, []string{"tag-1"}),
+				BuildLRPStartRequest("pg-2", "domain", []int{2}, "linux", 10, 10, 10, []string{"driver-2"}, []string{"tag-2"}),
 			})
 
 			batch.AddTasks([]auctioneer.TaskStartRequest{
-				BuildTaskStartRequest("tg-1", "domain", "linux", 10, 10),
-				BuildTaskStartRequest("tg-1", "domain", "linux", 10, 10),
-				BuildTaskStartRequest("tg-2", "domain", "linux", 10, 10)})
+				BuildTaskStartRequest("tg-1", "domain", "linux", 10, 10, 10),
+				BuildTaskStartRequest("tg-1", "domain", "linux", 10, 10, 10),
+				BuildTaskStartRequest("tg-2", "domain", "linux", 10, 10, 10)})
 		})
 
 		It("should dedupe any duplicate start auctions and stop auctions", func() {
 			lrpAuctions, taskAuctions := batch.DedupeAndDrain()
 			Expect(lrpAuctions).To(Equal([]auctiontypes.LRPAuction{
-				BuildLRPAuction("pg-1", "domain", 1, "linux", 10, 10, clock.Now(), []string{"driver-1"}, []string{"tag-1"}),
-				BuildLRPAuction("pg-2", "domain", 2, "linux", 10, 10, clock.Now(), []string{"driver-2"}, []string{"tag-2"}),
+				BuildLRPAuction("pg-1", "domain", 1, "linux", 10, 10, 10, clock.Now(), []string{"driver-1"}, []string{"tag-1"}),
+				BuildLRPAuction("pg-2", "domain", 2, "linux", 10, 10, 10, clock.Now(), []string{"driver-2"}, []string{"tag-2"}),
 			}))
 
 			Expect(taskAuctions).To(Equal([]auctiontypes.TaskAuction{
 				BuildTaskAuction(
-					BuildTask("tg-1", "domain", "linux", 10, 10, []string{}, []string{}),
+					BuildTask("tg-1", "domain", "linux", 10, 10, 10, []string{}, []string{}),
 					clock.Now(),
 				),
 				BuildTaskAuction(
-					BuildTask("tg-2", "domain", "linux", 10, 10, []string{}, []string{}),
+					BuildTask("tg-2", "domain", "linux", 10, 10, 10, []string{}, []string{}),
 					clock.Now(),
 				),
 			}))

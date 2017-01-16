@@ -48,6 +48,8 @@ var repResources = rep.Resources{
 	Containers: 100,
 }
 
+var defaultMaxContainerStartCount = uint(0)
+
 var defaultDrivers = []string{"my-driver"}
 
 var timeout time.Duration
@@ -126,6 +128,7 @@ var _ = BeforeEach(func() {
 		clock.NewClock(),
 		workPool,
 		0.25,
+		defaultMaxContainerStartCount,
 	)
 	runnerProcess = ifrit.Invoke(runner)
 })

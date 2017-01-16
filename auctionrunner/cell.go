@@ -25,6 +25,10 @@ func NewCell(logger lager.Logger, guid string, client rep.Client, state rep.Cell
 	}
 }
 
+func (c *Cell) StartingContainerCount() int {
+	return c.state.StartingContainerCount
+}
+
 func (c *Cell) MatchRootFS(rootFS string) bool {
 	return c.state.MatchRootFS(rootFS)
 }

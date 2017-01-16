@@ -42,6 +42,7 @@ func (e PlacementTagMismatchError) Error() string {
 
 var ErrorNothingToStop = errors.New("nothing to stop")
 var ErrorCellCommunication = errors.New("unable to communicate to compatible cells")
+var ErrorExceededInflightCreation = errors.New("waiting to start instance: reached in-flight start limit")
 
 //go:generate counterfeiter -o fakes/fake_auction_runner.go . AuctionRunner
 type AuctionRunner interface {

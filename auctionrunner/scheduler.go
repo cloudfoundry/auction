@@ -41,11 +41,12 @@ func (z *Zone) filterCells(pc rep.PlacementConstraint) ([]*Cell, error) {
 }
 
 type Scheduler struct {
-	workPool                *workpool.WorkPool
-	zones                   map[string]Zone
-	clock                   clock.Clock
-	logger                  lager.Logger
-	startingContainerWeight float64
+	workPool                      *workpool.WorkPool
+	zones                         map[string]Zone
+	clock                         clock.Clock
+	logger                        lager.Logger
+	startingContainerWeight       float64
+	startingContainerCountMaximum uint // 0 means no limit
 }
 
 func NewScheduler(
@@ -54,13 +55,15 @@ func NewScheduler(
 	clock clock.Clock,
 	logger lager.Logger,
 	startingContainerWeight float64,
+	startingContainerCountMaximum uint,
 ) *Scheduler {
 	return &Scheduler{
-		workPool:                workPool,
-		zones:                   zones,
-		clock:                   clock,
-		logger:                  logger,
-		startingContainerWeight: startingContainerWeight,
+		workPool:                      workPool,
+		zones:                         zones,
+		clock:                         clock,
+		logger:                        logger,
+		startingContainerWeight:       startingContainerWeight,
+		startingContainerCountMaximum: startingContainerCountMaximum,
 	}
 }
 
@@ -91,6 +94,13 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 	var lrpStartAuctionLookup = map[string]*auctiontypes.LRPAuction{}
 	var successfulTasks = map[string]*auctiontypes.TaskAuction{}
 	var taskAuctionLookup = map[string]*auctiontypes.TaskAuction{}
+	var currentInflightContainerStarts uint
+
+	for _, zone := range s.zones {
+		for _, cell := range zone {
+			currentInflightContainerStarts += uint(cell.StartingContainerCount())
+		}
+	}
 
 	sort.Sort(SortableLRPAuctions(auctionRequest.LRPs))
 	sort.Sort(SortableTaskAuctions(auctionRequest.Tasks))
@@ -101,12 +111,27 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 		for i := range lrpsToAuction {
 			lrpAuction := &lrpsToAuction[i]
 			lrpStartAuctionLookup[lrpAuction.Identifier()] = lrpAuction
+
+			if s.exceededInflightContainerCreation(currentInflightContainerStarts) {
+				s.logger.Info(
+					"exceeded-max-inflight-container-creation",
+					lager.Data{
+						"max-inflight": s.startingContainerCountMaximum,
+						"lrp-guid":     lrpAuction.Identifier(),
+					},
+				)
+				lrpAuction.PlacementError = auctiontypes.ErrorExceededInflightCreation.Error()
+				results.FailedLRPs = append(results.FailedLRPs, *lrpAuction)
+				continue
+			}
+
 			successfulStart, err := s.scheduleLRPAuction(lrpAuction)
 			if err != nil {
 				lrpAuction.PlacementError = err.Error()
 				results.FailedLRPs = append(results.FailedLRPs, *lrpAuction)
 			} else {
 				successfulLRPs[successfulStart.Identifier()] = successfulStart
+				currentInflightContainerStarts++
 			}
 		}
 	}
@@ -116,12 +141,27 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 	for i := range auctionRequest.Tasks {
 		taskAuction := &auctionRequest.Tasks[i]
 		taskAuctionLookup[taskAuction.Identifier()] = taskAuction
+
+		if s.exceededInflightContainerCreation(currentInflightContainerStarts) {
+			s.logger.Info(
+				"exceeded-max-inflight-container-creation",
+				lager.Data{
+					"max-inflight": s.startingContainerCountMaximum,
+					"task-guid":    taskAuction.Identifier(),
+				},
+			)
+			taskAuction.PlacementError = auctiontypes.ErrorExceededInflightCreation.Error()
+			results.FailedTasks = append(results.FailedTasks, *taskAuction)
+			continue
+		}
+
 		successfulTask, err := s.scheduleTaskAuction(taskAuction, s.startingContainerWeight)
 		if err != nil {
 			taskAuction.PlacementError = err.Error()
 			results.FailedTasks = append(results.FailedTasks, *taskAuction)
 		} else {
 			successfulTasks[successfulTask.Identifier()] = successfulTask
+			currentInflightContainerStarts++
 		}
 	}
 
@@ -347,4 +387,8 @@ func removeNonApplicableProblems(problems map[string]struct{}, err error) {
 			}
 		}
 	}
+}
+
+func (s *Scheduler) exceededInflightContainerCreation(currentInflight uint) bool {
+	return s.startingContainerCountMaximum != 0 && currentInflight >= s.startingContainerCountMaximum
 }

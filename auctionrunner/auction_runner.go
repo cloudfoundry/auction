@@ -15,12 +15,13 @@ import (
 type auctionRunner struct {
 	logger lager.Logger
 
-	delegate                auctiontypes.AuctionRunnerDelegate
-	metricEmitter           auctiontypes.AuctionMetricEmitterDelegate
-	batch                   *Batch
-	clock                   clock.Clock
-	workPool                *workpool.WorkPool
-	startingContainerWeight float64
+	delegate                      auctiontypes.AuctionRunnerDelegate
+	metricEmitter                 auctiontypes.AuctionMetricEmitterDelegate
+	batch                         *Batch
+	clock                         clock.Clock
+	workPool                      *workpool.WorkPool
+	startingContainerWeight       float64
+	startingContainerCountMaximum uint
 }
 
 func New(
@@ -30,16 +31,18 @@ func New(
 	clock clock.Clock,
 	workPool *workpool.WorkPool,
 	startingContainerWeight float64,
+	startingContainerCountMaximum uint,
 ) *auctionRunner {
 	return &auctionRunner{
 		logger: logger,
 
-		delegate:                delegate,
-		metricEmitter:           metricEmitter,
-		batch:                   NewBatch(clock),
-		clock:                   clock,
-		workPool:                workPool,
-		startingContainerWeight: startingContainerWeight,
+		delegate:                      delegate,
+		metricEmitter:                 metricEmitter,
+		batch:                         NewBatch(clock),
+		clock:                         clock,
+		workPool:                      workPool,
+		startingContainerWeight:       startingContainerWeight,
+		startingContainerCountMaximum: startingContainerCountMaximum,
 	}
 }
 
@@ -104,7 +107,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				Tasks: taskAuctions,
 			}
 
-			scheduler := NewScheduler(a.workPool, zones, a.clock, logger, a.startingContainerWeight)
+			scheduler := NewScheduler(a.workPool, zones, a.clock, logger, a.startingContainerWeight, a.startingContainerCountMaximum)
 			auctionResults := scheduler.Schedule(auctionRequest)
 			logger.Info("scheduled", lager.Data{
 				"successful-lrp-start-auctions": len(auctionResults.SuccessfulLRPs),

@@ -46,7 +46,7 @@ type Scheduler struct {
 	clock                         clock.Clock
 	logger                        lager.Logger
 	startingContainerWeight       float64
-	startingContainerCountMaximum uint // 0 means no limit
+	startingContainerCountMaximum int // <=0 means no limit
 }
 
 func NewScheduler(
@@ -55,7 +55,7 @@ func NewScheduler(
 	clock clock.Clock,
 	logger lager.Logger,
 	startingContainerWeight float64,
-	startingContainerCountMaximum uint,
+	startingContainerCountMaximum int,
 ) *Scheduler {
 	return &Scheduler{
 		workPool:                      workPool,
@@ -94,11 +94,11 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 	var lrpStartAuctionLookup = map[string]*auctiontypes.LRPAuction{}
 	var successfulTasks = map[string]*auctiontypes.TaskAuction{}
 	var taskAuctionLookup = map[string]*auctiontypes.TaskAuction{}
-	var currentInflightContainerStarts uint
+	var currentInflightContainerStarts int
 
 	for _, zone := range s.zones {
 		for _, cell := range zone {
-			currentInflightContainerStarts += uint(cell.StartingContainerCount())
+			currentInflightContainerStarts += cell.StartingContainerCount()
 		}
 	}
 
@@ -389,6 +389,6 @@ func removeNonApplicableProblems(problems map[string]struct{}, err error) {
 	}
 }
 
-func (s *Scheduler) exceededInflightContainerCreation(currentInflight uint) bool {
-	return s.startingContainerCountMaximum != 0 && currentInflight >= s.startingContainerCountMaximum
+func (s *Scheduler) exceededInflightContainerCreation(currentInflight int) bool {
+	return s.startingContainerCountMaximum > 0 && currentInflight >= s.startingContainerCountMaximum
 }

@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var defaultStartingContainerCountMaximum uint = uint(0)
+var defaultStartingContainerCountMaximum int = 0
 
 var _ = Describe("Scheduler", func() {
 	var clients map[string]*repfakes.FakeSimClient
@@ -120,7 +120,7 @@ var _ = Describe("Scheduler", func() {
 				taskAuction1 := BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, 10, []string{}, []string{}), clock.Now())
 				taskAuction2 := BuildTaskAuction(BuildTask("tg-2", "domain", linuxRootFSURL, 10, 10, 10, []string{}, []string{}), clock.Now())
 
-				scheduler = auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0, uint(startingContainerCountMaximum))
+				scheduler = auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0, startingContainerCountMaximum)
 				startLRPAuctions := []auctiontypes.LRPAuction{pg70, pg71}
 				startTaskAuctions := []auctiontypes.TaskAuction{taskAuction1, taskAuction2}
 				auctionRequest = auctiontypes.AuctionRequest{LRPs: startLRPAuctions, Tasks: startTaskAuctions}
@@ -462,26 +462,51 @@ var _ = Describe("Scheduler", func() {
 			})
 		})
 
-		Context("when auctioning more than the maximum inflight container creations", func() {
-			var startAuctions []auctiontypes.LRPAuction
-			var startingContainerCountMaximum int
+		Context("when the startingContainerCountMaximum is set", func() {
+
+			var (
+				startingContainerCountMaximum int
+				startAuctions                 []auctiontypes.LRPAuction
+			)
 
 			BeforeEach(func() {
-				startingContainerCountMaximum = 3
 				pg70 := BuildLRPAuction("pg-7", "domain", 0, linuxRootFSURL, 10, 10, 10, clock.Now(), nil, []string{})
 				pg71 := BuildLRPAuction("pg-7", "domain", 1, linuxRootFSURL, 10, 10, 10, clock.Now(), nil, []string{})
 				pg81 := BuildLRPAuction("pg-8", "domain", 1, linuxRootFSURL, 40, 40, 40, clock.Now(), nil, []string{})
 				pg82 := BuildLRPAuction("pg-8", "domain", 2, linuxRootFSURL, 40, 40, 40, clock.Now(), nil, []string{})
 				pg90 := BuildLRPAuction("pg-9", "domain", 0, linuxRootFSURL, 40, 40, 40, clock.Now(), nil, []string{})
 
-				scheduler = auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0, uint(startingContainerCountMaximum))
 				startAuctions = []auctiontypes.LRPAuction{pg70, pg71, pg81, pg82, pg90}
 			})
 
-			It("only starts the maximum number of containers", func() {
-				results = scheduler.Schedule(auctiontypes.AuctionRequest{LRPs: startAuctions})
-				Expect(results.SuccessfulLRPs).To(HaveLen(startingContainerCountMaximum))
-				Expect(results.FailedLRPs).To(HaveLen(len(startAuctions) - startingContainerCountMaximum))
+			Context("when auctioning more than the maximum inflight container creations", func() {
+
+				BeforeEach(func() {
+					startingContainerCountMaximum = 3
+				})
+
+				It("only starts the maximum number of containers", func() {
+					scheduler = auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0, startingContainerCountMaximum)
+					results = scheduler.Schedule(auctiontypes.AuctionRequest{LRPs: startAuctions})
+
+					Expect(results.SuccessfulLRPs).To(HaveLen(startingContainerCountMaximum))
+					Expect(results.FailedLRPs).To(HaveLen(len(startAuctions) - startingContainerCountMaximum))
+				})
+			})
+
+			Context("when the maximum inflight container creations is negative", func() {
+
+				BeforeEach(func() {
+					startingContainerCountMaximum = -3
+				})
+
+				It("should behave as if there is no limit", func() {
+					scheduler = auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0, startingContainerCountMaximum)
+					results = scheduler.Schedule(auctiontypes.AuctionRequest{LRPs: startAuctions})
+
+					Expect(results.SuccessfulLRPs).To(HaveLen(len(startAuctions)))
+					Expect(results.FailedLRPs).To(BeEmpty())
+				})
 			})
 		})
 
@@ -854,7 +879,7 @@ var _ = Describe("Scheduler", func() {
 				taskAuction3 := BuildTaskAuction(BuildTask("tg-3", "domain", linuxRootFSURL, 10, 10, 10, []string{}, []string{}), clock.Now())
 				taskAuction4 := BuildTaskAuction(BuildTask("tg-4", "domain", linuxRootFSURL, 10, 10, 10, []string{}, []string{}), clock.Now())
 
-				scheduler = auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0, uint(startingContainerCountMaximum))
+				scheduler = auctionrunner.NewScheduler(workPool, zones, clock, logger, 0.0, startingContainerCountMaximum)
 				startAuctions = []auctiontypes.TaskAuction{taskAuction1, taskAuction2, taskAuction3, taskAuction4}
 			})
 

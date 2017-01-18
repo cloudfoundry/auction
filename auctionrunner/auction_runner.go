@@ -21,7 +21,7 @@ type auctionRunner struct {
 	clock                         clock.Clock
 	workPool                      *workpool.WorkPool
 	startingContainerWeight       float64
-	startingContainerCountMaximum uint
+	startingContainerCountMaximum int
 }
 
 func New(
@@ -31,7 +31,7 @@ func New(
 	clock clock.Clock,
 	workPool *workpool.WorkPool,
 	startingContainerWeight float64,
-	startingContainerCountMaximum uint,
+	startingContainerCountMaximum int,
 ) *auctionRunner {
 	return &auctionRunner{
 		logger: logger,

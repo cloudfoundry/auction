@@ -48,7 +48,7 @@ var repResources = rep.Resources{
 	Containers: 100,
 }
 
-var defaultMaxContainerStartCount = uint(0)
+var defaultMaxContainerStartCount int = 0
 
 var defaultDrivers = []string{"my-driver"}
 

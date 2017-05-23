@@ -136,26 +136,5 @@ var _ = Describe("ZoneBuilder", func() {
 				repC.StateClientTimeoutReturns(client.Timeout)
 			}
 		})
-
-		It("retries with a backing off delay", func() {
-			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
-			Expect(zones).To(HaveLen(0))
-
-			Expect(repA.StateCallCount()).To(Equal(4))
-			Expect(repA.SetStateClientCallCount()).To(Equal(3))
-			Expect(repA.SetStateClientArgsForCall(0).Timeout).To(Equal(10 * time.Second))
-			Expect(repA.SetStateClientArgsForCall(1).Timeout).To(Equal(20 * time.Second))
-			Expect(repA.SetStateClientArgsForCall(2).Timeout).To(Equal(40 * time.Second))
-			Expect(repB.StateCallCount()).To(Equal(4))
-			Expect(repB.SetStateClientCallCount()).To(Equal(3))
-			Expect(repB.SetStateClientArgsForCall(0).Timeout).To(Equal(4 * time.Second))
-			Expect(repB.SetStateClientArgsForCall(1).Timeout).To(Equal(8 * time.Second))
-			Expect(repB.SetStateClientArgsForCall(2).Timeout).To(Equal(16 * time.Second))
-			Expect(repC.StateCallCount()).To(Equal(4))
-			Expect(repC.SetStateClientCallCount()).To(Equal(3))
-			Expect(repC.SetStateClientArgsForCall(0).Timeout).To(Equal(8 * time.Second))
-			Expect(repC.SetStateClientArgsForCall(1).Timeout).To(Equal(16 * time.Second))
-			Expect(repC.SetStateClientArgsForCall(2).Timeout).To(Equal(32 * time.Second))
-		})
 	})
 })

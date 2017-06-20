@@ -131,11 +131,11 @@ func (r *SimulationRep) Reset() error {
 
 //these are rep client methods the auction does not use
 
-func (rep *SimulationRep) StopLRPInstance(models.ActualLRPKey, models.ActualLRPInstanceKey) error {
+func (rep *SimulationRep) StopLRPInstance(lager.Logger, models.ActualLRPKey, models.ActualLRPInstanceKey) error {
 	panic("UNIMPLEMENTED METHOD")
 }
 
-func (rep *SimulationRep) CancelTask(string) error {
+func (rep *SimulationRep) CancelTask(lager.Logger, string) error {
 	panic("UNIMPLEMENTED METHOD")
 }
 

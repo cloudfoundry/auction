@@ -2,6 +2,7 @@ package simulation_test
 
 import (
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"code.cloudfoundry.org/auctioneer"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/rep"
+	"github.com/GaryBoone/GoStats/stats"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -88,6 +90,31 @@ var _ = Describe("Auction", func() {
 		return report
 	}
 
+	getResultVector := func() []float64 {
+		finalDistributions := make(map[string]float64)
+		for _, lrpAuction := range runnerDelegate.Results().SuccessfulLRPs {
+			finalDistributions[lrpAuction.Winner] += 1.0
+		}
+
+		distroVector := make([]float64, 0)
+		for _, v := range finalDistributions {
+			distroVector = append(distroVector, v)
+		}
+
+		return distroVector
+	}
+
+	// tolerance is tolerated the number of LRP deviance from the mean
+	assertDistributionTolerances := func(tolerance int) {
+		distroVector := getResultVector()
+		mean := stats.StatsMean(distroVector)
+
+		for j := range distroVector {
+			deviance := math.Abs(distroVector[j] - mean)
+			Expect(deviance).To(BeNumerically("<=", tolerance))
+		}
+	}
+
 	BeforeEach(func() {
 		util.ResetGuids()
 		initialDistributions = map[int][]rep.LRP{}
@@ -117,6 +144,8 @@ var _ = Describe("Auction", func() {
 					instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
 					runAndReportStartAuction(instances, ncells[i], i, 0)
+
+					assertDistributionTolerances(1)
 				})
 			}
 		})
@@ -145,7 +174,9 @@ var _ = Describe("Auction", func() {
 							permutedInstances[i] = instances[index]
 						}
 
-						runAndReportStartAuction(permutedInstances, ncells[i], i, 1)
+						runStartAuction(permutedInstances, ncells[i])
+
+						assertDistributionTolerances(10)
 					})
 				})
 			}
@@ -169,6 +200,8 @@ var _ = Describe("Auction", func() {
 						instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
 						runAndReportStartAuction(instances, ncells[i], i+2, 1)
+
+						assertDistributionTolerances(1)
 					})
 				})
 			}
@@ -217,6 +250,8 @@ var _ = Describe("Auction", func() {
 						instances := generateLRPStartAuctionsForProcessGuid(napps[i], "red", 1)
 
 						runAndReportStartAuction(instances, ncells[i], i+1, 2)
+
+						assertDistributionTolerances(1)
 					})
 				})
 			}

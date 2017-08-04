@@ -362,7 +362,9 @@ var _ = Describe("Scheduler", func() {
 					Expect(len(results.SuccessfulLRPs)).To(Equal(0))
 					Expect(len(results.FailedLRPs)).To(Equal(1))
 					Expect(results.FailedLRPs[0].LRP).To(Equal(startAuction.LRP))
-					Expect(results.FailedLRPs[0].AuctionRecord.PlacementError).To(ContainSubstring("found no compatible cell with placement tags \"kakaaaaa\" and \"oink\""))
+					Expect(results.FailedLRPs[0].AuctionRecord.PlacementError).To(ContainSubstring("found no compatible cell with placement tags "))
+					Expect(results.FailedLRPs[0].AuctionRecord.PlacementError).To(ContainSubstring("\"kakaaaaa\""))
+					Expect(results.FailedLRPs[0].AuctionRecord.PlacementError).To(ContainSubstring("\"oink\""))
 				})
 			})
 

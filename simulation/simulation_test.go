@@ -174,7 +174,7 @@ var _ = Describe("Auction", func() {
 							permutedInstances[i] = instances[index]
 						}
 
-						runStartAuction(permutedInstances, ncells[i])
+						runAndReportStartAuction(permutedInstances, ncells[i], i+1, 3)
 
 						assertDistributionTolerances(10)
 					})
@@ -267,7 +267,7 @@ var _ = Describe("Auction", func() {
 				}
 				instances = append(instances, generateLRPStartAuctionsForProcessGuid(2, "red", 50)...)
 
-				runStartAuction(instances, nCells)
+				runAndReportStartAuction(instances, nCells, 0, 3)
 				results := runnerDelegate.Results()
 
 				winners := []string{}

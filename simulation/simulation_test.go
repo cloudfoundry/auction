@@ -22,7 +22,7 @@ var _ = Describe("Auction", func() {
 
 	newLRP := func(processGuid string, index int, memoryMB int) rep.LRP {
 		lrpKey := models.NewActualLRPKey(processGuid, int32(index), "domain")
-		return rep.NewLRP(lrpKey, rep.NewResource(int32(memoryMB), 1, 10), rep.NewPlacementConstraint(linuxRootFSURL, []string{}, []string{}))
+		return rep.NewLRP("", lrpKey, rep.NewResource(int32(memoryMB), 1, 10), rep.NewPlacementConstraint(linuxRootFSURL, []string{}, []string{}))
 	}
 
 	generateUniqueLRPs := func(numInstances int, index int, memoryMB int) []rep.LRP {

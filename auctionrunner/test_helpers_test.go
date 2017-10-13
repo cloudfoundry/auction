@@ -39,6 +39,7 @@ func BuildLRP(
 ) *rep.LRP {
 	lrpKey := models.NewActualLRPKey(guid, int32(index), domain)
 	lrp := rep.NewLRP(
+		"",
 		lrpKey,
 		rep.NewResource(memoryMB, diskMB, maxPids),
 		rep.NewPlacementConstraint(rootFS, placementTags, []string{}),
@@ -68,6 +69,7 @@ func BuildLRPAuction(
 
 	return auctiontypes.NewLRPAuction(
 		rep.NewLRP(
+			"",
 			lrpKey,
 			rep.NewResource(memoryMB, diskMB, maxPids),
 			rep.NewPlacementConstraint(rootFS, placementTags, volumeDrivers),
@@ -89,6 +91,7 @@ func BuildLRPAuctionWithPlacementError(
 
 	a := auctiontypes.NewLRPAuction(
 		rep.NewLRP(
+			"",
 			lrpKey,
 			rep.NewResource(memoryMB, diskMB, maxPids),
 			rep.NewPlacementConstraint(rootFS, placementTags, volumeDrivers),
@@ -105,7 +108,7 @@ func BuildLRPAuctions(start auctioneer.LRPStartRequest, queueTime time.Time) []a
 	for _, index := range start.Indices {
 		lrpKey := models.NewActualLRPKey(start.ProcessGuid, int32(index), start.Domain)
 		auctions = append(auctions, auctiontypes.NewLRPAuction(
-			rep.NewLRP(lrpKey, start.Resource, start.PlacementConstraint),
+			rep.NewLRP("", lrpKey, start.Resource, start.PlacementConstraint),
 			queueTime,
 		))
 	}
@@ -154,6 +157,8 @@ func BuildCellState(
 	Expect(availableResources.Containers).To(BeNumerically(">=", 0), "Check your math!")
 
 	return rep.NewCellState(
+		"cell-id",
+		"https://foo.cell.service.cf.internal",
 		rootFSProviders,
 		availableResources,
 		totalResources,

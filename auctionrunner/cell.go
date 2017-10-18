@@ -18,10 +18,11 @@ type Cell struct {
 
 func NewCell(logger lager.Logger, guid string, client rep.Client, state rep.CellState) *Cell {
 	return &Cell{
-		logger: logger,
-		Guid:   guid,
-		client: client,
-		state:  state,
+		logger:       logger,
+		Guid:         guid,
+		client:       client,
+		state:        state,
+		workToCommit: rep.Work{CellID: guid},
 	}
 }
 

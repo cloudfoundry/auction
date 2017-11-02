@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/clock/fakeclock"
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/workpool"
 
 	"code.cloudfoundry.org/auction/auctionrunner"
@@ -14,6 +14,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 )
 
 var defaultStartingContainerCountMaximum int = 0
@@ -24,7 +25,7 @@ var _ = Describe("Scheduler", func() {
 	var clock *fakeclock.FakeClock
 	var workPool *workpool.WorkPool
 	var results auctiontypes.AuctionResults
-	var logger lager.Logger
+	var logger *lagertest.TestLogger
 	var scheduler *auctionrunner.Scheduler
 
 	BeforeEach(func() {
@@ -37,8 +38,7 @@ var _ = Describe("Scheduler", func() {
 		clients = map[string]*repfakes.FakeSimClient{}
 		zones = map[string]auctionrunner.Zone{}
 
-		logger = lager.NewLogger("fakelogger")
-		logger.RegisterSink(lager.NewWriterSink(GinkgoWriter, lager.DEBUG))
+		logger = lagertest.NewTestLogger("fakelogger")
 
 		scheduler = auctionrunner.NewScheduler(workPool, map[string]auctionrunner.Zone{}, clock, logger, 0.0, 0)
 	})
@@ -529,6 +529,10 @@ var _ = Describe("Scheduler", func() {
 			It("should not attempt to start the LRP", func() {
 				Expect(clients["A-cell"].PerformCallCount()).To(Equal(0))
 				Expect(clients["B-cell"].PerformCallCount()).To(Equal(0))
+			})
+
+			It("should log an error indicating the LRP and which resources failed", func() {
+				Expect(logger.Buffer()).To(gbytes.Say("lrp-auction-failed.*insufficient resources: memory.*pg-4"))
 			})
 
 			It("should mark the start auction as failed", func() {

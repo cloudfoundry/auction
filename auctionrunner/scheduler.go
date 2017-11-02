@@ -271,13 +271,11 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 	sortedZones := sortZonesByInstances(filteredZones)
 	problems := map[string]struct{}{"disk": struct{}{}, "memory": struct{}{}, "containers": struct{}{}}
 
-	s.logger.Info("schedule-lrp-auction", lager.Data{"problems": problems})
 	for zoneIndex, lrpByZone := range sortedZones {
 		for _, cell := range lrpByZone.zone {
 			score, err := cell.ScoreForLRP(&lrpAuction.LRP, s.startingContainerWeight)
 			if err != nil {
 				removeNonApplicableProblems(problems, err)
-				s.logger.Info("schedule-lrp-auction-after-error", lager.Data{"problems": problems, "error": err})
 				continue
 			}
 
@@ -300,7 +298,9 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 	}
 
 	if winnerCell == nil {
-		return nil, &rep.InsufficientResourcesError{Problems: problems}
+		err := &rep.InsufficientResourcesError{Problems: problems}
+		s.logger.Error("lrp-auction-failed", err, lager.Data{"lrp-guid": lrpAuction.Identifier()})
+		return nil, err
 	}
 
 	err = winnerCell.ReserveLRP(&lrpAuction.LRP)
@@ -360,7 +360,9 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction, s
 	}
 
 	if winnerCell == nil {
-		return nil, &rep.InsufficientResourcesError{Problems: problems}
+		err := &rep.InsufficientResourcesError{Problems: problems}
+		s.logger.Error("task-auction-failed", err, lager.Data{"task-guid": taskAuction.Identifier()})
+		return nil, err
 	}
 
 	err := winnerCell.ReserveTask(&taskAuction.Task)

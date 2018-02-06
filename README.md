@@ -19,19 +19,9 @@ The `auctionrunner` package provides an [*ifrit* process runner](https://github.
 
 ## The Simulation
 
-The `simulation` package contains a Ginkgo test suite that describes a number of scheduling scenarios.  These scenarios can be run in a number of different modes, all controlled by passing flags to the test suite.  The `simulation` generates comprehensive output to the command line, and an SVG describing, visually, the results of the simulation run.
+The `simulation` package contains a Ginkgo test suite that describes a number of scheduling scenarios.  The `simulation` generates comprehensive output to the command line, and an SVG describing, visually, the results of the simulation run.
 
-### In-Process Communication
-
-By default, the simulation runs with an "in-process" communication model.  In this mode, the simulation spins up a number of in-process [`SimulationRep`](https://github.com/cloudfoundry/auction/blob/master/simulation/simulationrep/simulation_rep.go)s.  They implement the [Rep client interface](https://github.com/cloudfoundry-incubator/rep/blob/master/client.go#L41-L54).
-
-This in-process communication mode allows us to isolate the algorithmic details from the communication details.  It allows us to iterate on the scoring math and scheduling details quickly and efficiently.
-
-### HTTP Communication
-
-The in-process model outlined above provides us with a starting point for analyzing the auction.  To understand the impact of HTTP communication, and ensure the HTTP layer works correctly, we can run the simulation with `ginkgo -- --communicationMode=http`.
-
-When `communicationMode` is set to `http`, the simulation will spin up 100 `simulation/repnode` external processes.   The simulation then runs in-process auctions that communicate with these external processes via http.
+The simulation spins up a number of in-process [`SimulationRep`](https://github.com/cloudfoundry/auction/blob/master/simulation/simulationrep/simulation_rep.go)s.  They implement the [Rep client interface](https://github.com/cloudfoundry-incubator/rep/blob/master/client.go#L41-L54). This in-process communication mode allows us to isolate the algorithmic details from the communication details.  It allows us to iterate on the scoring math and scheduling details quickly and efficiently.
 
 ### Running on Diego
 

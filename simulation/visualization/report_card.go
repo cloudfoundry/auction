@@ -62,10 +62,6 @@ func (r *SVGReport) Done() {
 	r.f.Close()
 }
 
-func (r *SVGReport) DrawHeader(communicationMode string) {
-	r.SVG.Text(border, 30, communicationMode, `text-anchor:start;font-size:20px;font-family:Helvetica Neue`)
-}
-
 func (r *SVGReport) drawResults() {
 	r.SVG.Text(border, 70, fmt.Sprintf("Distribution Scores: %.2f, Wait Time: %.2fs", stats.StatsSum(r.distributionScores), stats.StatsSum(r.waitTimes)), `text-anchor:start;font-size:20px;font-family:Helvetica Neue`)
 }

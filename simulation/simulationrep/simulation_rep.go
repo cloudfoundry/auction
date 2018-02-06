@@ -11,6 +11,7 @@ import (
 )
 
 type SimulationRep struct {
+	cellID                 string
 	stack                  string
 	zone                   string
 	totalResources         rep.Resources
@@ -22,8 +23,9 @@ type SimulationRep struct {
 	lock *sync.Mutex
 }
 
-func New(stack string, zone string, totalResources rep.Resources, volumeDrivers []string) rep.SimClient {
+func New(cellID string, stack string, zone string, totalResources rep.Resources, volumeDrivers []string) rep.SimClient {
 	return &SimulationRep{
+		cellID:         cellID,
 		stack:          stack,
 		totalResources: totalResources,
 		lrps:           map[string]rep.LRP{},
@@ -55,6 +57,7 @@ func (r *SimulationRep) State(_ lager.Logger) (rep.CellState, error) {
 	// util.RandomSleep(800, 900)
 
 	return rep.CellState{
+		CellID: r.cellID,
 		RootFSProviders: rep.RootFSProviders{
 			models.PreloadedRootFSScheme: rep.NewFixedSetRootFSProvider(r.stack),
 		},

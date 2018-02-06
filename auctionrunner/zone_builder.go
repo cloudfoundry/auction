@@ -46,6 +46,11 @@ func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 				return
 			}
 
+			if state.CellID != guid {
+				logger.Error("cell-id-mismatch", nil, lager.Data{"cell-guid": guid, "cell-state-guid": state.CellID})
+				return
+			}
+
 			cell := NewCell(logger, guid, client, state)
 			lock.Lock()
 			zones[state.Zone] = append(zones[state.Zone], cell)

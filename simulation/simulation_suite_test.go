@@ -137,7 +137,8 @@ func buildInProcessReps() map[string]rep.SimClient {
 	cells := map[string]rep.SimClient{}
 
 	for i := 0; i < numCells; i++ {
-		cells[cellGuid(i)] = simulationrep.New(linuxStack, zone(i), repResources, defaultDrivers)
+		guid := cellGuid(i)
+		cells[guid] = simulationrep.New(guid, linuxStack, zone(i), repResources, defaultDrivers)
 	}
 
 	return cells

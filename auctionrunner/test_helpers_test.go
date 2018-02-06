@@ -133,6 +133,7 @@ var windowsRootFSURL = models.PreloadedRootFS(windowsStack)
 var windowsOnlyRootFSProviders = rep.RootFSProviders{models.PreloadedRootFSScheme: rep.NewFixedSetRootFSProvider(windowsStack)}
 
 func BuildCellState(
+	cellID string,
 	zone string,
 	memoryMB int32,
 	diskMB int32,
@@ -157,7 +158,7 @@ func BuildCellState(
 	Expect(availableResources.Containers).To(BeNumerically(">=", 0), "Check your math!")
 
 	return rep.NewCellState(
-		"cell-id",
+		cellID,
 		"https://foo.cell.service.cf.internal",
 		rootFSProviders,
 		availableResources,

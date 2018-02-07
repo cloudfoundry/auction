@@ -12,9 +12,9 @@ import (
 	"code.cloudfoundry.org/rep/repfakes"
 	"code.cloudfoundry.org/workpool"
 
+	"code.cloudfoundry.org/lager"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"code.cloudfoundry.org/lager"
 )
 
 var _ = Describe("ZoneBuilder", func() {
@@ -109,6 +109,28 @@ var _ = Describe("ZoneBuilder", func() {
 			cells = zones["other-zone"]
 			Expect(cells).To(HaveLen(1))
 			Expect(cells[0].Guid).To(Equal("C"))
+		})
+
+		Context("when the cell id is empty", func() {
+			BeforeEach(func() {
+				repB.StateReturns(BuildCellState("", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), nil)
+			})
+
+			It("includes that cell in the map", func() {
+				zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+				Expect(zones).To(HaveLen(2))
+
+				cells := zones["the-zone"]
+				guids := []string{}
+				for _, cell := range cells {
+					guids = append(guids, cell.Guid)
+				}
+				Expect(guids).To(ConsistOf("A", "B"))
+
+				cells = zones["other-zone"]
+				Expect(cells).To(HaveLen(1))
+				Expect(cells[0].Guid).To(Equal("C"))
+			})
 		})
 
 		It("logs that there was a cell ID mismatch", func() {

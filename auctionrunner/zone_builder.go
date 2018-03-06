@@ -43,6 +43,7 @@ func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 			}
 
 			if state.Evacuating {
+				logger.Info("ignored-evacuating-cell", lager.Data{"cell-guid": guid})
 				return
 			}
 
@@ -55,6 +56,7 @@ func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 			lock.Lock()
 			zones[state.Zone] = append(zones[state.Zone], cell)
 			lock.Unlock()
+			logger.Info("fetched-cell-state", lager.Data{"cell-guid": guid})
 		})
 	}
 

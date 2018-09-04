@@ -74,6 +74,15 @@ var _ = Describe("ZoneBuilder", func() {
 		Expect(repC.StateCallCount()).To(Equal(1))
 	})
 
+	It("logs that it successfully fetched the state of the cells", func() {
+		auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+
+		getLogData := func(format lager.LogFormat) lager.Data { return format.Data }
+		Expect(logger.LogMessages()).To(ContainElement("test.fetched-cell-state"))
+		Expect(logger.Logs()).To(ContainElement(WithTransform(getLogData, Equal(lager.Data{"cell-guid": "A"}))))
+		Expect(logger.Logs()).To(ContainElement(WithTransform(getLogData, Equal(lager.Data{"cell-guid": "B"}))))
+	})
+
 	Context("when cells are evacuating", func() {
 		BeforeEach(func() {
 			repB.StateReturns(BuildCellState("B", "the-zone", 10, 10, 100, true, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), nil)
@@ -90,6 +99,14 @@ var _ = Describe("ZoneBuilder", func() {
 			cells = zones["other-zone"]
 			Expect(cells).To(HaveLen(1))
 			Expect(cells[0].Guid).To(Equal("C"))
+		})
+
+		It("logs that it ignored the evacuating cell", func() {
+			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+
+			getLogData := func(format lager.LogFormat) lager.Data { return format.Data }
+			Expect(logger.LogMessages()).To(ContainElement("test.ignored-evacuating-cell"))
+			Expect(logger.Logs()).To(ContainElement(WithTransform(getLogData, Equal(lager.Data{"cell-guid": "B"}))))
 		})
 	})
 
@@ -165,6 +182,14 @@ var _ = Describe("ZoneBuilder", func() {
 			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 			Expect(zones).To(HaveLen(2))
 			Expect(metricEmitter.FailedCellStateRequestCallCount()).To(Equal(1))
+		})
+
+		It("logs that it failed to fetch cell state", func() {
+			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+
+			getLogData := func(format lager.LogFormat) lager.Data { return format.Data }
+			Expect(logger.LogMessages()).To(ContainElement("test.failed-to-get-state"))
+			Expect(logger.Logs()).To(ContainElement(WithTransform(getLogData, Equal(lager.Data{"cell-guid": "B", "error": "boom"}))))
 		})
 	})
 

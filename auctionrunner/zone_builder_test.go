@@ -16,6 +16,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 )
 
 type logDataMatcher struct {
@@ -34,14 +35,32 @@ func (matcher *logDataMatcher) Match(actual interface{}) (success bool, err erro
 		return false, fmt.Errorf("logMessageMatcher expects to validate an object of type lager.LogFormat")
 	}
 
-	expectedLogData, ok := matcher.expected.(lager.Data)
+	var expectedLogData map[string]interface{}
+	expectedLogData, ok = matcher.expected.(lager.Data)
 	if !ok {
-		return false, fmt.Errorf("logMessageMatcher validates the Data of a lager.LogFormat object against a desired map[string]interface{}.")
+		return false, fmt.Errorf("logMessageMatcher validates the Data of a lager.LogFormat object against a desired map[string]interface{} or map[string]types.GomegaMatcher.")
 	}
 
-	for key, value := range expectedLogData {
-		if actualLog.Data[key] != value {
+	for key, expectedValue := range expectedLogData {
+		actualValue := actualLog.Data[key]
+		if actualValue == nil {
 			return false, nil
+		}
+
+		matcher, ok := expectedValue.(types.GomegaMatcher)
+		if ok {
+			matchSuccess, err := matcher.Match(actualValue)
+			if err != nil {
+				return false, err
+			}
+
+			if !matchSuccess {
+				return false, nil
+			}
+		} else {
+			if actualValue != expectedValue {
+				return false, nil
+			}
 		}
 	}
 

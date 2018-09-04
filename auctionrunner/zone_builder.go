@@ -2,6 +2,7 @@ package auctionrunner
 
 import (
 	"sync"
+	"time"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
 	"code.cloudfoundry.org/lager"
@@ -35,20 +36,22 @@ func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 		guid, client := guid, client
 		workPool.Submit(func() {
 			defer wg.Done()
+
+			startTime := time.Now()
 			state, err := client.State(logger)
 			if err != nil {
 				metricEmitter.FailedCellStateRequest()
-				logger.Error("failed-to-get-state", err, lager.Data{"cell-guid": guid})
+				logger.Error("failed-to-get-state", err, lager.Data{"cell-guid": guid, "duration_ns": time.Since(startTime)})
 				return
 			}
 
 			if state.Evacuating {
-				logger.Info("ignored-evacuating-cell", lager.Data{"cell-guid": guid})
+				logger.Info("ignored-evacuating-cell", lager.Data{"cell-guid": guid, "duration_ns": time.Since(startTime)})
 				return
 			}
 
 			if state.CellID != "" && state.CellID != guid {
-				logger.Error("cell-id-mismatch", nil, lager.Data{"cell-guid": guid, "cell-state-guid": state.CellID})
+				logger.Error("cell-id-mismatch", nil, lager.Data{"cell-guid": guid, "cell-state-guid": state.CellID, "duration_ns": time.Since(startTime)})
 				return
 			}
 
@@ -56,7 +59,7 @@ func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 			lock.Lock()
 			zones[state.Zone] = append(zones[state.Zone], cell)
 			lock.Unlock()
-			logger.Info("fetched-cell-state", lager.Data{"cell-guid": guid})
+			logger.Info("fetched-cell-state", lager.Data{"cell-guid": guid, "duration_ns": time.Since(startTime)})
 		})
 	}
 

@@ -138,8 +138,8 @@ var _ = Describe("ZoneBuilder", func() {
 		auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 
 		Expect(logger.LogMessages()).To(ContainElement("test.fetched-cell-state"))
-		Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "A"})))
-		Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B"})))
+		Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "A", "duration_ns": BeNumerically(">", 0)})))
+		Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B", "duration_ns": BeNumerically(">", 0)})))
 	})
 
 	Context("when cells are evacuating", func() {
@@ -164,7 +164,7 @@ var _ = Describe("ZoneBuilder", func() {
 			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 
 			Expect(logger.LogMessages()).To(ContainElement("test.ignored-evacuating-cell"))
-			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B"})))
+			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B", "duration_ns": BeNumerically(">", 0)})))
 		})
 	})
 
@@ -213,7 +213,7 @@ var _ = Describe("ZoneBuilder", func() {
 
 			Expect(logger.LogMessages()).To(ContainElement("test.cell-id-mismatch"))
 			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B"})))
-			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-state-guid": "badCellID"})))
+			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-state-guid": "badCellID", "duration_ns": BeNumerically(">", 0)})))
 		})
 	})
 
@@ -245,8 +245,7 @@ var _ = Describe("ZoneBuilder", func() {
 			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 
 			Expect(logger.LogMessages()).To(ContainElement("test.failed-to-get-state"))
-			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B"})))
-			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"error": "boom"})))
+			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B", "error": "boom", "duration_ns": BeNumerically(">", 0)})))
 		})
 	})
 

@@ -2,6 +2,7 @@ package auctionrunner_test
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -16,6 +17,46 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+type logDataMatcher struct {
+	expected interface{}
+}
+
+func IncludeLogData(expected interface{}) *logDataMatcher {
+	return &logDataMatcher{
+		expected: expected,
+	}
+}
+
+func (matcher *logDataMatcher) Match(actual interface{}) (success bool, err error) {
+	actualLog, ok := actual.(lager.LogFormat)
+	if !ok {
+		return false, fmt.Errorf("logMessageMatcher expects to validate an object of type lager.LogFormat")
+	}
+
+	expectedLogData, ok := matcher.expected.(lager.Data)
+	if !ok {
+		return false, fmt.Errorf("logMessageMatcher validates the Data of a lager.LogFormat object against a desired map[string]interface{}.")
+	}
+
+	for key, value := range expectedLogData {
+		if actualLog.Data[key] != value {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (matcher *logDataMatcher) FailureMessage(actual interface{}) string {
+	actualLog := actual.(lager.LogFormat)
+
+	return fmt.Sprintf("The log messages did not match. Expected \"%s\" but got \"%s\".", matcher.expected, actualLog.Message)
+}
+
+func (matcher *logDataMatcher) NegatedFailureMessage(actual interface{}) string {
+	return "The log messages were supposed to be different, but they were the same."
+}
 
 var _ = Describe("ZoneBuilder", func() {
 	var repA, repB, repC *repfakes.FakeSimClient
@@ -77,10 +118,9 @@ var _ = Describe("ZoneBuilder", func() {
 	It("logs that it successfully fetched the state of the cells", func() {
 		auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 
-		getLogData := func(format lager.LogFormat) lager.Data { return format.Data }
 		Expect(logger.LogMessages()).To(ContainElement("test.fetched-cell-state"))
-		Expect(logger.Logs()).To(ContainElement(WithTransform(getLogData, Equal(lager.Data{"cell-guid": "A"}))))
-		Expect(logger.Logs()).To(ContainElement(WithTransform(getLogData, Equal(lager.Data{"cell-guid": "B"}))))
+		Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "A"})))
+		Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B"})))
 	})
 
 	Context("when cells are evacuating", func() {
@@ -104,9 +144,8 @@ var _ = Describe("ZoneBuilder", func() {
 		It("logs that it ignored the evacuating cell", func() {
 			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 
-			getLogData := func(format lager.LogFormat) lager.Data { return format.Data }
 			Expect(logger.LogMessages()).To(ContainElement("test.ignored-evacuating-cell"))
-			Expect(logger.Logs()).To(ContainElement(WithTransform(getLogData, Equal(lager.Data{"cell-guid": "B"}))))
+			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B"})))
 		})
 	})
 
@@ -153,10 +192,9 @@ var _ = Describe("ZoneBuilder", func() {
 		It("logs that there was a cell ID mismatch", func() {
 			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 
-			getLogData := func(format lager.LogFormat) lager.Data { return format.Data }
-
 			Expect(logger.LogMessages()).To(ContainElement("test.cell-id-mismatch"))
-			Expect(logger.Logs()).To(ContainElement(WithTransform(getLogData, Equal(lager.Data{"cell-guid": "B", "cell-state-guid": "badCellID"}))))
+			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B"})))
+			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-state-guid": "badCellID"})))
 		})
 	})
 
@@ -187,9 +225,9 @@ var _ = Describe("ZoneBuilder", func() {
 		It("logs that it failed to fetch cell state", func() {
 			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
 
-			getLogData := func(format lager.LogFormat) lager.Data { return format.Data }
 			Expect(logger.LogMessages()).To(ContainElement("test.failed-to-get-state"))
-			Expect(logger.Logs()).To(ContainElement(WithTransform(getLogData, Equal(lager.Data{"cell-guid": "B", "error": "boom"}))))
+			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B"})))
+			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"error": "boom"})))
 		})
 	})
 

@@ -44,7 +44,13 @@ func (c *Cell) MatchPlacementTags(placementTags []string) bool {
 }
 
 func (c *Cell) ScoreForLRP(lrp *rep.LRP, startingContainerWeight float64) (float64, error) {
-	err := c.state.ResourceMatch(&lrp.Resource)
+	proxiedLRP := rep.Resource{
+		MemoryMB: lrp.Resource.MemoryMB + int32(c.state.ProxyMemoryAllocationMB),
+		DiskMB:   lrp.Resource.DiskMB,
+		MaxPids:  lrp.Resource.MaxPids,
+	}
+
+	err := c.state.ResourceMatch(&proxiedLRP)
 	if err != nil {
 		return 0, err
 	}
@@ -58,7 +64,7 @@ func (c *Cell) ScoreForLRP(lrp *rep.LRP, startingContainerWeight float64) (float
 
 	localityScore := LocalityOffset * numberOfInstancesWithMatchingProcessGuid
 
-	resourceScore := c.state.ComputeScore(&lrp.Resource, startingContainerWeight)
+	resourceScore := c.state.ComputeScore(&proxiedLRP, startingContainerWeight)
 	return resourceScore + float64(localityScore), nil
 }
 

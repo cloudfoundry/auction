@@ -92,7 +92,7 @@ var _ = Describe("Scheduler", func() {
 					BuildCellState("cellID", "A-zone", 100, 100, 100, false, inflightStartsPerCell, linuxOnlyRootFSProviders, []rep.LRP{
 						*BuildLRP("pg-1", "domain", 0, "", 10, 10, 10, []string{}),
 						*BuildLRP("pg-2", "domain", 0, "", 10, 10, 10, []string{}),
-					}, []string{}, []string{}, []string{}),
+					}, []string{}, []string{}, []string{}, 0),
 				),
 			}
 
@@ -104,7 +104,7 @@ var _ = Describe("Scheduler", func() {
 					clients["B-cell"],
 					BuildCellState("cellID", "B-zone", 100, 100, 100, false, inflightStartsPerCell, linuxOnlyRootFSProviders, []rep.LRP{
 						*BuildLRP("pg-3", "domain", 0, "", 10, 10, 10, []string{}),
-					}, []string{}, []string{}, []string{}),
+					}, []string{}, []string{}, []string{}, 0),
 				),
 			}
 		})
@@ -154,7 +154,7 @@ var _ = Describe("Scheduler", func() {
 					BuildCellState("cellID", "A-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 						*BuildLRP("pg-1", "domain", 0, "", 10, 10, 10, []string{}),
 						*BuildLRP("pg-2", "domain", 0, "", 10, 10, 10, []string{}),
-					}, []string{}, []string{}, []string{}),
+					}, []string{}, []string{}, []string{}, 0),
 				),
 			}
 
@@ -166,7 +166,7 @@ var _ = Describe("Scheduler", func() {
 					clients["B-cell"],
 					BuildCellState("cellID", "B-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 						*BuildLRP("pg-3", "domain", 0, "", 10, 10, 10, []string{}),
-					}, []string{}, []string{}, []string{}),
+					}, []string{}, []string{}, []string{}, 0),
 				),
 			}
 		})
@@ -181,7 +181,7 @@ var _ = Describe("Scheduler", func() {
 						clients["C-cell"],
 						BuildCellState("cellID", "C-zone", 100, 100, 100, false, 0, windowsOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-win-1", "domain", 0, "", 10, 10, 10, []string{}),
-						}, []string{}, []string{}, []string{}),
+						}, []string{}, []string{}, []string{}, 0),
 					),
 				}
 			})
@@ -227,7 +227,7 @@ var _ = Describe("Scheduler", func() {
 						clients["A-cell"],
 						BuildCellState("cellID", "A-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-win-1", "domain", 0, "", 10, 10, 10, []string{}),
-						}, []string{"driver-1", "driver-2"}, []string{}, []string{}),
+						}, []string{"driver-1", "driver-2"}, []string{}, []string{}, 0),
 					),
 				}
 
@@ -239,7 +239,7 @@ var _ = Describe("Scheduler", func() {
 						clients["B-cell"],
 						BuildCellState("cellID", "B-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-win-1", "domain", 0, "", 10, 10, 10, []string{}),
-						}, []string{"driver-3"}, []string{}, []string{}),
+						}, []string{"driver-3"}, []string{}, []string{}, 0),
 					),
 				}
 			})
@@ -298,7 +298,7 @@ var _ = Describe("Scheduler", func() {
 						clients["cell-z1-1"],
 						BuildCellState("cellID", "z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack", "moo"}),
-						}, []string{}, []string{"quack", "moo"}, []string{"chirp"}),
+						}, []string{}, []string{"quack", "moo"}, []string{"chirp"}, 0),
 					),
 					auctionrunner.NewCell(
 						logger,
@@ -306,7 +306,7 @@ var _ = Describe("Scheduler", func() {
 						clients["cell-z1-2"],
 						BuildCellState("cellID", "z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{}),
-						}, []string{}, []string{}, []string{}),
+						}, []string{}, []string{}, []string{}, 0),
 					),
 				}
 
@@ -318,7 +318,7 @@ var _ = Describe("Scheduler", func() {
 						clients["cell-z2-1"],
 						BuildCellState("cellID", "z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack"}),
-						}, []string{}, []string{"quack"}, []string{"chirp", "baa"}),
+						}, []string{}, []string{"quack"}, []string{"chirp", "baa"}, 0),
 					),
 					auctionrunner.NewCell(
 						logger,
@@ -326,7 +326,7 @@ var _ = Describe("Scheduler", func() {
 						clients["cell-z2-2"],
 						BuildCellState("cellID", "z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack", "moo", "oink"}),
-						}, []string{}, []string{"quack", "moo", "oink"}, []string{}),
+						}, []string{}, []string{"quack", "moo", "oink"}, []string{}, 0),
 					),
 				}
 
@@ -565,7 +565,7 @@ var _ = Describe("Scheduler", func() {
 							logger,
 							"C-cell",
 							clients["C-cell"],
-							BuildCellState("cellID", "C-zone", 1200, 5, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{}, []string{}, []string{}, []string{}),
+							BuildCellState("cellID", "C-zone", 1200, 5, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{}, []string{}, []string{}, []string{}, 0),
 						),
 					}
 				})
@@ -589,12 +589,12 @@ var _ = Describe("Scheduler", func() {
 			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "A-cell", clients["A-cell"], BuildCellState("cellID", "A-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10, 10, []string{}),
 				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10, 10, []string{}),
-			}, []string{"driver-1", "driver-2"}, []string{}, []string{}))}
+			}, []string{"driver-1", "driver-2"}, []string{}, []string{}, 0))}
 
 			clients["B-cell"] = &repfakes.FakeSimClient{}
 			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "B-cell", clients["B-cell"], BuildCellState("cellID", "B-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("does-not-matter", "domain", 0, "", 10, 10, 10, []string{}),
-			}, []string{"driver-3"}, []string{}, []string{}))}
+			}, []string{"driver-3"}, []string{}, []string{}, 0))}
 
 			taskAuction = BuildTaskAuction(BuildTask("tg-1", "domain", linuxRootFSURL, 10, 10, 10, []string{}, []string{}), clock.Now())
 			clock.Increment(time.Minute)
@@ -610,7 +610,7 @@ var _ = Describe("Scheduler", func() {
 						clients["C-cell"],
 						BuildCellState("cellID", "C-zone", 100, 100, 100, false, 0, windowsOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("tg-win-1", "domain", 0, "", 10, 10, 10, []string{}),
-						}, []string{}, []string{}, []string{}),
+						}, []string{}, []string{}, []string{}, 0),
 					),
 				}
 			})
@@ -700,7 +700,7 @@ var _ = Describe("Scheduler", func() {
 						clients["cell-z1-1"],
 						BuildCellState("cellID", "z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack", "moo"}),
-						}, []string{}, []string{"quack", "moo"}, []string{}),
+						}, []string{}, []string{"quack", "moo"}, []string{}, 0),
 					),
 					auctionrunner.NewCell(
 						logger,
@@ -708,7 +708,7 @@ var _ = Describe("Scheduler", func() {
 						clients["cell-z1-2"],
 						BuildCellState("cellID", "z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{}),
-						}, []string{}, []string{}, []string{}),
+						}, []string{}, []string{}, []string{}, 0),
 					),
 				}
 
@@ -720,7 +720,7 @@ var _ = Describe("Scheduler", func() {
 						clients["cell-z2-1"],
 						BuildCellState("cellID", "z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack"}),
-						}, []string{}, []string{"quack"}, []string{}),
+						}, []string{}, []string{"quack"}, []string{}, 0),
 					),
 					auctionrunner.NewCell(
 						logger,
@@ -728,7 +728,7 @@ var _ = Describe("Scheduler", func() {
 						clients["cell-z2-2"],
 						BuildCellState("cellID", "z1", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 							*BuildLRP("pg-5", "domain", 0, "", 10, 10, 10, []string{"quack", "moo", "oink"}),
-						}, []string{}, []string{"quack", "moo", "oink"}, []string{}),
+						}, []string{}, []string{"quack", "moo", "oink"}, []string{}, 0),
 					),
 				}
 
@@ -859,7 +859,7 @@ var _ = Describe("Scheduler", func() {
 							logger,
 							"C-cell",
 							clients["C-cell"],
-							BuildCellState("cellID", "C-zone", 1200, 5, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{}, []string{}, []string{}, []string{}),
+							BuildCellState("cellID", "C-zone", 1200, 5, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{}, []string{}, []string{}, []string{}, 0),
 						),
 					}
 				})
@@ -926,13 +926,13 @@ var _ = Describe("Scheduler", func() {
 			zones["A-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "A-cell", clients["A-cell"], BuildCellState("cellID", "A-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("pg-1", "domain", 0, "", 10, 10, 10, []string{}),
 				*BuildLRP("pg-2", "domain", 0, "", 10, 10, 10, []string{}),
-			}, []string{}, []string{}, []string{}))}
+			}, []string{}, []string{}, []string{}, 0))}
 
 			clients["B-cell"] = &repfakes.FakeSimClient{}
 			zones["B-zone"] = auctionrunner.Zone{auctionrunner.NewCell(logger, "B-cell", clients["B-cell"], BuildCellState("cellID", "B-zone", 100, 100, 100, false, 0, linuxOnlyRootFSProviders, []rep.LRP{
 				*BuildLRP("pg-3", "domain", 0, "", 10, 10, 10, []string{}),
 				*BuildLRP("pg-4", "domain", 0, "", 20, 20, 10, []string{}),
-			}, []string{}, []string{}, []string{}))}
+			}, []string{}, []string{}, []string{}, 0))}
 		})
 
 		It("should optimize the distribution", func() {
@@ -1047,7 +1047,7 @@ var _ = Describe("Scheduler", func() {
 
 		JustBeforeEach(func() {
 			zones["zone"] = auctionrunner.Zone{
-				auctionrunner.NewCell(logger, "cell", clients["cell"], BuildCellState("cellID", "zone", memory, 1000, 1000, false, 0, linuxOnlyRootFSProviders, []rep.LRP{}, []string{}, []string{}, []string{})),
+				auctionrunner.NewCell(logger, "cell", clients["cell"], BuildCellState("cellID", "zone", memory, 1000, 1000, false, 0, linuxOnlyRootFSProviders, []rep.LRP{}, []string{}, []string{}, []string{}, 0)),
 			}
 
 			auctionRequest := auctiontypes.AuctionRequest{

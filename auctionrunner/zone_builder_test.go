@@ -101,9 +101,9 @@ var _ = Describe("ZoneBuilder", func() {
 			"C": repC,
 		}
 
-		repA.StateReturns(BuildCellState("A", "the-zone", 100, 200, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), nil)
-		repB.StateReturns(BuildCellState("B", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), nil)
-		repC.StateReturns(BuildCellState("C", "other-zone", 100, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), nil)
+		repA.StateReturns(BuildCellState("A", "the-zone", 100, 200, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
+		repB.StateReturns(BuildCellState("B", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
+		repC.StateReturns(BuildCellState("C", "other-zone", 100, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
 
 		metricEmitter = new(fakes.FakeAuctionMetricEmitterDelegate)
 	})
@@ -144,7 +144,7 @@ var _ = Describe("ZoneBuilder", func() {
 
 	Context("when cells are evacuating", func() {
 		BeforeEach(func() {
-			repB.StateReturns(BuildCellState("B", "the-zone", 10, 10, 100, true, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), nil)
+			repB.StateReturns(BuildCellState("B", "the-zone", 10, 10, 100, true, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
 		})
 
 		It("does not include them in the map", func() {
@@ -170,7 +170,7 @@ var _ = Describe("ZoneBuilder", func() {
 
 	Context("when a cell ID does not match the cell state ID", func() {
 		BeforeEach(func() {
-			repB.StateReturns(BuildCellState("badCellID", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), nil)
+			repB.StateReturns(BuildCellState("badCellID", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
 		})
 
 		It("does not include that cell in the map", func() {
@@ -188,7 +188,7 @@ var _ = Describe("ZoneBuilder", func() {
 
 		Context("when the cell id is empty", func() {
 			BeforeEach(func() {
-				repB.StateReturns(BuildCellState("", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), nil)
+				repB.StateReturns(BuildCellState("", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
 			})
 
 			It("includes that cell in the map", func() {
@@ -219,7 +219,7 @@ var _ = Describe("ZoneBuilder", func() {
 
 	Context("when a client fails", func() {
 		BeforeEach(func() {
-			repB.StateReturns(BuildCellState("B", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), errors.New("boom"))
+			repB.StateReturns(BuildCellState("B", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), errors.New("boom"))
 		})
 
 		It("does not include the client in the map", func() {
@@ -251,17 +251,17 @@ var _ = Describe("ZoneBuilder", func() {
 
 	Context("when clients are slow to respond", func() {
 		BeforeEach(func() {
-			repA.StateReturns(BuildCellState("A", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), errors.New("timeout"))
+			repA.StateReturns(BuildCellState("A", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), errors.New("timeout"))
 			repA.StateClientTimeoutReturns(5 * time.Second)
 			repA.SetStateClientStub = func(client *http.Client) {
 				repA.StateClientTimeoutReturns(client.Timeout)
 			}
-			repB.StateReturns(BuildCellState("B", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), errors.New("timeout"))
+			repB.StateReturns(BuildCellState("B", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), errors.New("timeout"))
 			repB.StateClientTimeoutReturns(2 * time.Second)
 			repB.SetStateClientStub = func(client *http.Client) {
 				repB.StateClientTimeoutReturns(client.Timeout)
 			}
-			repC.StateReturns(BuildCellState("C", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}), errors.New("timeout"))
+			repC.StateReturns(BuildCellState("C", "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), errors.New("timeout"))
 			repC.StateClientTimeoutReturns(4 * time.Second)
 			repC.SetStateClientStub = func(client *http.Client) {
 				repC.StateClientTimeoutReturns(client.Timeout)

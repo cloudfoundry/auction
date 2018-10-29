@@ -145,6 +145,7 @@ func BuildCellState(
 	volumeDrivers []string,
 	placementTags []string,
 	optionalPlacementTags []string,
+	proxyMemoryAllocationMB int,
 ) rep.CellState {
 	totalResources := rep.NewResources(memoryMB, diskMB, containers)
 
@@ -171,5 +172,6 @@ func BuildCellState(
 		volumeDrivers,
 		placementTags,
 		optionalPlacementTags,
+		proxyMemoryAllocationMB,
 	)
 }

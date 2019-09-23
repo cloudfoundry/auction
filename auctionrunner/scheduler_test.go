@@ -14,7 +14,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 )
 
 var defaultStartingContainerCountMaximum int = 0
@@ -532,7 +531,10 @@ var _ = Describe("Scheduler", func() {
 			})
 
 			It("should log an error indicating the LRP and which resources failed", func() {
-				Expect(logger.Buffer()).To(gbytes.Say("lrp-auction-failed.*insufficient resources: memory.*pg-4"))
+				logText := string(logger.Buffer().Contents())
+				Expect(logText).To(MatchRegexp("lrp-auction-failed.*insufficient resources: memory.*pg-4"))
+				Expect(logText).To(MatchRegexp("lrp-auction-failed.*lrp-placement-constraints.*"))
+				Expect(logText).To(MatchRegexp(".*cells-failing-score-for-lrp.*"))
 			})
 
 			It("should mark the start auction as failed", func() {

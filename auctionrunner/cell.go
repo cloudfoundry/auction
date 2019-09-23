@@ -39,8 +39,11 @@ func (c *Cell) MatchVolumeDrivers(volumeDrivers []string) bool {
 }
 
 func (c *Cell) MatchPlacementTags(placementTags []string) bool {
-	// fmt.Printf("cell to match against is [%s]\n", c.Guid)
 	return c.state.MatchPlacementTags(placementTags)
+}
+
+func (c *Cell) State() rep.CellState {
+	return c.state
 }
 
 func (c *Cell) ScoreForLRP(lrp *rep.LRP, startingContainerWeight float64) (float64, error) {

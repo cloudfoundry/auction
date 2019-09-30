@@ -20,6 +20,7 @@ type auctionRunner struct {
 	batch                         *Batch
 	clock                         clock.Clock
 	workPool                      *workpool.WorkPool
+	binPackFirstFitWeight         float64
 	startingContainerWeight       float64
 	startingContainerCountMaximum int
 }
@@ -30,6 +31,7 @@ func New(
 	metricEmitter auctiontypes.AuctionMetricEmitterDelegate,
 	clock clock.Clock,
 	workPool *workpool.WorkPool,
+	binPackFirstFitWeight float64,
 	startingContainerWeight float64,
 	startingContainerCountMaximum int,
 ) *auctionRunner {
@@ -41,6 +43,7 @@ func New(
 		batch:                         NewBatch(clock),
 		clock:                         clock,
 		workPool:                      workPool,
+		binPackFirstFitWeight:         binPackFirstFitWeight  ,
 		startingContainerWeight:       startingContainerWeight,
 		startingContainerCountMaximum: startingContainerCountMaximum,
 	}
@@ -107,7 +110,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				Tasks: taskAuctions,
 			}
 
-			scheduler := NewScheduler(a.workPool, zones, a.clock, logger, a.startingContainerWeight, a.startingContainerCountMaximum)
+			scheduler := NewScheduler(a.workPool, zones, a.clock, logger, a.binPackFirstFitWeight, a.startingContainerWeight, a.startingContainerCountMaximum)
 			auctionResults := scheduler.Schedule(auctionRequest)
 			logger.Info("scheduled", lager.Data{
 				"successful-lrp-start-auctions": len(auctionResults.SuccessfulLRPs),

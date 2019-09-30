@@ -46,7 +46,7 @@ func (c *Cell) State() rep.CellState {
 	return c.state
 }
 
-func (c *Cell) ScoreForLRP(lrp *rep.LRP, startingContainerWeight float64) (float64, error) {
+func (c *Cell) ScoreForLRP(lrp *rep.LRP, startingContainerWeight float64, binPackFirstFitWeight float64) (float64, error) {
 	proxiedLRP := rep.Resource{
 		MemoryMB: lrp.Resource.MemoryMB + int32(c.state.ProxyMemoryAllocationMB),
 		DiskMB:   lrp.Resource.DiskMB,
@@ -68,7 +68,18 @@ func (c *Cell) ScoreForLRP(lrp *rep.LRP, startingContainerWeight float64) (float
 	localityScore := LocalityOffset * numberOfInstancesWithMatchingProcessGuid
 
 	resourceScore := c.state.ComputeScore(&proxiedLRP, startingContainerWeight)
-	return resourceScore + float64(localityScore), nil
+
+	indexScore := float64(c.state.CellIndex) * binPackFirstFitWeight
+
+	c.logger.Debug("score-for-lrp", lager.Data{
+		"cell-guid":      c.Guid,
+		"cell-index":     c.state.CellIndex,
+		"locality-score": localityScore,
+		"resource-score": resourceScore,
+		"index-score":    indexScore,
+		"score":          resourceScore + float64(localityScore) + indexScore,
+	})
+	return resourceScore + float64(localityScore) + indexScore, nil
 }
 
 func (c *Cell) ScoreForTask(task *rep.Task, startingContainerWeight float64) (float64, error) {

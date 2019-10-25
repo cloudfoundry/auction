@@ -25,14 +25,14 @@ type SimulationRep struct {
 
 func New(cellID string, stack string, zone string, totalResources rep.Resources, volumeDrivers []string) rep.SimClient {
 	return &SimulationRep{
-		cellID:         cellID,
-		stack:          stack,
-		totalResources: totalResources,
-		lrps:           map[string]rep.LRP{},
-		tasks:          map[string]rep.Task{},
+		cellID:                 cellID,
+		stack:                  stack,
+		totalResources:         totalResources,
+		lrps:                   map[string]rep.LRP{},
+		tasks:                  map[string]rep.Task{},
 		startingContainerCount: 0,
-		zone:          zone,
-		volumeDrivers: volumeDrivers,
+		zone:                   zone,
+		volumeDrivers:          volumeDrivers,
 
 		lock: &sync.Mutex{},
 	}
@@ -61,13 +61,13 @@ func (r *SimulationRep) State(_ lager.Logger) (rep.CellState, error) {
 		RootFSProviders: rep.RootFSProviders{
 			models.PreloadedRootFSScheme: rep.NewFixedSetRootFSProvider(r.stack),
 		},
-		AvailableResources: availableResources,
-		TotalResources:     r.totalResources,
-		LRPs:               lrps,
-		Tasks:              tasks,
+		AvailableResources:     availableResources,
+		TotalResources:         r.totalResources,
+		LRPs:                   lrps,
+		Tasks:                  tasks,
 		StartingContainerCount: r.startingContainerCount,
-		Zone:          r.zone,
-		VolumeDrivers: r.volumeDrivers,
+		Zone:                   r.zone,
+		VolumeDrivers:          r.volumeDrivers,
 	}, nil
 }
 

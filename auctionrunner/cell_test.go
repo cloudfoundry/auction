@@ -140,6 +140,90 @@ var _ = Describe("Cell", func() {
 			Expect(bigScore).To(BeNumerically("<", smallScore), "prefer Cells with more resources")
 		})
 
+		Context("Weighted Bin Pack First Fit algorithm", func() {
+			var instance *rep.LRP
+			var cellStateZero, cellStateOne rep.CellState
+			var cellZero, cellOne *auctionrunner.Cell
+
+			BeforeEach(func() {
+				instance = BuildLRP("pg-0", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{})
+
+				cellStateZero = BuildCellState(
+					"cellID",
+					0,
+					"the-zone",
+					100,
+					200,
+					50,
+					false,
+					0,
+					linuxOnlyRootFSProviders,
+					[]rep.LRP{
+						*BuildLRP("pg-1", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{}),
+					},
+					[]string{},
+					[]string{},
+					[]string{},
+					0,
+				)
+				cellZero = auctionrunner.NewCell(logger, "cell-0", client, cellStateZero)
+
+				cellStateOne = BuildCellState(
+					"cellID",
+					1,
+					"the-zone",
+					100,
+					200,
+					50,
+					false,
+					0,
+					linuxOnlyRootFSProviders,
+					[]rep.LRP{
+						*BuildLRP("pg-2", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{}),
+					},
+					[]string{},
+					[]string{},
+					[]string{},
+					0,
+				)
+				cellOne = auctionrunner.NewCell(logger, "cell-1", client, cellStateOne)
+			})
+
+			It("factors in Bin Pack First Fit algorithm when a weight is provided", func() {
+				binPackFirstFitWeight := 0.2
+
+				cellZeroScore, err := cellZero.ScoreForLRP(instance, 0.0, binPackFirstFitWeight)
+				Expect(err).NotTo(HaveOccurred())
+				cellOneScore, err := cellOne.ScoreForLRP(instance, 0.0, binPackFirstFitWeight)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(cellZeroScore).To(BeNumerically("<", cellOneScore), "prefer Cells that have a lower index number")
+			})
+
+			It("privileges spreading LRPs across cells over Bin Pack First Fit algorithm", func() {
+				instance = BuildLRP("pg-1", "domain", 1, linuxRootFSURL, 20, 20, 10, []string{})
+				binPackFirstFitWeight := 0.2
+
+				cellZeroScore, err := cellZero.ScoreForLRP(instance, 0.0, binPackFirstFitWeight)
+				Expect(err).NotTo(HaveOccurred())
+				cellOneScore, err := cellOne.ScoreForLRP(instance, 0.0, binPackFirstFitWeight)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(cellZeroScore).To(BeNumerically(">", cellOneScore), "prefer Cells that do not have an instance of self already running")
+			})
+
+			It("ignores Bin Pack First Fit algorithm when a weight is not provided", func() {
+				binPackFirstFitWeight := 0.0
+
+				cellZeroScore, err := cellZero.ScoreForLRP(instance, 0.0, binPackFirstFitWeight)
+				Expect(err).NotTo(HaveOccurred())
+				cellOneScore, err := cellOne.ScoreForLRP(instance, 0.0, binPackFirstFitWeight)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(cellZeroScore).To(BeNumerically("==", cellOneScore), "ignore Bin Pack First Fit algorithm")
+			})
+		})
+
 		Context("Starting Containers", func() {
 			var instance *rep.LRP
 			var busyState, boredState rep.CellState

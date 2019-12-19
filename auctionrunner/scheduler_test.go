@@ -535,7 +535,7 @@ var _ = Describe("Scheduler", func() {
 				Expect(logText).To(MatchRegexp("lrp-auction-failed.*insufficient resources: memory.*pg-4"))
 				Expect(logText).To(MatchRegexp("lrp-auction-failed.*lrp-placement-constraints.*"))
 				Expect(logText).To(MatchRegexp(".*cells-failing-score-for-lrp.*"))
-				Expect(logText).To(MatchRegexp(".*AvailableResource.*"))
+				Expect(logText).To(MatchRegexp(".*AvailableResources.*"))
 				Expect(logText).ToNot(MatchRegexp(".*LRPs.*"))
 			})
 

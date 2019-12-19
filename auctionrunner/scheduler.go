@@ -257,6 +257,26 @@ func (s *Scheduler) commitCells() []rep.Work {
 	return failedWorks
 }
 
+type CellResourceState struct {
+	CellID                string `json:"cell_id"`
+	RootFSProviders       rep.RootFSProviders
+	AvailableResources    rep.Resources
+	TotalResources        rep.Resources
+	PlacementTags         []string
+	OptionalPlacementTags []string
+}
+
+func NewCellResourceState(state rep.CellState) CellResourceState {
+	return CellResourceState{
+		CellID:                state.CellID,
+		RootFSProviders:       state.RootFSProviders,
+		AvailableResources:    state.AvailableResources,
+		TotalResources:        state.TotalResources,
+		PlacementTags:         state.PlacementTags,
+		OptionalPlacementTags: state.OptionalPlacementTags,
+	}
+}
+
 func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*auctiontypes.LRPAuction, error) {
 	var winnerCell *Cell
 	winnerScore := 1e20
@@ -271,13 +291,13 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 	sortedZones := sortZonesByInstances(filteredZones)
 	problems := map[string]struct{}{"disk": struct{}{}, "memory": struct{}{}, "containers": struct{}{}}
 
-	cellStates := map[string]rep.CellState{}
+	cellStates := map[string]CellResourceState{}
 
 	for zoneIndex, lrpByZone := range sortedZones {
 		for _, cell := range lrpByZone.zone {
 			score, err := cell.ScoreForLRP(&lrpAuction.LRP, s.startingContainerWeight)
 			if err != nil {
-				cellStates[cell.Guid] = cell.State()
+				cellStates[cell.Guid] = NewCellResourceState(cell.State())
 				removeNonApplicableProblems(problems, err)
 				continue
 			}

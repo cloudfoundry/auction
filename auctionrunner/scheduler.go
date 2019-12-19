@@ -303,14 +303,14 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 	if winnerCell == nil {
 		err := &rep.InsufficientResourcesError{Problems: problems}
 		s.logger.Error("lrp-auction-failed", err, lager.Data{"lrp-guid": lrpAuction.Identifier(), "lrp-instance-guid": lrpAuction.LRP.InstanceGUID, "lrp-placement-constraints": lrpAuction.LRP.PlacementConstraint, "lrp-resource": lrpAuction.LRP.Resource})
-		s.logger.Info("cells-failing-score-for-lrp", lager.Data{"states": cellStates})
+		s.logger.Debug("cells-failing-score-for-lrp", lager.Data{"states": cellStates})
 		return nil, err
 	}
 
 	err = winnerCell.ReserveLRP(&lrpAuction.LRP)
 	if err != nil {
 		s.logger.Error("lrp-failed-to-reserve-cell", err, lager.Data{"cell-guid": winnerCell.Guid, "lrp-guid": lrpAuction.Identifier(), "lrp-instance-guid": lrpAuction.LRP.InstanceGUID, "lrp-placement-constraints": lrpAuction.LRP.PlacementConstraint, "lrp-resource": lrpAuction.LRP.Resource})
-		s.logger.Info("cells-failing-score-for-lrp", lager.Data{"states": cellStates})
+		s.logger.Debug("cells-failing-score-for-lrp", lager.Data{"states": cellStates})
 		return nil, err
 	}
 

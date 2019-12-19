@@ -59,7 +59,7 @@ func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 			lock.Lock()
 			zones[state.Zone] = append(zones[state.Zone], cell)
 			lock.Unlock()
-			logger.Info("fetched-cell-state", lager.Data{"cell-guid": guid, "duration_ns": time.Since(startTime)})
+			logger.Debug("fetched-cell-state", lager.Data{"cell-guid": guid, "duration_ns": time.Since(startTime)})
 		})
 	}
 

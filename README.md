@@ -6,7 +6,7 @@
 
 Please report all issues and feature requests in [cloudfoundry/diego-release](https://github.com/cloudfoundry/diego-release/issues).
 
-####Learn more about Diego and its components at [diego-design-notes](https://github.com/cloudfoundry/diego-design-notes)
+#### Learn more about Diego and its components at [diego-design-notes](https://github.com/cloudfoundry/diego-design-notes)
 
 The `auction` package in this repository encodes the details behind Diego's scheduling mechanism.  There are two components in Diego that participate in auctions:
 

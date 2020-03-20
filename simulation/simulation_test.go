@@ -6,14 +6,17 @@ import (
 	"sync"
 	"time"
 
+	"code.cloudfoundry.org/auction/auctionrunner"
 	"code.cloudfoundry.org/auction/simulation/util"
 	"code.cloudfoundry.org/auction/simulation/visualization"
 	"code.cloudfoundry.org/auctioneer"
 	"code.cloudfoundry.org/bbs/models"
+	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/rep"
 	"github.com/GaryBoone/GoStats/stats"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/tedsuo/ifrit"
 )
 
 var _ = Describe("Auction", func() {
@@ -144,6 +147,53 @@ var _ = Describe("Auction", func() {
 					instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
 					runAndReportStartAuction(instances, ncells[i], i, 0)
+
+					assertDistributionTolerances(1)
+				})
+			}
+		})
+
+		Context("Bin Pack First Fit", func() {
+			BeforeEach(func() {
+				metricEmitterDelegate := NewAuctionMetricEmitterDelegate()
+				runner = auctionrunner.New(
+					logger,
+					runnerDelegate,
+					metricEmitterDelegate,
+					clock.NewClock(),
+					workPool,
+					0.75, // Artificially high to force LRPs to be scheduled on lower indexed cells.
+					0.5,
+					defaultMaxContainerStartCount,
+				)
+				runnerProcess = ifrit.Invoke(runner)
+			})
+
+			ncells := []int{10}
+			napps := []int{80}
+			for i := range ncells {
+				i := i
+				It("favors cells with lower index", func() {
+					instances := generateUniqueLRPStartAuctions(napps[i], 1)
+
+					runAndReportStartAuction(instances, ncells[i], i, 4)
+
+					finalDistributions := make(map[string]float64)
+					for _, lrpAuction := range runnerDelegate.Results().SuccessfulLRPs {
+						finalDistributions[lrpAuction.Winner] += 1.0
+					}
+
+					for j := 1; j < ncells[i]; j++ {
+						cellID := fmt.Sprintf("REP-%d", j)
+						nextCellID := fmt.Sprintf("REP-%d", j+1)
+						Expect(finalDistributions[cellID]).To(BeNumerically(">", finalDistributions[nextCellID]))
+					}
+				})
+
+				It("should distribute evenly", func() {
+					instances := generateLRPStartAuctionsForProcessGuid(napps[i], "yellow", 1)
+
+					runAndReportStartAuction(instances, ncells[i], i+1, 2)
 
 					assertDistributionTolerances(1)
 				})

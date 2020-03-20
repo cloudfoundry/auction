@@ -107,6 +107,7 @@ var _ = BeforeEach(func() {
 		metricEmitterDelegate,
 		clock.NewClock(),
 		workPool,
+		0.0,
 		0.25,
 		defaultMaxContainerStartCount,
 	)
@@ -138,7 +139,7 @@ func buildInProcessReps() map[string]rep.SimClient {
 
 	for i := 0; i < numCells; i++ {
 		guid := cellGuid(i)
-		cells[guid] = simulationrep.New(guid, linuxStack, zone(i), repResources, defaultDrivers)
+		cells[guid] = simulationrep.New(guid, i, linuxStack, zone(i), repResources, defaultDrivers)
 	}
 
 	return cells

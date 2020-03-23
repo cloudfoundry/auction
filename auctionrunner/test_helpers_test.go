@@ -134,7 +134,7 @@ var windowsOnlyRootFSProviders = rep.RootFSProviders{models.PreloadedRootFSSchem
 
 func BuildCellState(
 	cellID string,
-    cellIndex int,
+	cellIndex int,
 	zone string,
 	memoryMB int32,
 	diskMB int32,
@@ -161,7 +161,7 @@ func BuildCellState(
 
 	return rep.NewCellState(
 		cellID,
-        cellIndex,
+		cellIndex,
 		"https://foo.cell.service.cf.internal",
 		rootFSProviders,
 		availableResources,

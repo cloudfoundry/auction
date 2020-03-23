@@ -43,7 +43,7 @@ func New(
 		batch:                         NewBatch(clock),
 		clock:                         clock,
 		workPool:                      workPool,
-		binPackFirstFitWeight:         binPackFirstFitWeight  ,
+		binPackFirstFitWeight:         binPackFirstFitWeight,
 		startingContainerWeight:       startingContainerWeight,
 		startingContainerCountMaximum: startingContainerCountMaximum,
 	}

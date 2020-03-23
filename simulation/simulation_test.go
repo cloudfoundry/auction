@@ -154,48 +154,56 @@ var _ = Describe("Auction", func() {
 		})
 
 		Context("Bin Pack First Fit", func() {
-			BeforeEach(func() {
-				metricEmitterDelegate := NewAuctionMetricEmitterDelegate()
-				runner = auctionrunner.New(
-					logger,
-					runnerDelegate,
-					metricEmitterDelegate,
-					clock.NewClock(),
-					workPool,
-					0.75, // Artificially high to force LRPs to be scheduled on lower indexed cells.
-					0.5,
-					defaultMaxContainerStartCount,
-				)
-				runnerProcess = ifrit.Invoke(runner)
-			})
+			napps := []int{8, 40, 200, 800}
+			ncells := []int{4, 10, 20, 40}
+			binPackWeights := []float64{0.25, 0.5, 0.75}
 
-			ncells := []int{10}
-			napps := []int{80}
-			for i := range ncells {
-				i := i
-				It("favors cells with lower index", func() {
-					instances := generateUniqueLRPStartAuctions(napps[i], 1)
+			for _, w := range binPackWeights {
+				weight := w
+				Context(fmt.Sprintf("with weight %f", w), func() {
+					BeforeEach(func() {
+						metricEmitterDelegate := NewAuctionMetricEmitterDelegate()
+						runner = auctionrunner.New(
+							logger,
+							runnerDelegate,
+							metricEmitterDelegate,
+							clock.NewClock(),
+							workPool,
+							weight,
+							0.5,
+							defaultMaxContainerStartCount,
+						)
+						runnerProcess = ifrit.Invoke(runner)
+					})
 
-					runAndReportStartAuction(instances, ncells[i], i, 4)
+					for i := range ncells {
+						i := i
+						FIt("favors cells with lower index", func() {
+							instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
-					finalDistributions := make(map[string]float64)
-					for _, lrpAuction := range runnerDelegate.Results().SuccessfulLRPs {
-						finalDistributions[lrpAuction.Winner] += 1.0
+							runAndReportStartAuction(instances, ncells[i], i, 4)
+
+							finalDistributions := make(map[string]float64)
+							for _, lrpAuction := range runnerDelegate.Results().SuccessfulLRPs {
+								finalDistributions[lrpAuction.Winner] += 1.0
+							}
+
+							for j := 1; j < ncells[i]; j++ {
+								cellID := fmt.Sprintf("REP-%d", j)
+								nextCellID := fmt.Sprintf("REP-%d", j+1)
+								Expect(finalDistributions[cellID]).To(BeNumerically(">=", finalDistributions[nextCellID]))
+							}
+							Expect(finalDistributions["REP-1"]).To(BeNumerically(">", finalDistributions[fmt.Sprintf("REP-%d", ncells[i])]))
+						})
+
+						It("should distribute evenly", func() {
+							instances := generateLRPStartAuctionsForProcessGuid(napps[i], "yellow", 1)
+
+							runAndReportStartAuction(instances, ncells[i], i+1, 2)
+
+							assertDistributionTolerances(1)
+						})
 					}
-
-					for j := 1; j < ncells[i]; j++ {
-						cellID := fmt.Sprintf("REP-%d", j)
-						nextCellID := fmt.Sprintf("REP-%d", j+1)
-						Expect(finalDistributions[cellID]).To(BeNumerically(">", finalDistributions[nextCellID]))
-					}
-				})
-
-				It("should distribute evenly", func() {
-					instances := generateLRPStartAuctionsForProcessGuid(napps[i], "yellow", 1)
-
-					runAndReportStartAuction(instances, ncells[i], i+1, 2)
-
-					assertDistributionTolerances(1)
 				})
 			}
 		})

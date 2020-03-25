@@ -178,7 +178,7 @@ var _ = Describe("Auction", func() {
 
 					for i := range ncells {
 						i := i
-						FIt("favors cells with lower index", func() {
+						It("favors cells with lower index", func() {
 							instances := generateUniqueLRPStartAuctions(napps[i], 1)
 
 							runAndReportStartAuction(instances, ncells[i], i, 4)

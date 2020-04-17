@@ -15,9 +15,11 @@ type zoneSorterByInstances struct {
 	zones []lrpByZone
 }
 
-func (s zoneSorterByInstances) Len() int           { return len(s.zones) }
-func (s zoneSorterByInstances) Swap(i, j int)      { s.zones[i], s.zones[j] = s.zones[j], s.zones[i] }
-func (s zoneSorterByInstances) Less(i, j int) bool { return s.zones[i].instances < s.zones[j].instances }
+func (s zoneSorterByInstances) Len() int      { return len(s.zones) }
+func (s zoneSorterByInstances) Swap(i, j int) { s.zones[i], s.zones[j] = s.zones[j], s.zones[i] }
+func (s zoneSorterByInstances) Less(i, j int) bool {
+	return s.zones[i].instances < s.zones[j].instances
+}
 
 func accumulateZonesByInstances(zones map[string]Zone, processGuid string) []lrpByZone {
 	lrpZones := []lrpByZone{}

@@ -149,9 +149,9 @@ var _ = Describe("Cell", func() {
 				instance = BuildLRP("pg-0", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{})
 
 				cellStateZero = BuildCellState(
-					"cellID",
+					"diego-cell/a",
 					0,
-					"the-zone",
+					"z1",
 					100,
 					200,
 					50,
@@ -169,9 +169,9 @@ var _ = Describe("Cell", func() {
 				cellZero = auctionrunner.NewCell(logger, "cell-0", client, cellStateZero)
 
 				cellStateOne = BuildCellState(
-					"cellID",
+					"diego-cell/b",
 					1,
-					"the-zone",
+					"z2",
 					100,
 					200,
 					50,
@@ -221,6 +221,20 @@ var _ = Describe("Cell", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(cellZeroScore).To(BeNumerically("==", cellOneScore), "ignore Bin Pack First Fit algorithm")
+			})
+
+			It("prefers normalised cell indices", func() {
+				binPackFirstFitWeight := 1.0
+
+				cellZero.Index = 0
+				cellZeroScore, err := cellZero.ScoreForLRP(instance, 0.0, binPackFirstFitWeight)
+				Expect(err).NotTo(HaveOccurred())
+
+				cellOne.Index = 0
+				cellOneScore, err := cellOne.ScoreForLRP(instance, 0.0, binPackFirstFitWeight)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(cellZeroScore).To(BeNumerically("==", cellOneScore), "has a separate normalised cell ordering for each zone")
 			})
 		})
 

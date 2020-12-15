@@ -40,6 +40,12 @@ func (z *Zone) filterCells(pc rep.PlacementConstraint) ([]*Cell, error) {
 	return cells, err
 }
 
+func (z Zone) Len() int      { return len(z) }
+func (z Zone) Swap(i, j int) { z[i], z[j] = z[j], z[i] }
+func (z Zone) Less(i, j int) bool {
+	return z[i].State().CellID < z[j].State().CellID
+}
+
 type Scheduler struct {
 	workPool                      *workpool.WorkPool
 	zones                         map[string]Zone
@@ -296,8 +302,12 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 
 	cellStates := map[string]CellResourceState{}
 
+	// Build the zone index registry
+
 	for zoneIndex, lrpByZone := range sortedZones {
 		for _, cell := range lrpByZone.zone {
+			// Take the index and pass it to the scoreForLRP
+
 			score, err := cell.ScoreForLRP(&lrpAuction.LRP, s.startingContainerWeight, s.binPackFirstFitWeight)
 			if err != nil {
 				cellStates[cell.Guid] = NewCellResourceState(cell.State())

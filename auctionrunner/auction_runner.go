@@ -23,6 +23,7 @@ type auctionRunner struct {
 	binPackFirstFitWeight         float64
 	startingContainerWeight       float64
 	startingContainerCountMaximum int
+	useNormalisedCellIndices      bool
 }
 
 func New(
@@ -35,10 +36,10 @@ func New(
 	// Add a use cell index normalization boolean flag
 	startingContainerWeight float64,
 	startingContainerCountMaximum int,
+	useNormalisedCellIndices bool,
 ) *auctionRunner {
 	return &auctionRunner{
-		logger: logger,
-
+		logger:                        logger,
 		delegate:                      delegate,
 		metricEmitter:                 metricEmitter,
 		batch:                         NewBatch(clock),
@@ -47,6 +48,7 @@ func New(
 		binPackFirstFitWeight:         binPackFirstFitWeight,
 		startingContainerWeight:       startingContainerWeight,
 		startingContainerCountMaximum: startingContainerCountMaximum,
+		useNormalisedCellIndices:      useNormalisedCellIndices,
 	}
 }
 
@@ -77,7 +79,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			logger.Info("fetching-zone-state")
 			fetchStatesStartTime := time.Now()
 			// Add a use cell index normalization boolean flag
-			zones := FetchStateAndBuildZones(logger, a.workPool, clients, a.metricEmitter, false)
+			zones := FetchStateAndBuildZones(logger, a.workPool, clients, a.metricEmitter, a.useNormalisedCellIndices)
 			fetchStateDuration := time.Since(fetchStatesStartTime)
 			err = a.metricEmitter.FetchStatesCompleted(fetchStateDuration)
 			if err != nil {

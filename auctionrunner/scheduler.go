@@ -302,12 +302,8 @@ func (s *Scheduler) scheduleLRPAuction(lrpAuction *auctiontypes.LRPAuction) (*au
 
 	cellStates := map[string]CellResourceState{}
 
-	// Build the zone index registry
-
 	for zoneIndex, lrpByZone := range sortedZones {
 		for _, cell := range lrpByZone.zone {
-			// Take the index and pass it to the scoreForLRP
-
 			score, err := cell.ScoreForLRP(&lrpAuction.LRP, s.startingContainerWeight, s.binPackFirstFitWeight)
 			if err != nil {
 				cellStates[cell.Guid] = NewCellResourceState(cell.State())

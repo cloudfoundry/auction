@@ -102,8 +102,8 @@ var _ = Describe("ZoneBuilder", func() {
 		}
 
 		repA.StateReturns(BuildCellState("A", 0, "the-zone", 100, 200, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
-		repB.StateReturns(BuildCellState("B", 0, "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
-		repC.StateReturns(BuildCellState("C", 0, "other-zone", 100, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
+		repB.StateReturns(BuildCellState("B", 2, "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
+		repC.StateReturns(BuildCellState("C", 5, "other-zone", 100, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
 
 		metricEmitter = new(fakes.FakeAuctionMetricEmitterDelegate)
 	})
@@ -270,14 +270,24 @@ var _ = Describe("ZoneBuilder", func() {
 	})
 
 	Describe("cell index normalisation", func() {
-		assertCellIndices := func(zone auctionrunner.Zone, expectedIndices []int) {
+		getCellIndices := func(zone auctionrunner.Zone) []int {
 			cellIndices := []int{}
 
 			for _, cell := range zone {
 				cellIndices = append(cellIndices, cell.Index)
 			}
 
+			return cellIndices
+		}
+
+		assertCellIndicesWithOrder := func(zone auctionrunner.Zone, expectedIndices []int) {
+			cellIndices := getCellIndices(zone)
 			Expect(cellIndices).To(Equal(expectedIndices))
+		}
+
+		assertCellIndices := func(zone auctionrunner.Zone, expectedIndices []int) {
+			cellIndices := getCellIndices(zone)
+			Expect(cellIndices).To(ConsistOf(expectedIndices))
 		}
 
 		assertCellIDs := func(zone auctionrunner.Zone, expectedIDs []string) {
@@ -291,13 +301,13 @@ var _ = Describe("ZoneBuilder", func() {
 		}
 
 		Context("when used", func() {
-			It("separately orders cells in each zone lexicographically by cell ID", func() {
+			It("separately orders cells in each zone by cell index", func() {
 				zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, true)
 
-				assertCellIndices(zones["the-zone"], []int{0, 1})
+				assertCellIndicesWithOrder(zones["the-zone"], []int{0, 1})
 				assertCellIDs(zones["the-zone"], []string{"A", "B"})
 
-				assertCellIndices(zones["other-zone"], []int{0})
+				assertCellIndicesWithOrder(zones["other-zone"], []int{0})
 				assertCellIDs(zones["other-zone"], []string{"C"})
 			})
 		})
@@ -306,8 +316,8 @@ var _ = Describe("ZoneBuilder", func() {
 			It("keeps the original cell indices unchanged", func() {
 				zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, false)
 
-				assertCellIndices(zones["the-zone"], []int{0, 0})
-				assertCellIndices(zones["other-zone"], []int{0})
+				assertCellIndices(zones["the-zone"], []int{0, 2})
+				assertCellIndices(zones["other-zone"], []int{5})
 			})
 		})
 	})

@@ -43,7 +43,7 @@ func (z *Zone) filterCells(pc rep.PlacementConstraint) ([]*Cell, error) {
 func (z Zone) Len() int      { return len(z) }
 func (z Zone) Swap(i, j int) { z[i], z[j] = z[j], z[i] }
 func (z Zone) Less(i, j int) bool {
-	return z[i].State().CellID < z[j].State().CellID
+	return z[i].State().CellIndex < z[j].State().CellIndex
 }
 
 type Scheduler struct {

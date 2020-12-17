@@ -149,7 +149,7 @@ var _ = Describe("Cell", func() {
 				instance = BuildLRP("pg-0", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{})
 
 				cellStateZero = BuildCellState(
-					"diego-cell/a",
+					"the-zone",
 					0,
 					"z1",
 					100,
@@ -169,7 +169,7 @@ var _ = Describe("Cell", func() {
 				cellZero = auctionrunner.NewCell(logger, "cell-0", client, cellStateZero)
 
 				cellStateOne = BuildCellState(
-					"diego-cell/b",
+					"the-zone",
 					1,
 					"z2",
 					100,

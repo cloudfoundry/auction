@@ -33,7 +33,6 @@ func New(
 	clock clock.Clock,
 	workPool *workpool.WorkPool,
 	binPackFirstFitWeight float64,
-	// Add a use cell index normalization boolean flag
 	startingContainerWeight float64,
 	startingContainerCountMaximum int,
 	useNormalisedCellIndices bool,
@@ -78,7 +77,6 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 
 			logger.Info("fetching-zone-state")
 			fetchStatesStartTime := time.Now()
-			// Add a use cell index normalization boolean flag
 			zones := FetchStateAndBuildZones(logger, a.workPool, clients, a.metricEmitter, a.useNormalisedCellIndices)
 			fetchStateDuration := time.Since(fetchStatesStartTime)
 			err = a.metricEmitter.FetchStatesCompleted(fetchStateDuration)

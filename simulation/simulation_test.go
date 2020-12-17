@@ -3,7 +3,6 @@ package simulation_test
 import (
 	"fmt"
 	"math"
-	"sort"
 	"sync"
 	"time"
 
@@ -129,7 +128,7 @@ var _ = Describe("Auction", func() {
 		assertSampleDistributionTolerances(distroVector, tolerance)
 	}
 
-	getZonesOrderedByCellID := func(numCells int, finalDistributions map[string]float64) map[int][]string {
+	getZones := func(numCells int, finalDistributions map[string]float64) map[int][]string {
 		zones := map[int][]string{}
 
 		for zoneIdx := 0; zoneIdx < numZones; zoneIdx++ {
@@ -138,8 +137,6 @@ var _ = Describe("Auction", func() {
 			for i := zoneIdx; i < numCells; i += numZones {
 				zones[zoneIdx] = append(zones[zoneIdx], cellGuid(i))
 			}
-
-			sort.Strings(zones[zoneIdx])
 		}
 
 		return zones
@@ -274,7 +271,7 @@ var _ = Describe("Auction", func() {
 
 								finalDistributions := getFinalDistributions()
 
-								zones := getZonesOrderedByCellID(ncells[i], finalDistributions)
+								zones := getZones(ncells[i], finalDistributions)
 								for _, zone := range zones {
 									assertNonDecreasingMonotonicSample(zone, finalDistributions)
 								}

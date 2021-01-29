@@ -23,7 +23,6 @@ type auctionRunner struct {
 	binPackFirstFitWeight         float64
 	startingContainerWeight       float64
 	startingContainerCountMaximum int
-	useNormalisedCellIndices      bool
 }
 
 func New(
@@ -35,7 +34,6 @@ func New(
 	binPackFirstFitWeight float64,
 	startingContainerWeight float64,
 	startingContainerCountMaximum int,
-	useNormalisedCellIndices bool,
 ) *auctionRunner {
 	return &auctionRunner{
 		logger:                        logger,
@@ -47,7 +45,6 @@ func New(
 		binPackFirstFitWeight:         binPackFirstFitWeight,
 		startingContainerWeight:       startingContainerWeight,
 		startingContainerCountMaximum: startingContainerCountMaximum,
-		useNormalisedCellIndices:      useNormalisedCellIndices,
 	}
 }
 
@@ -77,7 +74,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 
 			logger.Info("fetching-zone-state")
 			fetchStatesStartTime := time.Now()
-			zones := FetchStateAndBuildZones(logger, a.workPool, clients, a.metricEmitter, a.useNormalisedCellIndices)
+			zones := FetchStateAndBuildZones(logger, a.workPool, clients, a.metricEmitter, a.binPackFirstFitWeight)
 			fetchStateDuration := time.Since(fetchStatesStartTime)
 			err = a.metricEmitter.FetchStatesCompleted(fetchStateDuration)
 			if err != nil {

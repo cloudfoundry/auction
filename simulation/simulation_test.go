@@ -128,7 +128,7 @@ var _ = Describe("Auction", func() {
 		assertSampleDistributionTolerances(distroVector, tolerance)
 	}
 
-	getZones := func(numCells int, finalDistributions map[string]float64) map[int][]string {
+	getZones := func(numCells int) map[int][]string {
 		zones := map[int][]string{}
 
 		for zoneIdx := 0; zoneIdx < numZones; zoneIdx++ {
@@ -142,10 +142,10 @@ var _ = Describe("Auction", func() {
 		return zones
 	}
 
-	assertNonDecreasingMonotonicSample := func(sample []string, finalDistributions map[string]float64) {
-		for i := 0; i+1 < len(sample); i++ {
-			cellID := sample[i]
-			nextCellID := sample[i+1]
+	assertNonDecreasingMonotonicSample := func(cells []string, finalDistributions map[string]float64) {
+		for i := 0; i+1 < len(cells); i++ {
+			cellID := cells[i]
+			nextCellID := cells[i+1]
 			Expect(finalDistributions[cellID]).To(BeNumerically(">=", finalDistributions[nextCellID]))
 		}
 	}
@@ -212,12 +212,6 @@ var _ = Describe("Auction", func() {
 			for _, w := range binPackWeights {
 				weight := w
 				Context(fmt.Sprintf("with weight %f", w), func() {
-					var useCellIndexNormalisation bool
-
-					BeforeEach(func() {
-						useCellIndexNormalisation = false
-					})
-
 					JustBeforeEach(func() {
 						metricEmitterDelegate := NewAuctionMetricEmitterDelegate()
 						runner = auctionrunner.New(
@@ -229,7 +223,6 @@ var _ = Describe("Auction", func() {
 							weight,
 							0.5,
 							defaultMaxContainerStartCount,
-							useCellIndexNormalisation,
 						)
 						runnerProcess = ifrit.Invoke(runner)
 					})
@@ -238,47 +231,24 @@ var _ = Describe("Auction", func() {
 						i := i
 						It("favors cells with lower index", func() {
 							instances := generateUniqueLRPStartAuctions(napps[i], 1)
-
 							runAndReportStartAuction(instances, ncells[i], i, 4)
 
 							finalDistributions := getFinalDistributions()
 
-							cells := []string{}
-							for j := 0; j < ncells[i]; j++ {
-								cells = append(cells, cellGuid(j))
+							zones := getZones(ncells[i])
+							for _, zone := range zones {
+								assertNonDecreasingMonotonicSample(zone, finalDistributions)
 							}
 
-							assertNonDecreasingMonotonicSample(cells, finalDistributions)
-							Expect(finalDistributions["REP-1"]).To(BeNumerically(">", finalDistributions[cellGuid(ncells[i]-1)]))
+							tolerance := 1
+							assertLRPBalanceBetweenZones(tolerance, zones, finalDistributions)
 						})
 
 						It("should distribute evenly", func() {
 							instances := generateLRPStartAuctionsForProcessGuid(napps[i], "yellow", 1)
-
 							runAndReportStartAuction(instances, ncells[i], i+1, 2)
 
 							assertDistributionTolerances(1)
-						})
-
-						Context("with cell index normalisation", func() {
-							BeforeEach(func() {
-								useCellIndexNormalisation = true
-							})
-
-							It("favors cells with lower index", func() {
-								instances := generateUniqueLRPStartAuctions(napps[i], 1)
-								runAndReportStartAuction(instances, ncells[i], 0, 4)
-
-								finalDistributions := getFinalDistributions()
-
-								zones := getZones(ncells[i], finalDistributions)
-								for _, zone := range zones {
-									assertNonDecreasingMonotonicSample(zone, finalDistributions)
-								}
-
-								tolerance := 1
-								assertLRPBalanceBetweenZones(tolerance, zones, finalDistributions)
-							})
 						})
 					}
 				})

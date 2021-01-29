@@ -148,44 +148,12 @@ var _ = Describe("Cell", func() {
 			BeforeEach(func() {
 				instance = BuildLRP("pg-0", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{})
 
-				cellStateZero = BuildCellState(
-					"the-zone",
-					0,
-					"z1",
-					100,
-					200,
-					50,
-					false,
-					0,
-					linuxOnlyRootFSProviders,
-					[]rep.LRP{
-						*BuildLRP("pg-1", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{}),
-					},
-					[]string{},
-					[]string{},
-					[]string{},
-					0,
-				)
+				cellZeroLRPs := []rep.LRP{*BuildLRP("pg-1", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{})}
+				cellStateZero = BuildCellState("cellID", 0, "the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, cellZeroLRPs, []string{}, []string{}, []string{}, 0)
 				cellZero = auctionrunner.NewCell(logger, "cell-0", client, cellStateZero)
 
-				cellStateOne = BuildCellState(
-					"the-zone",
-					1,
-					"z2",
-					100,
-					200,
-					50,
-					false,
-					0,
-					linuxOnlyRootFSProviders,
-					[]rep.LRP{
-						*BuildLRP("pg-2", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{}),
-					},
-					[]string{},
-					[]string{},
-					[]string{},
-					0,
-				)
+				cellOneLRPs := []rep.LRP{*BuildLRP("pg-2", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{})}
+				cellStateOne = BuildCellState("cellID", 1, "other-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, cellOneLRPs, []string{}, []string{}, []string{}, 0)
 				cellOne = auctionrunner.NewCell(logger, "cell-1", client, cellStateOne)
 			})
 

@@ -11,10 +11,12 @@ import (
 	"code.cloudfoundry.org/workpool"
 )
 
-func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client, metricEmitter auctiontypes.AuctionMetricEmitterDelegate, useNormalisedCellIndices bool) map[string]Zone {
+const MinBinPackFirstFitWeight = 0.0
+
+func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client, metricEmitter auctiontypes.AuctionMetricEmitterDelegate, binPackFirstFitWeight float64) map[string]Zone {
 	var zones map[string]Zone
 	for i := 0; ; i++ {
-		zones = fetchStateAndBuildZones(logger, workPool, clients, metricEmitter, useNormalisedCellIndices)
+		zones = fetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
 		if len(zones) > 0 {
 			break
 		}
@@ -27,7 +29,7 @@ func FetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 	return zones
 }
 
-func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client, metricEmitter auctiontypes.AuctionMetricEmitterDelegate, useNormalisedCellIndices bool) map[string]Zone {
+func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, clients map[string]rep.Client, metricEmitter auctiontypes.AuctionMetricEmitterDelegate, binPackFirstFitWeight float64) map[string]Zone {
 	wg := &sync.WaitGroup{}
 	zones := map[string]Zone{}
 	lock := &sync.Mutex{}
@@ -67,11 +69,15 @@ func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 
 	wg.Wait()
 
-	if useNormalisedCellIndices {
+	if isBinPackFirstFitWeightProvided(binPackFirstFitWeight) {
 		return normaliseCellIndices(zones)
 	}
 
 	return zones
+}
+
+func isBinPackFirstFitWeightProvided(binPackFirstFitWeight float64) bool {
+	return binPackFirstFitWeight > MinBinPackFirstFitWeight
 }
 
 func normaliseCellIndices(zones map[string]Zone) map[string]Zone {

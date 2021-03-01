@@ -34,6 +34,8 @@ const linuxStack = "linux"
 
 const numCells = 100
 
+var numZones = 2
+
 var cells map[string]rep.SimClient
 
 var repResources = rep.Resources{
@@ -131,7 +133,7 @@ func cellGuid(index int) string {
 }
 
 func zone(index int) string {
-	return fmt.Sprintf("Z%d", index%2)
+	return fmt.Sprintf("Z%d", index%numZones)
 }
 
 func buildInProcessReps() map[string]rep.SimClient {

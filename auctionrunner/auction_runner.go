@@ -36,8 +36,7 @@ func New(
 	startingContainerCountMaximum int,
 ) *auctionRunner {
 	return &auctionRunner{
-		logger: logger,
-
+		logger:                        logger,
 		delegate:                      delegate,
 		metricEmitter:                 metricEmitter,
 		batch:                         NewBatch(clock),
@@ -75,7 +74,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 
 			logger.Info("fetching-zone-state")
 			fetchStatesStartTime := time.Now()
-			zones := FetchStateAndBuildZones(logger, a.workPool, clients, a.metricEmitter)
+			zones := FetchStateAndBuildZones(logger, a.workPool, clients, a.metricEmitter, a.binPackFirstFitWeight)
 			fetchStateDuration := time.Since(fetchStatesStartTime)
 			err = a.metricEmitter.FetchStatesCompleted(fetchStateDuration)
 			if err != nil {

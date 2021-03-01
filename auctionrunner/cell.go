@@ -12,6 +12,7 @@ type Cell struct {
 	Guid   string
 	client rep.Client
 	state  rep.CellState
+	Index  int
 
 	workToCommit rep.Work
 }
@@ -22,6 +23,7 @@ func NewCell(logger lager.Logger, guid string, client rep.Client, state rep.Cell
 		Guid:         guid,
 		client:       client,
 		state:        state,
+		Index:        state.CellIndex,
 		workToCommit: rep.Work{CellID: guid},
 	}
 }
@@ -46,7 +48,7 @@ func (c *Cell) State() rep.CellState {
 	return c.state
 }
 
-func (c *Cell) ScoreForLRP(lrp *rep.LRP, startingContainerWeight float64, binPackFirstFitWeight float64) (float64, error) {
+func (c *Cell) ScoreForLRP(lrp *rep.LRP, startingContainerWeight, binPackFirstFitWeight float64) (float64, error) {
 	proxiedLRP := rep.Resource{
 		MemoryMB: lrp.Resource.MemoryMB + int32(c.state.ProxyMemoryAllocationMB),
 		DiskMB:   lrp.Resource.DiskMB,
@@ -69,7 +71,7 @@ func (c *Cell) ScoreForLRP(lrp *rep.LRP, startingContainerWeight float64, binPac
 
 	resourceScore := c.state.ComputeScore(&proxiedLRP, startingContainerWeight)
 
-	indexScore := float64(c.state.CellIndex) * binPackFirstFitWeight
+	indexScore := float64(c.Index) * binPackFirstFitWeight
 
 	c.logger.Debug("score-for-lrp", lager.Data{
 		"cell-guid":      c.Guid,

@@ -148,44 +148,12 @@ var _ = Describe("Cell", func() {
 			BeforeEach(func() {
 				instance = BuildLRP("pg-0", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{})
 
-				cellStateZero = BuildCellState(
-					"cellID",
-					0,
-					"the-zone",
-					100,
-					200,
-					50,
-					false,
-					0,
-					linuxOnlyRootFSProviders,
-					[]rep.LRP{
-						*BuildLRP("pg-1", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{}),
-					},
-					[]string{},
-					[]string{},
-					[]string{},
-					0,
-				)
+				cellZeroLRPs := []rep.LRP{*BuildLRP("pg-1", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{})}
+				cellStateZero = BuildCellState("cellID", 0, "the-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, cellZeroLRPs, []string{}, []string{}, []string{}, 0)
 				cellZero = auctionrunner.NewCell(logger, "cell-0", client, cellStateZero)
 
-				cellStateOne = BuildCellState(
-					"cellID",
-					1,
-					"the-zone",
-					100,
-					200,
-					50,
-					false,
-					0,
-					linuxOnlyRootFSProviders,
-					[]rep.LRP{
-						*BuildLRP("pg-2", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{}),
-					},
-					[]string{},
-					[]string{},
-					[]string{},
-					0,
-				)
+				cellOneLRPs := []rep.LRP{*BuildLRP("pg-2", "domain", 0, linuxRootFSURL, 20, 20, 10, []string{})}
+				cellStateOne = BuildCellState("cellID", 1, "other-zone", 100, 200, 50, false, 0, linuxOnlyRootFSProviders, cellOneLRPs, []string{}, []string{}, []string{}, 0)
 				cellOne = auctionrunner.NewCell(logger, "cell-1", client, cellStateOne)
 			})
 
@@ -221,6 +189,20 @@ var _ = Describe("Cell", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(cellZeroScore).To(BeNumerically("==", cellOneScore), "ignore Bin Pack First Fit algorithm")
+			})
+
+			It("prefers normalised cell indices", func() {
+				binPackFirstFitWeight := 1.0
+
+				cellZero.Index = 0
+				cellZeroScore, err := cellZero.ScoreForLRP(instance, 0.0, binPackFirstFitWeight)
+				Expect(err).NotTo(HaveOccurred())
+
+				cellOne.Index = 0
+				cellOneScore, err := cellOne.ScoreForLRP(instance, 0.0, binPackFirstFitWeight)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(cellZeroScore).To(BeNumerically("==", cellOneScore), "has a separate normalised cell ordering for each zone")
 			})
 		})
 

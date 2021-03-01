@@ -83,6 +83,37 @@ var _ = Describe("ZoneBuilder", func() {
 	var workPool *workpool.WorkPool
 	var logger *lagertest.TestLogger
 	var metricEmitter *fakes.FakeAuctionMetricEmitterDelegate
+	var binPackFirstFitWeight float64
+
+	getCellIndices := func(zone auctionrunner.Zone) []int {
+		cellIndices := []int{}
+
+		for _, cell := range zone {
+			cellIndices = append(cellIndices, cell.Index)
+		}
+
+		return cellIndices
+	}
+
+	assertCellIndicesWithOrder := func(zone auctionrunner.Zone, expectedIndices []int) {
+		cellIndices := getCellIndices(zone)
+		Expect(cellIndices).To(Equal(expectedIndices))
+	}
+
+	assertCellIndices := func(zone auctionrunner.Zone, expectedIndices []int) {
+		cellIndices := getCellIndices(zone)
+		Expect(cellIndices).To(ConsistOf(expectedIndices))
+	}
+
+	assertCellIDs := func(zone auctionrunner.Zone, expectedIDs []string) {
+		cellIDs := []string{}
+
+		for _, cell := range zone {
+			cellIDs = append(cellIDs, cell.State().CellID)
+		}
+
+		Expect(cellIDs).To(Equal(expectedIDs))
+	}
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test")
@@ -102,10 +133,12 @@ var _ = Describe("ZoneBuilder", func() {
 		}
 
 		repA.StateReturns(BuildCellState("A", 0, "the-zone", 100, 200, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
-		repB.StateReturns(BuildCellState("B", 0, "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
-		repC.StateReturns(BuildCellState("C", 0, "other-zone", 100, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
+		repB.StateReturns(BuildCellState("B", 2, "the-zone", 10, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
+		repC.StateReturns(BuildCellState("C", 5, "other-zone", 100, 10, 100, false, 0, linuxOnlyRootFSProviders, nil, []string{}, []string{}, []string{}, 0), nil)
 
 		metricEmitter = new(fakes.FakeAuctionMetricEmitterDelegate)
+
+		binPackFirstFitWeight = 0.0
 	})
 
 	AfterEach(func() {
@@ -113,7 +146,7 @@ var _ = Describe("ZoneBuilder", func() {
 	})
 
 	It("fetches state by calling each client", func() {
-		zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+		zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
 		Expect(zones).To(HaveLen(2))
 
 		cells := map[string]*auctionrunner.Cell{}
@@ -135,7 +168,7 @@ var _ = Describe("ZoneBuilder", func() {
 	})
 
 	It("logs that it successfully fetched the state of the cells", func() {
-		auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+		auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
 
 		Expect(logger.LogMessages()).To(ContainElement("test.fetched-cell-state"))
 		Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "A", "duration_ns": BeNumerically(">", 0)})))
@@ -148,7 +181,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("does not include them in the map", func() {
-			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
 			Expect(zones).To(HaveLen(2))
 
 			cells := zones["the-zone"]
@@ -161,7 +194,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("logs that it ignored the evacuating cell", func() {
-			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
 
 			Expect(logger.LogMessages()).To(ContainElement("test.ignored-evacuating-cell"))
 			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B", "duration_ns": BeNumerically(">", 0)})))
@@ -174,7 +207,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("does not include that cell in the map", func() {
-			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
 			Expect(zones).To(HaveLen(2))
 
 			cells := zones["the-zone"]
@@ -192,7 +225,7 @@ var _ = Describe("ZoneBuilder", func() {
 			})
 
 			It("includes that cell in the map", func() {
-				zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+				zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
 				Expect(zones).To(HaveLen(2))
 
 				cells := zones["the-zone"]
@@ -209,7 +242,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("logs that there was a cell ID mismatch", func() {
-			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
 
 			Expect(logger.LogMessages()).To(ContainElement("test.cell-id-mismatch"))
 			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B"})))
@@ -223,7 +256,7 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("does not include the client in the map", func() {
-			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
 			Expect(zones).To(HaveLen(2))
 
 			cells := zones["the-zone"]
@@ -236,13 +269,13 @@ var _ = Describe("ZoneBuilder", func() {
 		})
 
 		It("it emits metrics for the failure", func() {
-			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+			zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
 			Expect(zones).To(HaveLen(2))
 			Expect(metricEmitter.FailedCellStateRequestCallCount()).To(Equal(1))
 		})
 
 		It("logs that it failed to fetch cell state", func() {
-			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter)
+			auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
 
 			Expect(logger.LogMessages()).To(ContainElement("test.failed-to-get-state"))
 			Expect(logger.Logs()).To(ContainElement(IncludeLogData(lager.Data{"cell-guid": "B", "error": "boom", "duration_ns": BeNumerically(">", 0)})))
@@ -267,5 +300,23 @@ var _ = Describe("ZoneBuilder", func() {
 				repC.StateClientTimeoutReturns(client.Timeout)
 			}
 		})
+	})
+
+	It("separately orders cells in each zone by cell index when bin pack first-fit weight is provided", func() {
+		binPackFirstFitWeight := 1.0
+		zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
+
+		assertCellIndicesWithOrder(zones["the-zone"], []int{0, 1})
+		assertCellIDs(zones["the-zone"], []string{"A", "B"})
+
+		assertCellIndicesWithOrder(zones["other-zone"], []int{0})
+		assertCellIDs(zones["other-zone"], []string{"C"})
+	})
+
+	It("keeps the original cell indices intact when bin pack first-fit weight is not provided", func() {
+		zones := auctionrunner.FetchStateAndBuildZones(logger, workPool, clients, metricEmitter, binPackFirstFitWeight)
+
+		assertCellIndices(zones["the-zone"], []int{0, 2})
+		assertCellIndices(zones["other-zone"], []int{5})
 	})
 })

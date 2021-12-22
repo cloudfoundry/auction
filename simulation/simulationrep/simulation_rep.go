@@ -141,6 +141,10 @@ func (rep *SimulationRep) StopLRPInstance(lager.Logger, models.ActualLRPKey, mod
 	panic("UNIMPLEMENTED METHOD")
 }
 
+func (rep *SimulationRep) UpdateLRPInstance(lager.Logger, rep.LRPUpdate) error {
+	panic("UNIMPLEMENTED METHOD")
+}
+
 func (rep *SimulationRep) CancelTask(lager.Logger, string) error {
 	panic("UNIMPLEMENTED METHOD")
 }

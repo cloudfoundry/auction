@@ -13,7 +13,7 @@ The `auction` package in this repository encodes the details behind Diego's sche
 - The [Auctioneer](https://github.com/cloudfoundry/auctioneer) is responsible for holding auctions whenever a Task or LongRunningProcess needs to be scheduled.
 - The [Rep](https://github.com/cloudfoundry/rep) represents a Diego Cell in the auction by making bids and, if picked as the winner, running the Task or LongRunningProcess.
 
-The Auctioneers run on the Diego "Brain" nodes, and there is only ever one active Auctioneer at a time (determined by acquiring a lock in [Consul](https://github.com/cloudfoundry-incubator/consul-release)). There is one Rep running on every Diego Cell.
+The Auctioneers run on the Diego "Brain" nodes, and there is only ever one active Auctioneer at a time (determined by acquiring a lock in Locket). There is one Rep running on every Diego Cell.
 
 The Auctioneer communicates with Reps on all Cells when holding an auction.
 

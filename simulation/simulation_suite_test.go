@@ -22,7 +22,7 @@ import (
 	"code.cloudfoundry.org/auction/simulation/visualization"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/rep"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"testing"

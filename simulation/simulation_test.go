@@ -14,7 +14,7 @@ import (
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/rep"
 	"github.com/GaryBoone/GoStats/stats"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/tedsuo/ifrit"
 )

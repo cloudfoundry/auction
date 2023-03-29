@@ -1,7 +1,7 @@
 package auctionrunner
 
 import (
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/rep"
 )
 

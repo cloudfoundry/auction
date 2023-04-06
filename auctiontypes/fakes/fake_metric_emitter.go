@@ -38,11 +38,11 @@ func (fake *FakeAuctionMetricEmitterDelegate) AuctionCompleted(arg1 auctiontypes
 	fake.auctionCompletedArgsForCall = append(fake.auctionCompletedArgsForCall, struct {
 		arg1 auctiontypes.AuctionResults
 	}{arg1})
+	stub := fake.AuctionCompletedStub
 	fake.recordInvocation("AuctionCompleted", []interface{}{arg1})
-	auctionCompletedStubCopy := fake.AuctionCompletedStub
 	fake.auctionCompletedMutex.Unlock()
-	if auctionCompletedStubCopy != nil {
-		auctionCompletedStubCopy(arg1)
+	if stub != nil {
+		fake.AuctionCompletedStub(arg1)
 	}
 }
 
@@ -69,11 +69,11 @@ func (fake *FakeAuctionMetricEmitterDelegate) FailedCellStateRequest() {
 	fake.failedCellStateRequestMutex.Lock()
 	fake.failedCellStateRequestArgsForCall = append(fake.failedCellStateRequestArgsForCall, struct {
 	}{})
+	stub := fake.FailedCellStateRequestStub
 	fake.recordInvocation("FailedCellStateRequest", []interface{}{})
-	failedCellStateRequestStubCopy := fake.FailedCellStateRequestStub
 	fake.failedCellStateRequestMutex.Unlock()
-	if failedCellStateRequestStubCopy != nil {
-		failedCellStateRequestStubCopy()
+	if stub != nil {
+		fake.FailedCellStateRequestStub()
 	}
 }
 
@@ -95,16 +95,16 @@ func (fake *FakeAuctionMetricEmitterDelegate) FetchStatesCompleted(arg1 time.Dur
 	fake.fetchStatesCompletedArgsForCall = append(fake.fetchStatesCompletedArgsForCall, struct {
 		arg1 time.Duration
 	}{arg1})
+	stub := fake.FetchStatesCompletedStub
+	fakeReturns := fake.fetchStatesCompletedReturns
 	fake.recordInvocation("FetchStatesCompleted", []interface{}{arg1})
-	fetchStatesCompletedStubCopy := fake.FetchStatesCompletedStub
 	fake.fetchStatesCompletedMutex.Unlock()
-	if fetchStatesCompletedStubCopy != nil {
-		return fetchStatesCompletedStubCopy(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.fetchStatesCompletedReturns
 	return fakeReturns.result1
 }
 

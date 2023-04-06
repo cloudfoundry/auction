@@ -43,16 +43,16 @@ func (fake *FakeAuctionRunner) Run(arg1 <-chan os.Signal, arg2 chan<- struct{}) 
 		arg1 <-chan os.Signal
 		arg2 chan<- struct{}
 	}{arg1, arg2})
+	stub := fake.RunStub
+	fakeReturns := fake.runReturns
 	fake.recordInvocation("Run", []interface{}{arg1, arg2})
-	runStubCopy := fake.RunStub
 	fake.runMutex.Unlock()
-	if runStubCopy != nil {
-		return runStubCopy(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.runReturns
 	return fakeReturns.result1
 }
 
@@ -108,11 +108,11 @@ func (fake *FakeAuctionRunner) ScheduleLRPsForAuctions(arg1 []auctioneer.LRPStar
 	fake.scheduleLRPsForAuctionsArgsForCall = append(fake.scheduleLRPsForAuctionsArgsForCall, struct {
 		arg1 []auctioneer.LRPStartRequest
 	}{arg1Copy})
+	stub := fake.ScheduleLRPsForAuctionsStub
 	fake.recordInvocation("ScheduleLRPsForAuctions", []interface{}{arg1Copy})
-	scheduleLRPsForAuctionsStubCopy := fake.ScheduleLRPsForAuctionsStub
 	fake.scheduleLRPsForAuctionsMutex.Unlock()
-	if scheduleLRPsForAuctionsStubCopy != nil {
-		scheduleLRPsForAuctionsStubCopy(arg1)
+	if stub != nil {
+		fake.ScheduleLRPsForAuctionsStub(arg1)
 	}
 }
 
@@ -145,11 +145,11 @@ func (fake *FakeAuctionRunner) ScheduleTasksForAuctions(arg1 []auctioneer.TaskSt
 	fake.scheduleTasksForAuctionsArgsForCall = append(fake.scheduleTasksForAuctionsArgsForCall, struct {
 		arg1 []auctioneer.TaskStartRequest
 	}{arg1Copy})
+	stub := fake.ScheduleTasksForAuctionsStub
 	fake.recordInvocation("ScheduleTasksForAuctions", []interface{}{arg1Copy})
-	scheduleTasksForAuctionsStubCopy := fake.ScheduleTasksForAuctionsStub
 	fake.scheduleTasksForAuctionsMutex.Unlock()
-	if scheduleTasksForAuctionsStubCopy != nil {
-		scheduleTasksForAuctionsStubCopy(arg1)
+	if stub != nil {
+		fake.ScheduleTasksForAuctionsStub(arg1)
 	}
 }
 

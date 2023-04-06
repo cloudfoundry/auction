@@ -2,7 +2,7 @@ package auctiontypes_test
 
 import (
 	"code.cloudfoundry.org/auction/auctiontypes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

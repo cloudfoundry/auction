@@ -8,7 +8,7 @@ import (
 	"code.cloudfoundry.org/rep"
 
 	"code.cloudfoundry.org/clock"
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/workpool"
 )
 

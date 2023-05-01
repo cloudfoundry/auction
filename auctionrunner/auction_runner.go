@@ -2,10 +2,13 @@ package auctionrunner
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager/v3"
+	"github.com/openzipkin/zipkin-go/idgenerator"
+	"github.com/openzipkin/zipkin-go/model"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
 	"code.cloudfoundry.org/auctioneer"
@@ -51,21 +54,21 @@ func New(
 func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	close(ready)
 
-	var hasWork chan struct{}
+	var hasWork chan Work
 	hasWork = a.batch.HasWork
 
 	for {
 		select {
-		case <-hasWork:
-			logger := a.logger.Session("auction")
+		case work := <-hasWork:
+			logger := a.loggerWithTraceInfo(work.TraceID).Session("auction")
 
 			logger.Info("fetching-cell-reps")
-			clients, err := a.delegate.FetchCellReps()
+			clients, err := a.delegate.FetchCellReps(logger, work.TraceID)
 			if err != nil {
 				logger.Error("failed-to-fetch-reps", err)
 				time.Sleep(time.Second)
-				hasWork = make(chan struct{}, 1)
-				hasWork <- struct{}{}
+				hasWork = make(chan Work, 1)
+				hasWork <- work
 				break
 			}
 			logger.Info("fetched-cell-reps", lager.Data{"cell-reps-count": len(clients)})
@@ -119,17 +122,28 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			})
 
 			a.metricEmitter.AuctionCompleted(auctionResults)
-			a.delegate.AuctionCompleted(auctionResults)
+			a.delegate.AuctionCompleted(logger, auctionResults)
 		case <-signals:
 			return nil
 		}
 	}
 }
 
-func (a *auctionRunner) ScheduleLRPsForAuctions(lrpStarts []auctioneer.LRPStartRequest) {
-	a.batch.AddLRPStarts(lrpStarts)
+func (a *auctionRunner) ScheduleLRPsForAuctions(lrpStarts []auctioneer.LRPStartRequest, traceID string) {
+	a.batch.AddLRPStarts(lrpStarts, traceID)
 }
 
-func (a *auctionRunner) ScheduleTasksForAuctions(tasks []auctioneer.TaskStartRequest) {
-	a.batch.AddTasks(tasks)
+func (a *auctionRunner) ScheduleTasksForAuctions(tasks []auctioneer.TaskStartRequest, traceID string) {
+	a.batch.AddTasks(tasks, traceID)
+}
+
+func (a *auctionRunner) loggerWithTraceInfo(traceIDStr string) lager.Logger {
+	traceHex := strings.Replace(traceIDStr, "-", "", -1)
+	traceID, err := model.TraceIDFromHex(traceHex)
+	if err != nil {
+		return a.logger.WithData(nil)
+	}
+
+	spanID := idgenerator.NewRandom128().SpanID(traceID)
+	return a.logger.WithData(lager.Data{"trace-id": traceID.String(), "span-id": spanID.String()})
 }

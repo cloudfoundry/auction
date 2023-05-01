@@ -11,11 +11,15 @@ import (
 	"code.cloudfoundry.org/clock"
 )
 
+type Work struct {
+	TraceID string
+}
+
 type Batch struct {
 	lrpAuctions  []auctiontypes.LRPAuction
 	taskAuctions []auctiontypes.TaskAuction
 	lock         *sync.Mutex
-	HasWork      chan struct{}
+	HasWork      chan Work
 	clock        clock.Clock
 }
 
@@ -24,11 +28,11 @@ func NewBatch(clock clock.Clock) *Batch {
 		lrpAuctions: []auctiontypes.LRPAuction{},
 		lock:        &sync.Mutex{},
 		clock:       clock,
-		HasWork:     make(chan struct{}, 1),
+		HasWork:     make(chan Work, 1),
 	}
 }
 
-func (b *Batch) AddLRPStarts(starts []auctioneer.LRPStartRequest) {
+func (b *Batch) AddLRPStarts(starts []auctioneer.LRPStartRequest, traceID string) {
 	auctions := make([]auctiontypes.LRPAuction, 0, len(starts))
 	now := b.clock.Now()
 	for i := range starts {
@@ -42,11 +46,11 @@ func (b *Batch) AddLRPStarts(starts []auctioneer.LRPStartRequest) {
 
 	b.lock.Lock()
 	b.lrpAuctions = append(b.lrpAuctions, auctions...)
-	b.claimToHaveWork()
+	b.claimToHaveWork(traceID)
 	b.lock.Unlock()
 }
 
-func (b *Batch) AddTasks(tasks []auctioneer.TaskStartRequest) {
+func (b *Batch) AddTasks(tasks []auctioneer.TaskStartRequest, traceID string) {
 	auctions := make([]auctiontypes.TaskAuction, 0, len(tasks))
 	now := b.clock.Now()
 	for i := range tasks {
@@ -55,7 +59,7 @@ func (b *Batch) AddTasks(tasks []auctioneer.TaskStartRequest) {
 
 	b.lock.Lock()
 	b.taskAuctions = append(b.taskAuctions, auctions...)
-	b.claimToHaveWork()
+	b.claimToHaveWork(traceID)
 	b.lock.Unlock()
 }
 
@@ -96,9 +100,9 @@ func (b *Batch) DedupeAndDrain() ([]auctiontypes.LRPAuction, []auctiontypes.Task
 	return dedupedLRPAuctions, dedupedTaskAuctions
 }
 
-func (b *Batch) claimToHaveWork() {
+func (b *Batch) claimToHaveWork(traceID string) {
 	select {
-	case b.HasWork <- struct{}{}:
+	case b.HasWork <- Work{TraceID: traceID}:
 	default:
 	}
 }

@@ -22,15 +22,17 @@ type FakeAuctionRunner struct {
 	runReturnsOnCall map[int]struct {
 		result1 error
 	}
-	ScheduleLRPsForAuctionsStub        func([]auctioneer.LRPStartRequest)
+	ScheduleLRPsForAuctionsStub        func([]auctioneer.LRPStartRequest, string)
 	scheduleLRPsForAuctionsMutex       sync.RWMutex
 	scheduleLRPsForAuctionsArgsForCall []struct {
 		arg1 []auctioneer.LRPStartRequest
+		arg2 string
 	}
-	ScheduleTasksForAuctionsStub        func([]auctioneer.TaskStartRequest)
+	ScheduleTasksForAuctionsStub        func([]auctioneer.TaskStartRequest, string)
 	scheduleTasksForAuctionsMutex       sync.RWMutex
 	scheduleTasksForAuctionsArgsForCall []struct {
 		arg1 []auctioneer.TaskStartRequest
+		arg2 string
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -98,7 +100,7 @@ func (fake *FakeAuctionRunner) RunReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAuctionRunner) ScheduleLRPsForAuctions(arg1 []auctioneer.LRPStartRequest) {
+func (fake *FakeAuctionRunner) ScheduleLRPsForAuctions(arg1 []auctioneer.LRPStartRequest, arg2 string) {
 	var arg1Copy []auctioneer.LRPStartRequest
 	if arg1 != nil {
 		arg1Copy = make([]auctioneer.LRPStartRequest, len(arg1))
@@ -107,12 +109,13 @@ func (fake *FakeAuctionRunner) ScheduleLRPsForAuctions(arg1 []auctioneer.LRPStar
 	fake.scheduleLRPsForAuctionsMutex.Lock()
 	fake.scheduleLRPsForAuctionsArgsForCall = append(fake.scheduleLRPsForAuctionsArgsForCall, struct {
 		arg1 []auctioneer.LRPStartRequest
-	}{arg1Copy})
+		arg2 string
+	}{arg1Copy, arg2})
 	stub := fake.ScheduleLRPsForAuctionsStub
-	fake.recordInvocation("ScheduleLRPsForAuctions", []interface{}{arg1Copy})
+	fake.recordInvocation("ScheduleLRPsForAuctions", []interface{}{arg1Copy, arg2})
 	fake.scheduleLRPsForAuctionsMutex.Unlock()
 	if stub != nil {
-		fake.ScheduleLRPsForAuctionsStub(arg1)
+		fake.ScheduleLRPsForAuctionsStub(arg1, arg2)
 	}
 }
 
@@ -122,20 +125,20 @@ func (fake *FakeAuctionRunner) ScheduleLRPsForAuctionsCallCount() int {
 	return len(fake.scheduleLRPsForAuctionsArgsForCall)
 }
 
-func (fake *FakeAuctionRunner) ScheduleLRPsForAuctionsCalls(stub func([]auctioneer.LRPStartRequest)) {
+func (fake *FakeAuctionRunner) ScheduleLRPsForAuctionsCalls(stub func([]auctioneer.LRPStartRequest, string)) {
 	fake.scheduleLRPsForAuctionsMutex.Lock()
 	defer fake.scheduleLRPsForAuctionsMutex.Unlock()
 	fake.ScheduleLRPsForAuctionsStub = stub
 }
 
-func (fake *FakeAuctionRunner) ScheduleLRPsForAuctionsArgsForCall(i int) []auctioneer.LRPStartRequest {
+func (fake *FakeAuctionRunner) ScheduleLRPsForAuctionsArgsForCall(i int) ([]auctioneer.LRPStartRequest, string) {
 	fake.scheduleLRPsForAuctionsMutex.RLock()
 	defer fake.scheduleLRPsForAuctionsMutex.RUnlock()
 	argsForCall := fake.scheduleLRPsForAuctionsArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeAuctionRunner) ScheduleTasksForAuctions(arg1 []auctioneer.TaskStartRequest) {
+func (fake *FakeAuctionRunner) ScheduleTasksForAuctions(arg1 []auctioneer.TaskStartRequest, arg2 string) {
 	var arg1Copy []auctioneer.TaskStartRequest
 	if arg1 != nil {
 		arg1Copy = make([]auctioneer.TaskStartRequest, len(arg1))
@@ -144,12 +147,13 @@ func (fake *FakeAuctionRunner) ScheduleTasksForAuctions(arg1 []auctioneer.TaskSt
 	fake.scheduleTasksForAuctionsMutex.Lock()
 	fake.scheduleTasksForAuctionsArgsForCall = append(fake.scheduleTasksForAuctionsArgsForCall, struct {
 		arg1 []auctioneer.TaskStartRequest
-	}{arg1Copy})
+		arg2 string
+	}{arg1Copy, arg2})
 	stub := fake.ScheduleTasksForAuctionsStub
-	fake.recordInvocation("ScheduleTasksForAuctions", []interface{}{arg1Copy})
+	fake.recordInvocation("ScheduleTasksForAuctions", []interface{}{arg1Copy, arg2})
 	fake.scheduleTasksForAuctionsMutex.Unlock()
 	if stub != nil {
-		fake.ScheduleTasksForAuctionsStub(arg1)
+		fake.ScheduleTasksForAuctionsStub(arg1, arg2)
 	}
 }
 
@@ -159,17 +163,17 @@ func (fake *FakeAuctionRunner) ScheduleTasksForAuctionsCallCount() int {
 	return len(fake.scheduleTasksForAuctionsArgsForCall)
 }
 
-func (fake *FakeAuctionRunner) ScheduleTasksForAuctionsCalls(stub func([]auctioneer.TaskStartRequest)) {
+func (fake *FakeAuctionRunner) ScheduleTasksForAuctionsCalls(stub func([]auctioneer.TaskStartRequest, string)) {
 	fake.scheduleTasksForAuctionsMutex.Lock()
 	defer fake.scheduleTasksForAuctionsMutex.Unlock()
 	fake.ScheduleTasksForAuctionsStub = stub
 }
 
-func (fake *FakeAuctionRunner) ScheduleTasksForAuctionsArgsForCall(i int) []auctioneer.TaskStartRequest {
+func (fake *FakeAuctionRunner) ScheduleTasksForAuctionsArgsForCall(i int) ([]auctioneer.TaskStartRequest, string) {
 	fake.scheduleTasksForAuctionsMutex.RLock()
 	defer fake.scheduleTasksForAuctionsMutex.RUnlock()
 	argsForCall := fake.scheduleTasksForAuctionsArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeAuctionRunner) Invocations() map[string][][]interface{} {

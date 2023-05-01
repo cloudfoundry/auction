@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
+	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/rep"
 )
 
@@ -30,7 +31,7 @@ func (a *auctionRunnerDelegate) SetCellLimit(limit int) {
 	a.cellLimit = limit
 }
 
-func (a *auctionRunnerDelegate) FetchCellReps() (map[string]rep.Client, error) {
+func (a *auctionRunnerDelegate) FetchCellReps(lager.Logger, string) (map[string]rep.Client, error) {
 	subset := map[string]rep.Client{}
 	for i := 0; i < a.cellLimit; i++ {
 		subset[cellGuid(i)] = a.cells[cellGuid(i)]
@@ -38,7 +39,7 @@ func (a *auctionRunnerDelegate) FetchCellReps() (map[string]rep.Client, error) {
 	return subset, nil
 }
 
-func (a *auctionRunnerDelegate) AuctionCompleted(work auctiontypes.AuctionResults) {
+func (a *auctionRunnerDelegate) AuctionCompleted(logger lager.Logger, work auctiontypes.AuctionResults) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.workResults.FailedLRPs = append(a.workResults.FailedLRPs, work.FailedLRPs...)

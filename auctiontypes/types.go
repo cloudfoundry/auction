@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/auctioneer"
+	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/rep"
 	"github.com/tedsuo/ifrit"
 )
@@ -47,13 +48,13 @@ var ErrorExceededInflightCreation = errors.New("waiting to start instance: reach
 //go:generate counterfeiter -o fakes/fake_auction_runner.go . AuctionRunner
 type AuctionRunner interface {
 	ifrit.Runner
-	ScheduleLRPsForAuctions([]auctioneer.LRPStartRequest)
-	ScheduleTasksForAuctions([]auctioneer.TaskStartRequest)
+	ScheduleLRPsForAuctions([]auctioneer.LRPStartRequest, string)
+	ScheduleTasksForAuctions([]auctioneer.TaskStartRequest, string)
 }
 
 type AuctionRunnerDelegate interface {
-	FetchCellReps() (map[string]rep.Client, error)
-	AuctionCompleted(AuctionResults)
+	FetchCellReps(lager.Logger, string) (map[string]rep.Client, error)
+	AuctionCompleted(lager.Logger, AuctionResults)
 }
 
 //go:generate counterfeiter -o fakes/fake_metric_emitter.go . AuctionMetricEmitterDelegate

@@ -2,13 +2,11 @@ package auctionrunner
 
 import (
 	"os"
-	"strings"
 	"time"
 
+	"code.cloudfoundry.org/bbs/trace"
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager/v3"
-	"github.com/openzipkin/zipkin-go/idgenerator"
-	"github.com/openzipkin/zipkin-go/model"
 
 	"code.cloudfoundry.org/auction/auctiontypes"
 	"code.cloudfoundry.org/auctioneer"
@@ -60,7 +58,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 	for {
 		select {
 		case work := <-hasWork:
-			logger := a.loggerWithTraceInfo(work.TraceID).Session("auction")
+			logger := trace.LoggerWithTraceInfo(a.logger, work.TraceID).Session("auction")
 
 			logger.Info("fetching-cell-reps")
 			clients, err := a.delegate.FetchCellReps(logger, work.TraceID)
@@ -135,15 +133,4 @@ func (a *auctionRunner) ScheduleLRPsForAuctions(lrpStarts []auctioneer.LRPStartR
 
 func (a *auctionRunner) ScheduleTasksForAuctions(tasks []auctioneer.TaskStartRequest, traceID string) {
 	a.batch.AddTasks(tasks, traceID)
-}
-
-func (a *auctionRunner) loggerWithTraceInfo(traceIDStr string) lager.Logger {
-	traceHex := strings.Replace(traceIDStr, "-", "", -1)
-	traceID, err := model.TraceIDFromHex(traceHex)
-	if err != nil {
-		return a.logger.WithData(nil)
-	}
-
-	spanID := idgenerator.NewRandom128().SpanID(traceID)
-	return a.logger.WithData(lager.Data{"trace-id": traceID.String(), "span-id": spanID.String()})
 }

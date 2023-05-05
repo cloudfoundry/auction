@@ -39,7 +39,7 @@ func (a *auctionRunnerDelegate) FetchCellReps(lager.Logger, string) (map[string]
 	return subset, nil
 }
 
-func (a *auctionRunnerDelegate) AuctionCompleted(logger lager.Logger, work auctiontypes.AuctionResults) {
+func (a *auctionRunnerDelegate) AuctionCompleted(logger lager.Logger, traceID string, work auctiontypes.AuctionResults) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	a.workResults.FailedLRPs = append(a.workResults.FailedLRPs, work.FailedLRPs...)

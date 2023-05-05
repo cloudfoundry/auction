@@ -120,7 +120,7 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			})
 
 			a.metricEmitter.AuctionCompleted(auctionResults)
-			a.delegate.AuctionCompleted(logger, auctionResults)
+			a.delegate.AuctionCompleted(logger, work.TraceID, auctionResults)
 		case <-signals:
 			return nil
 		}

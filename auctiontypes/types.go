@@ -54,7 +54,7 @@ type AuctionRunner interface {
 
 type AuctionRunnerDelegate interface {
 	FetchCellReps(lager.Logger, string) (map[string]rep.Client, error)
-	AuctionCompleted(lager.Logger, AuctionResults)
+	AuctionCompleted(lager.Logger, string, AuctionResults)
 }
 
 //go:generate counterfeiter -o fakes/fake_metric_emitter.go . AuctionMetricEmitterDelegate

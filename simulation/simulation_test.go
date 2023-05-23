@@ -71,7 +71,7 @@ var _ = Describe("Auction", func() {
 
 	runStartAuction := func(lrpStartAuctions []auctioneer.LRPStartRequest, numCells int) {
 		runnerDelegate.SetCellLimit(numCells)
-		runner.ScheduleLRPsForAuctions(lrpStartAuctions)
+		runner.ScheduleLRPsForAuctions(lrpStartAuctions, "some-trace-id")
 
 		Eventually(runnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStartAuctions)))
 	}
@@ -83,7 +83,7 @@ var _ = Describe("Auction", func() {
 		Eventually(runnerDelegate.ResultSize, time.Minute, 100*time.Millisecond).Should(Equal(len(lrpStartAuctions)))
 		duration := time.Since(t)
 
-		cells, _ := runnerDelegate.FetchCellReps()
+		cells, _ := runnerDelegate.FetchCellReps(logger, "some-trace-id")
 		report := visualization.NewReport(len(lrpStartAuctions), cells, runnerDelegate.Results(), duration)
 
 		visualization.PrintReport(report)

@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"code.cloudfoundry.org/bbs/trace"
 	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager/v3"
 
@@ -51,21 +52,21 @@ func New(
 func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	close(ready)
 
-	var hasWork chan struct{}
+	var hasWork chan Work
 	hasWork = a.batch.HasWork
 
 	for {
 		select {
-		case <-hasWork:
-			logger := a.logger.Session("auction")
+		case work := <-hasWork:
+			logger := trace.LoggerWithTraceInfo(a.logger, work.TraceID).Session("auction")
 
 			logger.Info("fetching-cell-reps")
-			clients, err := a.delegate.FetchCellReps()
+			clients, err := a.delegate.FetchCellReps(logger, work.TraceID)
 			if err != nil {
 				logger.Error("failed-to-fetch-reps", err)
 				time.Sleep(time.Second)
-				hasWork = make(chan struct{}, 1)
-				hasWork <- struct{}{}
+				hasWork = make(chan Work, 1)
+				hasWork <- work
 				break
 			}
 			logger.Info("fetched-cell-reps", lager.Data{"cell-reps-count": len(clients)})
@@ -119,17 +120,17 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 			})
 
 			a.metricEmitter.AuctionCompleted(auctionResults)
-			a.delegate.AuctionCompleted(auctionResults)
+			a.delegate.AuctionCompleted(logger, work.TraceID, auctionResults)
 		case <-signals:
 			return nil
 		}
 	}
 }
 
-func (a *auctionRunner) ScheduleLRPsForAuctions(lrpStarts []auctioneer.LRPStartRequest) {
-	a.batch.AddLRPStarts(lrpStarts)
+func (a *auctionRunner) ScheduleLRPsForAuctions(lrpStarts []auctioneer.LRPStartRequest, traceID string) {
+	a.batch.AddLRPStarts(lrpStarts, traceID)
 }
 
-func (a *auctionRunner) ScheduleTasksForAuctions(tasks []auctioneer.TaskStartRequest) {
-	a.batch.AddTasks(tasks)
+func (a *auctionRunner) ScheduleTasksForAuctions(tasks []auctioneer.TaskStartRequest, traceID string) {
+	a.batch.AddTasks(tasks, traceID)
 }

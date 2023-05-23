@@ -34,7 +34,7 @@ var _ = Describe("Batch", func() {
 		Context("when adding start auctions", func() {
 			BeforeEach(func() {
 				lrpStart = BuildLRPStartRequest("pg-1", "domain", []int{1}, "linux", 10, 10, 10, []string{}, []string{})
-				batch.AddLRPStarts([]auctioneer.LRPStartRequest{lrpStart})
+				batch.AddLRPStarts([]auctioneer.LRPStartRequest{lrpStart}, "some-trace-id")
 			})
 
 			It("makes the start auction available when drained", func() {
@@ -50,7 +50,7 @@ var _ = Describe("Batch", func() {
 		Context("when adding tasks", func() {
 			BeforeEach(func() {
 				task = BuildTaskStartRequest("tg-1", "domain", "linux", 10, 10, 10)
-				batch.AddTasks([]auctioneer.TaskStartRequest{task})
+				batch.AddTasks([]auctioneer.TaskStartRequest{task}, "some-trace-id")
 			})
 
 			It("makes the stop auction available when drained", func() {
@@ -70,12 +70,12 @@ var _ = Describe("Batch", func() {
 				BuildLRPStartRequest("pg-1", "domain", []int{1}, "linux", 10, 10, 10, []string{"driver-1"}, []string{"tag-1"}),
 				BuildLRPStartRequest("pg-1", "domain", []int{1}, "linux", 10, 10, 10, []string{"driver-1"}, []string{"tag-1"}),
 				BuildLRPStartRequest("pg-2", "domain", []int{2}, "linux", 10, 10, 10, []string{"driver-2"}, []string{"tag-2"}),
-			})
+			}, "some-trace-id")
 
 			batch.AddTasks([]auctioneer.TaskStartRequest{
 				BuildTaskStartRequest("tg-1", "domain", "linux", 10, 10, 10),
 				BuildTaskStartRequest("tg-1", "domain", "linux", 10, 10, 10),
-				BuildTaskStartRequest("tg-2", "domain", "linux", 10, 10, 10)})
+				BuildTaskStartRequest("tg-2", "domain", "linux", 10, 10, 10)}, "some-trace-id")
 		})
 
 		It("should dedupe any duplicate start auctions and stop auctions", func() {

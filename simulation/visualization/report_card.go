@@ -9,7 +9,7 @@ import (
 	"github.com/GaryBoone/GoStats/stats"
 	. "github.com/onsi/gomega"
 
-	"github.com/ajstarks/svgo"
+	svg "github.com/ajstarks/svgo"
 )
 
 var border = 5
@@ -118,7 +118,7 @@ func (r *SVGReport) drawDurationsHistogram(report *Report) int {
 	for _, start := range report.AuctionResults.SuccessfulLRPs {
 		waitTimes = append(waitTimes, start.WaitDuration.Seconds())
 	}
-	sort.Sort(sort.Float64Slice(waitTimes))
+	sort.Float64s(waitTimes)
 
 	bins := binUp([]float64{0, 0.25, 0.5, 1, 2, 5, 10, 20, 40, 1e9}, waitTimes)
 	labels := []string{"<0.25s", "0.25-0.5s", "0.5-1s", "1-2s", "2-5s", "5-10s", "10-20s", "20-40s", ">40s"}
@@ -140,7 +140,7 @@ func (r *SVGReport) drawAttemptsHistogram(report *Report, y int) int {
 	for _, start := range report.AuctionResults.FailedLRPs {
 		attempts = append(attempts, float64(start.Attempts))
 	}
-	sort.Sort(sort.Float64Slice(attempts))
+	sort.Float64s(attempts)
 
 	bins := binUp([]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, attempts)
 	labels := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"}

@@ -12,10 +12,10 @@ func NewAuctionMetricEmitterDelegate() auctionMetricEmitterDelegate {
 	return auctionMetricEmitterDelegate{}
 }
 
-func (_ auctionMetricEmitterDelegate) FetchStatesCompleted(_ time.Duration) error {
+func (auctionMetricEmitterDelegate) FetchStatesCompleted(_ time.Duration) error {
 	return nil
 }
 
-func (_ auctionMetricEmitterDelegate) FailedCellStateRequest() {}
+func (auctionMetricEmitterDelegate) FailedCellStateRequest() {}
 
-func (_ auctionMetricEmitterDelegate) AuctionCompleted(_ auctiontypes.AuctionResults) {}
+func (auctionMetricEmitterDelegate) AuctionCompleted(_ auctiontypes.AuctionResults) {}

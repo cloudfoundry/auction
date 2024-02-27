@@ -89,11 +89,11 @@ func (s *Scheduler) Schedule(auctionRequest auctiontypes.AuctionRequest) auction
 
 	if len(s.zones) == 0 {
 		results.FailedLRPs = auctionRequest.LRPs
-		for i, _ := range results.FailedLRPs {
+		for i := range results.FailedLRPs {
 			results.FailedLRPs[i].PlacementError = auctiontypes.ErrorCellCommunication.Error()
 		}
 		results.FailedTasks = auctionRequest.Tasks
-		for i, _ := range results.FailedTasks {
+		for i := range results.FailedTasks {
 			results.FailedTasks[i].PlacementError = auctiontypes.ErrorCellCommunication.Error()
 		}
 		return s.markResults(results)
@@ -417,7 +417,7 @@ func (s *Scheduler) scheduleTaskAuction(taskAuction *auctiontypes.TaskAuction, s
 // not call out memory or disk as being a specific problem.
 func removeNonApplicableProblems(problems map[string]struct{}, err error) {
 	if ierr, ok := err.(rep.InsufficientResourcesError); ok {
-		for problem, _ := range problems {
+		for problem := range problems {
 			if _, ok := ierr.Problems[problem]; !ok {
 				delete(problems, problem)
 			}

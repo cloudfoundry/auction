@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
@@ -161,5 +160,5 @@ func finishReport() {
 
 	data, err := json.Marshal(reports)
 	Expect(err).NotTo(HaveOccurred())
-	ioutil.WriteFile("./"+reportName+".json", data, 0777)
+	os.WriteFile("./"+reportName+".json", data, 0777)
 }

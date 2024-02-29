@@ -33,7 +33,6 @@ var ReportCardHeight = border*3 + instanceBoxHeight
 type SVGReport struct {
 	SVG                *svg.SVG
 	f                  *os.File
-	attempts           []float64
 	waitTimes          []float64
 	distributionScores []float64
 	width              int

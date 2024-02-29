@@ -9,7 +9,6 @@ import (
 )
 
 const defaultStyle = "\x1b[0m"
-const boldStyle = "\x1b[1m"
 const redColor = "\x1b[91m"
 const greenColor = "\x1b[32m"
 const yellowColor = "\x1b[33m"

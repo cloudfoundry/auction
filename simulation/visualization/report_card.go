@@ -55,10 +55,10 @@ func StartSVGReport(path string, width, height int, numCells int) *SVGReport {
 	}
 }
 
-func (r *SVGReport) Done() {
+func (r *SVGReport) Done() error {
 	r.drawResults()
 	r.SVG.End()
-	r.f.Close()
+	return r.f.Close()
 }
 
 func (r *SVGReport) drawResults() {

@@ -119,7 +119,10 @@ func (a *auctionRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) err
 				"failed-task-auctions":          len(auctionResults.FailedTasks),
 			})
 
-			a.metricEmitter.AuctionCompleted(auctionResults)
+			err = a.metricEmitter.AuctionCompleted(auctionResults)
+			if err != nil {
+				logger.Debug("failed-emitting-auction-complete-metrics", lager.Data{"error": err})
+			}
 			a.delegate.AuctionCompleted(logger, work.TraceID, auctionResults)
 		case <-signals:
 			return nil

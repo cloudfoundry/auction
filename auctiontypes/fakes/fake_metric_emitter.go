@@ -9,14 +9,26 @@ import (
 )
 
 type FakeAuctionMetricEmitterDelegate struct {
-	AuctionCompletedStub        func(auctiontypes.AuctionResults)
+	AuctionCompletedStub        func(auctiontypes.AuctionResults) error
 	auctionCompletedMutex       sync.RWMutex
 	auctionCompletedArgsForCall []struct {
 		arg1 auctiontypes.AuctionResults
 	}
-	FailedCellStateRequestStub        func()
+	auctionCompletedReturns struct {
+		result1 error
+	}
+	auctionCompletedReturnsOnCall map[int]struct {
+		result1 error
+	}
+	FailedCellStateRequestStub        func() error
 	failedCellStateRequestMutex       sync.RWMutex
 	failedCellStateRequestArgsForCall []struct {
+	}
+	failedCellStateRequestReturns struct {
+		result1 error
+	}
+	failedCellStateRequestReturnsOnCall map[int]struct {
+		result1 error
 	}
 	FetchStatesCompletedStub        func(time.Duration) error
 	fetchStatesCompletedMutex       sync.RWMutex
@@ -33,17 +45,23 @@ type FakeAuctionMetricEmitterDelegate struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeAuctionMetricEmitterDelegate) AuctionCompleted(arg1 auctiontypes.AuctionResults) {
+func (fake *FakeAuctionMetricEmitterDelegate) AuctionCompleted(arg1 auctiontypes.AuctionResults) error {
 	fake.auctionCompletedMutex.Lock()
+	ret, specificReturn := fake.auctionCompletedReturnsOnCall[len(fake.auctionCompletedArgsForCall)]
 	fake.auctionCompletedArgsForCall = append(fake.auctionCompletedArgsForCall, struct {
 		arg1 auctiontypes.AuctionResults
 	}{arg1})
 	stub := fake.AuctionCompletedStub
+	fakeReturns := fake.auctionCompletedReturns
 	fake.recordInvocation("AuctionCompleted", []interface{}{arg1})
 	fake.auctionCompletedMutex.Unlock()
 	if stub != nil {
-		fake.AuctionCompletedStub(arg1)
+		return stub(arg1)
 	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
 }
 
 func (fake *FakeAuctionMetricEmitterDelegate) AuctionCompletedCallCount() int {
@@ -52,7 +70,7 @@ func (fake *FakeAuctionMetricEmitterDelegate) AuctionCompletedCallCount() int {
 	return len(fake.auctionCompletedArgsForCall)
 }
 
-func (fake *FakeAuctionMetricEmitterDelegate) AuctionCompletedCalls(stub func(auctiontypes.AuctionResults)) {
+func (fake *FakeAuctionMetricEmitterDelegate) AuctionCompletedCalls(stub func(auctiontypes.AuctionResults) error) {
 	fake.auctionCompletedMutex.Lock()
 	defer fake.auctionCompletedMutex.Unlock()
 	fake.AuctionCompletedStub = stub
@@ -65,16 +83,45 @@ func (fake *FakeAuctionMetricEmitterDelegate) AuctionCompletedArgsForCall(i int)
 	return argsForCall.arg1
 }
 
-func (fake *FakeAuctionMetricEmitterDelegate) FailedCellStateRequest() {
+func (fake *FakeAuctionMetricEmitterDelegate) AuctionCompletedReturns(result1 error) {
+	fake.auctionCompletedMutex.Lock()
+	defer fake.auctionCompletedMutex.Unlock()
+	fake.AuctionCompletedStub = nil
+	fake.auctionCompletedReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeAuctionMetricEmitterDelegate) AuctionCompletedReturnsOnCall(i int, result1 error) {
+	fake.auctionCompletedMutex.Lock()
+	defer fake.auctionCompletedMutex.Unlock()
+	fake.AuctionCompletedStub = nil
+	if fake.auctionCompletedReturnsOnCall == nil {
+		fake.auctionCompletedReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.auctionCompletedReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeAuctionMetricEmitterDelegate) FailedCellStateRequest() error {
 	fake.failedCellStateRequestMutex.Lock()
+	ret, specificReturn := fake.failedCellStateRequestReturnsOnCall[len(fake.failedCellStateRequestArgsForCall)]
 	fake.failedCellStateRequestArgsForCall = append(fake.failedCellStateRequestArgsForCall, struct {
 	}{})
 	stub := fake.FailedCellStateRequestStub
+	fakeReturns := fake.failedCellStateRequestReturns
 	fake.recordInvocation("FailedCellStateRequest", []interface{}{})
 	fake.failedCellStateRequestMutex.Unlock()
 	if stub != nil {
-		fake.FailedCellStateRequestStub()
+		return stub()
 	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
 }
 
 func (fake *FakeAuctionMetricEmitterDelegate) FailedCellStateRequestCallCount() int {
@@ -83,10 +130,33 @@ func (fake *FakeAuctionMetricEmitterDelegate) FailedCellStateRequestCallCount() 
 	return len(fake.failedCellStateRequestArgsForCall)
 }
 
-func (fake *FakeAuctionMetricEmitterDelegate) FailedCellStateRequestCalls(stub func()) {
+func (fake *FakeAuctionMetricEmitterDelegate) FailedCellStateRequestCalls(stub func() error) {
 	fake.failedCellStateRequestMutex.Lock()
 	defer fake.failedCellStateRequestMutex.Unlock()
 	fake.FailedCellStateRequestStub = stub
+}
+
+func (fake *FakeAuctionMetricEmitterDelegate) FailedCellStateRequestReturns(result1 error) {
+	fake.failedCellStateRequestMutex.Lock()
+	defer fake.failedCellStateRequestMutex.Unlock()
+	fake.FailedCellStateRequestStub = nil
+	fake.failedCellStateRequestReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeAuctionMetricEmitterDelegate) FailedCellStateRequestReturnsOnCall(i int, result1 error) {
+	fake.failedCellStateRequestMutex.Lock()
+	defer fake.failedCellStateRequestMutex.Unlock()
+	fake.FailedCellStateRequestStub = nil
+	if fake.failedCellStateRequestReturnsOnCall == nil {
+		fake.failedCellStateRequestReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.failedCellStateRequestReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeAuctionMetricEmitterDelegate) FetchStatesCompleted(arg1 time.Duration) error {

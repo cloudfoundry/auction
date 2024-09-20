@@ -16,6 +16,6 @@ func (auctionMetricEmitterDelegate) FetchStatesCompleted(_ time.Duration) error 
 	return nil
 }
 
-func (auctionMetricEmitterDelegate) FailedCellStateRequest() {}
+func (auctionMetricEmitterDelegate) FailedCellStateRequest() error { return nil }
 
-func (auctionMetricEmitterDelegate) AuctionCompleted(_ auctiontypes.AuctionResults) {}
+func (auctionMetricEmitterDelegate) AuctionCompleted(_ auctiontypes.AuctionResults) error { return nil }

@@ -43,7 +43,10 @@ func fetchStateAndBuildZones(logger lager.Logger, workPool *workpool.WorkPool, c
 			startTime := time.Now()
 			state, err := client.State(logger)
 			if err != nil {
-				metricEmitter.FailedCellStateRequest()
+				metricErr := metricEmitter.FailedCellStateRequest()
+				if metricErr != nil {
+					logger.Debug("failed-to-emit-get-cell-state-failure-metric", lager.Data{"error": err})
+				}
 				logger.Error("failed-to-get-state", err, lager.Data{"cell-guid": guid, "duration_ns": time.Since(startTime)})
 				return
 			}

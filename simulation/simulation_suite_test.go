@@ -151,8 +151,9 @@ func startReport() {
 }
 
 func finishReport() {
-	svgReport.Done()
-	_, err := exec.LookPath("rsvg-convert")
+	err := svgReport.Done()
+	Expect(err).NotTo(HaveOccurred())
+	_, err = exec.LookPath("rsvg-convert")
 	if err == nil {
 		exec.Command("rsvg-convert", "-h", "2000", "--background-color=#fff", "./"+reportName+".svg", "-o", "./"+reportName+".png").Run()
 		exec.Command("open", "./"+reportName+".png").Run()

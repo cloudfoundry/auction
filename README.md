@@ -1,5 +1,10 @@
 # Auction
 
+[![Go Report
+Card](https://goreportcard.com/badge/code.cloudfoundry.org/auction)](https://goreportcard.com/report/code.cloudfoundry.org/auction)
+[![Go
+Reference](https://pkg.go.dev/badge/code.cloudfoundry.org/auction.svg)](https://pkg.go.dev/code.cloudfoundry.org/auction)
+
 This repository contains the source code for the Cloud Foundry package
 responsible for the details behind Diego's scheduling mechanism.
 
